@@ -7,10 +7,10 @@
 
 
 
-### currentSettlement
+### relatedSettlement
 
 ```solidity
-contract ISettlement currentSettlement
+contract ISettlement relatedSettlement
 ```
 
 Settlement address to which this army belongs
@@ -23,27 +23,13 @@ _Immutable, initialized on the army creation_
 ### currentPosition
 
 ```solidity
-uint32 currentPosition
+uint64 currentPosition
 ```
 
 Position where army currently stands on
 
-_Updated when army updates position. It does not take into account if army is moving
+_Updated when army updates position. It does not take into account if army is maneuvering
 To proper query current position use #getCurrentPosition_
-
-
-
-
-### destinationPosition
-
-```solidity
-uint32 destinationPosition
-```
-
-Position to which are is moving to
-
-_Updated when army starts moving. It does not take into account if army is finished move by time
-To proper calculate destination position you need to check if army finished movement by comparing current time and movementTiming.endTime_
 
 
 
@@ -56,73 +42,60 @@ contract IBattle battle
 
 Battle in which army is on
 
-_If army is not in battle returns address(0). It does not take into account if battle is finished but army is not left the battle_
+_If army is not in battle returns address(0). It does not take into account if battle is ended but army is not left the battle_
 
 
 
 
-### siege
+### maneuverInfo
 
 ```solidity
-contract ISiege siege
+struct IArmy.ManeuverInfo maneuverInfo
 ```
 
-Siege in which are army is on
+Maneuver info
 
-_If army is not in siege returns address(0)_
-
-
+_Updated when army begins maneuvering. It does not take into account if army is ended maneuver by time_
 
 
-### movementTiming
+
+
+### stunInfo
 
 ```solidity
-struct IArmy.MovementTiming movementTiming
+struct IArmy.StunInfo stunInfo
 ```
 
-Movement timings
+Stun info
 
-_Updated when army starts moving. It does not take into account if army is finished move by time_
-
-
+_Updated when army stun is applied_
 
 
-### movementPath
+
+
+### additionalUnitsBattleMultipliers
 
 ```solidity
-uint32[] movementPath
+mapping(bytes32 => uint256) additionalUnitsBattleMultipliers
 ```
 
-Path army is taken during movement
+Mapping containing additional unit battle multiplier
 
-_Updated when army starts moving. It does not take into account if army is finished move by time
-To proper query entire movementPath use #getMovementPath_
-
-
-
-
-### lastDemilitarizationTime
-
-```solidity
-uint256 lastDemilitarizationTime
-```
-
-Time at which last demilitarization occured
-
-_Updated when #demilitarize is called_
+_Updated when #increaseUnitBattleMultiplier or #decreaseUnitBattleMultiplier is called_
 
 
 
 
-### onlyOwnerOrWorldAssetFromSameEpoch
+### onlyRulerOrWorldAssetFromSameEra
 
 ```solidity
-modifier onlyOwnerOrWorldAssetFromSameEpoch()
+modifier onlyRulerOrWorldAssetFromSameEra()
 ```
 
 
 
-_Allows caller to be only ruler or any world asset_
+_Only ruler or world or world asset from same era modifier
+Modifier is calling internal function in order to reduce contract size_
 
 
 
@@ -130,33 +103,17 @@ _Allows caller to be only ruler or any world asset_
 ### init
 
 ```solidity
-function init(address settlementAddress) public
+function init(bytes initParams) public
 ```
 
-Proxy initializer
 
-_Called by factory contract which creates current instance_
+
+_World asset initializer_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
+| initParams | bytes | Encoded init params (every world asset has own knowledge how to extract data from it) |
 
-
-
-### getMovementPath
-
-```solidity
-function getMovementPath() public view returns (uint32[])
-```
-
-Path army is taken during movement
-
-_Useful to get entire movement path rather than querying each path item by index. It does not take into account if army is finished move by time_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint32[] |  |
 
 
 ### updateState
@@ -168,45 +125,6 @@ function updateState() public
 Updates army state to the current block
 
 _Called on every action which are based on army state and time_
-
-
-
-
-### canUpdatePosition
-
-```solidity
-function canUpdatePosition() internal view returns (bool)
-```
-
-
-
-_Checks if army can update position at the moment_
-
-
-
-
-### updatePosition
-
-```solidity
-function updatePosition() public
-```
-
-Updates army position if movement is finished
-
-_Called on every action which are based on army state and time_
-
-
-
-
-### checkLiquidation
-
-```solidity
-function checkLiquidation() public
-```
-
-Checks army for liquidation, and if it can be liquidated - liquidates it
-
-_Anyone can call that function_
 
 
 
@@ -230,7 +148,7 @@ _Same as owner of the settlement to which this army belongs_
 ### burnUnits
 
 ```solidity
-function burnUnits(string[] unitNames, uint256[] unitsCount) public
+function burnUnits(bytes32[] unitTypeIds, uint256[] unitsAmounts) public
 ```
 
 Burns units from the army
@@ -239,63 +157,90 @@ _Can only be called by world or world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitNames | string[] | Names of the unit types for burning |
-| unitsCount | uint256[] | Amount of units for burning for every unit type |
+| unitTypeIds | bytes32[] | Unit type ids for burning |
+| unitsAmounts | uint256[] | Amount of units for burning for every unit type |
 
 
 
-### speedUpArmyBySpendingFood
-
-```solidity
-function speedUpArmyBySpendingFood(uint256 defaultPathTime, uint256 pathLength, uint256 foodToSpendOnFeeding) internal returns (uint256)
-```
-
-
-
-_Updates farm's treasury, burns food specified for feeding and returns new path time_
-
-
-
-
-### move
+### liquidateUnits
 
 ```solidity
-function move(uint32[] path, uint256 foodToSpendOnFeeding) public
+function liquidateUnits(bytes32[] unitTypeIds, uint256[] unitsAmounts) public
 ```
 
-Initiates army movement to the settlement
+Liquidates units from the army
 
-_Even though path can be provided artificial only allowed movement to a settlement_
+_Can only be called by world or world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| path | uint32[] | Path army will take to the settlement |
-| foodToSpendOnFeeding | uint256 | Amount of food army will take from current position settlements FARM in order to decrease total time army will take to get to destination position |
+| unitTypeIds | bytes32[] | Unit type ids for liquidation |
+| unitsAmounts | uint256[] | Amount of units for liquidation |
 
 
 
-### updateFortOnPositionAndGetHealth
-
-```solidity
-function updateFortOnPositionAndGetHealth(uint32 position) internal returns (uint256)
-```
-
-
-
-_Updates fort on current position and returns its health_
-
-
-
-
-### calculateDefaultPathTime
+### beginOpenManeuver
 
 ```solidity
-function calculateDefaultPathTime(uint32[] path) internal returns (uint256)
+function beginOpenManeuver(uint64 position, uint256 foodToSpendOnAcceleration) public
 ```
 
+Begins open maneuver to specified position
+
+_Even though position can be artificial, army can move only to settlement_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| position | uint64 | Position of settlement to move to |
+| foodToSpendOnAcceleration | uint256 | Amount of food army will take from current position settlements FARM in order to decrease total time army will take to get to destination position |
 
 
-_Calculates default path time_
+
+### beginSecretManeuver
+
+```solidity
+function beginSecretManeuver(uint64 secretDestinationRegionId, bytes32 secretDestinationPosition) public
+```
+
+Begins secret maneuver to secret position
+
+_Caller must be aware of the rules applied to revealing destination position otherwise army may be punished_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| secretDestinationRegionId | uint64 | Secret destination region id |
+| secretDestinationPosition | bytes32 | Secret destination position |
+
+
+
+### revealSecretManeuver
+
+```solidity
+function revealSecretManeuver(uint64 destinationPosition, bytes32 revealKey, uint256 woodToSpendOnAcceleration) public
+```
+
+Reveals secret maneuver
+
+_In order to successfully reveal 'secretDestinationPosition' - 'destination position' and 'revealKey' must be valid
+Validity of verified by 'keccak256(abi.encodePacked(destinationPosition, revealKey)) == secretDestinationPosition'_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationPosition | uint64 | Destination position |
+| revealKey | bytes32 | Reveal key |
+| woodToSpendOnAcceleration | uint256 | Wood to spend on acceleration |
+
+
+
+### cancelSecretManeuver
+
+```solidity
+function cancelSecretManeuver() public
+```
+
+Cancels secret maneuver
+
+_Can be cancelled by army owner_
 
 
 
@@ -303,7 +248,7 @@ _Calculates default path time_
 ### demilitarize
 
 ```solidity
-function demilitarize(string[] unitNames, uint256[] unitsCount) public
+function demilitarize(bytes32[] unitTypeIds, uint256[] unitsAmounts) public
 ```
 
 Demilitarizes part of the army. Demilitarization provides prosperity to the settlement army is currently staying on
@@ -312,197 +257,102 @@ _Even though demilitarization of 0 units may seem reasonable, it is disabled_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitNames | string[] | Names of the unit types for demilitarization |
-| unitsCount | uint256[] | Amount of units for demilitarization for every unit type |
-
-
-
-### getDecreasedPathTime
-
-```solidity
-function getDecreasedPathTime(uint256 pathLength, uint256 defaultPathTime, uint256 foodToSpendOnFeeding, uint256 foodAmountToMaximumSpeed) internal returns (uint256)
-```
-
-
-
-_Calculates decreased path time by feeding parameters_
-
-
-
-
-### getFoodMovementStats
-
-```solidity
-function getFoodMovementStats(uint256 pathLength) internal returns (uint256)
-```
-
-
-
-_Calculates amount of needed food for maximum speed increase and amount of max allowed food to spend on feeding_
-
-
-
-
-### getUnitsBalance
-
-```solidity
-function getUnitsBalance() internal view returns (uint256[] unitsBalances, uint256 totalUnits)
-```
-
-
-
-_Calculates current army units balance_
-
+| unitTypeIds | bytes32[] | Unit type ids for demilitarization |
+| unitsAmounts | uint256[] | Amount of units to demilitarize |
 
 
 
 ### getCurrentPosition
 
 ```solidity
-function getCurrentPosition() public view returns (uint32)
+function getCurrentPosition() public view returns (uint64)
 ```
 
-Calculates current position taking to the account #movementTimings
+Calculates current position taking to the account #maneuverInfo
 
 _This method should be used to determine real army position_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint32 |  |
+| [0] | uint64 |  |
 
 
-### setInBattle
-
-```solidity
-function setInBattle(address _battleAddress) public
-```
-
-Sets army is battle
-
-_Can only be called by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _battleAddress | address |  |
-
-
-
-### newBattle
+### beginBattle
 
 ```solidity
-function newBattle(address _targetArmyAddress) public
+function beginBattle(address targetArmyAddress, bytes32[] maxUnitTypeIdsToAttack, uint256[] maxUnitsToAttack) public
 ```
 
-Initiates battle with another army is both are not in battle
+Begins battle with another army if both are not in battle
 
 _Creates IBattle and sets both armies in created battle_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _targetArmyAddress | address |  |
+| targetArmyAddress | address |  |
+| maxUnitTypeIdsToAttack | bytes32[] | Max unit type ids to attack |
+| maxUnitsToAttack | uint256[] | Max units to attack |
 
 
 
 ### joinBattle
 
 ```solidity
-function joinBattle(address _battleAddress, bool _isSideA) public
+function joinBattle(address battleAddress, uint256 side) public
 ```
 
 Joins current army in battle to the provided side
 
-_Moving army is able to join battle only if caller is another army (drags it into battle)_
+_Maneuvering army is able to join battle only if caller is another army (drags it into battle)_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _battleAddress | address |  |
-| _isSideA | bool |  |
+| battleAddress | address | Battle address army will join |
+| side | uint256 | Side of the battle army will join (sideA = 1, sideB = 2) |
 
 
 
-### setUnitsInSiege
+### modifySiege
 
 ```solidity
-function setUnitsInSiege(string[] _addUnitsNames, uint256[] _addUnitsCount, string[] _removeUnitsNames, uint256[] _removeUnitsCount) public
+function modifySiege(bytes32[] unitTypeIds, bool[] toAddIndication, uint256[] unitsAmounts, uint256 newRobberyMultiplier) public
 ```
 
-Sets and withdraw units to/from siege
+Modifies army siege params
 
 _Provides ability to atomically setup/re-setup siege_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _addUnitsNames | string[] |  |
-| _addUnitsCount | uint256[] |  |
-| _removeUnitsNames | string[] |  |
-| _removeUnitsCount | uint256[] |  |
+| unitTypeIds | bytes32[] | Unit type ids |
+| toAddIndication | bool[] | Indication array whether to add units or to withdraw (add = true, withdraw = false) |
+| unitsAmounts | uint256[] | Amounts of units to add/withdraw |
+| newRobberyMultiplier | uint256 | New robbery multiplier |
 
 
 
-### startSiege
-
-```solidity
-function startSiege(string[] _unitNames, uint256[] _unitsCount) internal
-```
-
-
-
-_Sets specified units in siege_
-
-
-
-
-### withdrawUnitsFromSiege
+### swapRobberyPointsForResourceFromBuildingTreasury
 
 ```solidity
-function withdrawUnitsFromSiege(string[] _unitNames, uint256[] _unitsCount) internal
+function swapRobberyPointsForResourceFromBuildingTreasury(address buildingAddress, uint256 pointsToSpend) public
 ```
 
-
-
-_Withdraws units from siege_
-
-
-
-
-### setSiegeAddress
-
-```solidity
-function setSiegeAddress(address _siegeAddress) public
-```
-
-Sets army in siege
-
-_Can only be called by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _siegeAddress | address |  |
-
-
-
-### claimResources
-
-```solidity
-function claimResources(address buildingAddress, uint256 _points) public
-```
-
-Swaps accumulated robbery tokens in siege for resource
+Swaps accumulated robbery points in siege for resource from building treasury
 
 _Amount of points will be taken may be lesser if building does not have resources in its treasury_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | buildingAddress | address | Address of the building treasury of which will be robbed |
-| _points | uint256 |  |
+| pointsToSpend | uint256 | Amount of points to spend for resources |
 
 
 
 ### getTotalSiegeSupport
 
 ```solidity
-function getTotalSiegeSupport() public view returns (uint256 totalSiegeSupport)
+function getTotalSiegeSupport() public view returns (uint256)
 ```
 
 Calculates total siege support of the army
@@ -512,18 +362,18 @@ _For every unit type placed in siege calculates sum of all of them_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| totalSiegeSupport | uint256 | Total siege support of the army |
+| [0] | uint256 |  |
 
 
-### isHomePosition
+### isAtHomePosition
 
 ```solidity
-function isHomePosition() public view returns (bool)
+function isAtHomePosition() public view returns (bool)
 ```
 
-Calculates is army on its home position
+Calculates is army at home position
 
-_Takes into account if army movement is finished_
+_Takes into account if army maneuver is ended (by time)_
 
 
 | Name | Type | Description |
@@ -531,126 +381,76 @@ _Takes into account if army movement is finished_
 | [0] | bool |  |
 
 
-## Army
-
-
-
-
-
-
-
-
-### currentSettlement
+### isManeuvering
 
 ```solidity
-contract ISettlement currentSettlement
+function isManeuvering() public view returns (bool)
 ```
 
-Settlement address to which this army belongs
+Calculates is army maneuvering (openly or secretly)
 
-_Immutable, initialized on the army creation_
-
-
+_Takes into account if army maneuver is ended (by time)_
 
 
-### currentPosition
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bool |  |
+
+
+### increaseUnitBattleMultiplier
 
 ```solidity
-uint32 currentPosition
+function increaseUnitBattleMultiplier(bytes32 unitTypeId, uint256 unitBattleMultiplier) public
 ```
 
-Position where army currently stands on
+Increases unit battle multiplier
 
-_Updated when army updates position. It does not take into account if army is moving
-To proper query current position use #getCurrentPosition_
+_Can only be called by world or world asset_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeId | bytes32 | Unit type id |
+| unitBattleMultiplier | uint256 | Unit battle multiplier |
 
 
 
-
-### destinationPosition
+### decreaseUnitBattleMultiplier
 
 ```solidity
-uint32 destinationPosition
+function decreaseUnitBattleMultiplier(bytes32 unitTypeId, uint256 unitBattleMultiplier) public
 ```
 
-Position to which are is moving to
+Decreases unit battle multiplier
 
-_Updated when army starts moving. It does not take into account if army is finished move by time
-To proper calculate destination position you need to check if army finished movement by comparing current time and movementTiming.endTime_
+_Can only be called by world or world asset_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeId | bytes32 | Unit type id |
+| unitBattleMultiplier | uint256 | Unit battle multiplier |
 
 
 
-
-### battle
+### applySelfStun
 
 ```solidity
-contract IBattle battle
+function applySelfStun(uint64 stunDuration) public
 ```
 
-Battle in which army is on
+Applies army stun by settlement ruler
 
-_If army is not in battle returns address(0). It does not take into account if battle is finished but army is not left the battle_
+_Provides ability to self stun owned army_
 
-
-
-
-### siege
-
-```solidity
-contract ISiege siege
-```
-
-Siege in which are army is on
-
-_If army is not in siege returns address(0)_
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| stunDuration | uint64 | Stun duration |
 
 
 
-
-### movementTiming
+### _onlyRulerOrWorldAssetFromSameEra
 
 ```solidity
-struct IArmy.MovementTiming movementTiming
-```
-
-Movement timings
-
-_Updated when army starts moving. It does not take into account if army is finished move by time_
-
-
-
-
-### movementPath
-
-```solidity
-uint32[] movementPath
-```
-
-Path army is taken during movement
-
-_Updated when army starts moving. It does not take into account if army is finished move by time
-To proper query entire movementPath use #getMovementPath_
-
-
-
-
-### lastDemilitarizationTime
-
-```solidity
-uint256 lastDemilitarizationTime
-```
-
-Time at which last demilitarization occured
-
-_Updated when #demilitarize is called_
-
-
-
-
-### onlyOwnerOrWorldAssetFromSameEpoch
-
-```solidity
-modifier onlyOwnerOrWorldAssetFromSameEpoch()
+function _onlyRulerOrWorldAssetFromSameEra() internal view
 ```
 
 
@@ -660,55 +460,101 @@ _Allows caller to be only ruler or any world asset_
 
 
 
-### init
+### _calculateResourceAmountPer1SecondOfDecreasedManeuverDuration
 
 ```solidity
-function init(address settlementAddress) public
+function _calculateResourceAmountPer1SecondOfDecreasedManeuverDuration() internal view returns (uint256)
 ```
 
-Proxy initializer
 
-_Called by factory contract which creates current instance_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
+_Calculates amount of needed resource per one second of decreased maneuver duration_
 
 
 
-### getMovementPath
+
+### _getArmyTotalUnitsAmount
 
 ```solidity
-function getMovementPath() public view returns (uint32[])
+function _getArmyTotalUnitsAmount(address armyAddress) internal view returns (uint256)
 ```
 
-Path army is taken during movement
-
-_Useful to get entire movement path rather than querying each path item by index. It does not take into account if army is finished move by time_
 
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint32[] |  |
+_Calculates total units amount_
 
 
-### updateState
+
+
+### _calculateDefaultManeuverDuration
 
 ```solidity
-function updateState() public
+function _calculateDefaultManeuverDuration(uint64 distanceBetweenPositions) internal view returns (uint256)
 ```
 
-Updates army state to the current block
-
-_Called on every action which are based on army state and time_
 
 
+_Calculates default maneuver duration_
 
 
-### canUpdatePosition
+
+
+### _calculateMaxDecreasedManeuverDuration
 
 ```solidity
-function canUpdatePosition() internal view returns (bool)
+function _calculateMaxDecreasedManeuverDuration(uint64 distanceBetweenPositions) internal view returns (uint256)
+```
+
+
+
+_Calculates max default maneuver duration_
+
+
+
+
+### _speedUpArmyByBurningTreasuryOnCurrentPosition
+
+```solidity
+function _speedUpArmyByBurningTreasuryOnCurrentPosition(uint256 maxManeuverDurationReduction, uint64 distanceBetweenPositions, uint256 resourceToSpendOnAcceleration, bytes32 buildingTypeIdFromWhichBurnResource) internal returns (uint256)
+```
+
+
+
+_Updates building's treasury, burns resource specified for acceleration and returns maneuver duration duration reduction_
+
+
+
+
+### _isManeuveringOpenly
+
+```solidity
+function _isManeuveringOpenly() internal view returns (bool)
+```
+
+
+
+_Checks if army is maneuvering openly_
+
+
+
+
+### _isManeuveringSecretly
+
+```solidity
+function _isManeuveringSecretly() internal view returns (bool)
+```
+
+
+
+_Checks if army is maneuvering secretly_
+
+
+
+
+### _hasComeToDestinationPosition
+
+```solidity
+function _hasComeToDestinationPosition() internal view returns (bool)
 ```
 
 
@@ -718,349 +564,68 @@ _Checks if army can update position at the moment_
 
 
 
-### updatePosition
+### _applyStun
 
 ```solidity
-function updatePosition() public
-```
-
-Updates army position if movement is finished
-
-_Called on every action which are based on army state and time_
-
-
-
-
-### checkLiquidation
-
-```solidity
-function checkLiquidation() public
-```
-
-Checks army for liquidation, and if it can be liquidated - liquidates it
-
-_Anyone can call that function_
-
-
-
-
-### getOwner
-
-```solidity
-function getOwner() public view returns (address)
-```
-
-Return owner of the army
-
-_Same as owner of the settlement to which this army belongs_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address |  |
-
-
-### burnUnits
-
-```solidity
-function burnUnits(string[] unitNames, uint256[] unitsCount) public
-```
-
-Burns units from the army
-
-_Can only be called by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitNames | string[] | Names of the unit types for burning |
-| unitsCount | uint256[] | Amount of units for burning for every unit type |
-
-
-
-### speedUpArmyBySpendingFood
-
-```solidity
-function speedUpArmyBySpendingFood(uint256 defaultPathTime, uint256 pathLength, uint256 foodToSpendOnFeeding) internal returns (uint256)
+function _applyStun(uint64 stunBeginTime, uint256 stunDuration) internal
 ```
 
 
 
-_Updates farm's treasury, burns food specified for feeding and returns new path time_
+_Applies stun_
 
 
 
 
-### move
-
-```solidity
-function move(uint32[] path, uint256 foodToSpendOnFeeding) public
-```
-
-Initiates army movement to the settlement
-
-_Even though path can be provided artificial only allowed movement to a settlement_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| path | uint32[] | Path army will take to the settlement |
-| foodToSpendOnFeeding | uint256 | Amount of food army will take from current position settlements FARM in order to decrease total time army will take to get to destination position |
-
-
-
-### updateFortOnPositionAndGetHealth
+### _getSettlementOnCurrentPosition
 
 ```solidity
-function updateFortOnPositionAndGetHealth(uint32 position) internal returns (uint256)
+function _getSettlementOnCurrentPosition() internal view returns (contract ISettlement)
 ```
 
 
 
-_Updates fort on current position and returns its health_
+_Calculates settlement on current army position_
 
 
 
 
-### calculateDefaultPathTime
+### _isBesieging
 
 ```solidity
-function calculateDefaultPathTime(uint32[] path) internal returns (uint256)
+function _isBesieging() internal view returns (bool)
 ```
 
 
 
-_Calculates default path time_
+_Calculates if army is currently in siege or not_
 
 
 
 
-### demilitarize
-
-```solidity
-function demilitarize(string[] unitNames, uint256[] unitsCount) public
-```
-
-Demilitarizes part of the army. Demilitarization provides prosperity to the settlement army is currently staying on
-
-_Even though demilitarization of 0 units may seem reasonable, it is disabled_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitNames | string[] | Names of the unit types for demilitarization |
-| unitsCount | uint256[] | Amount of units for demilitarization for every unit type |
-
-
-
-### getDecreasedPathTime
+### _hasUnitsInBattleAtProvidedSide
 
 ```solidity
-function getDecreasedPathTime(uint256 pathLength, uint256 defaultPathTime, uint256 foodToSpendOnFeeding, uint256 foodAmountToMaximumSpeed) internal returns (uint256)
+function _hasUnitsInBattleAtProvidedSide(contract IBattle battle, uint256 side) internal view returns (bool)
 ```
 
 
 
-_Calculates decreased path time by feeding parameters_
+_Calculates if battle has units at provided side_
 
 
 
 
-### getFoodMovementStats
+### _isCultistsSettlement
 
 ```solidity
-function getFoodMovementStats(uint256 pathLength) internal returns (uint256)
+function _isCultistsSettlement(contract ISettlement settlement) internal view returns (bool)
 ```
 
 
 
-_Calculates amount of needed food for maximum speed increase and amount of max allowed food to spend on feeding_
+_Calculates whether settlement is cultists settlement_
 
 
-
-
-### getUnitsBalance
-
-```solidity
-function getUnitsBalance() internal view returns (uint256[] unitsBalances, uint256 totalUnits)
-```
-
-
-
-_Calculates current army units balance_
-
-
-
-
-### getCurrentPosition
-
-```solidity
-function getCurrentPosition() public view returns (uint32)
-```
-
-Calculates current position taking to the account #movementTimings
-
-_This method should be used to determine real army position_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint32 |  |
-
-
-### setInBattle
-
-```solidity
-function setInBattle(address _battleAddress) public
-```
-
-Sets army is battle
-
-_Can only be called by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _battleAddress | address |  |
-
-
-
-### newBattle
-
-```solidity
-function newBattle(address _targetArmyAddress) public
-```
-
-Initiates battle with another army is both are not in battle
-
-_Creates IBattle and sets both armies in created battle_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _targetArmyAddress | address |  |
-
-
-
-### joinBattle
-
-```solidity
-function joinBattle(address _battleAddress, bool _isSideA) public
-```
-
-Joins current army in battle to the provided side
-
-_Moving army is able to join battle only if caller is another army (drags it into battle)_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _battleAddress | address |  |
-| _isSideA | bool |  |
-
-
-
-### setUnitsInSiege
-
-```solidity
-function setUnitsInSiege(string[] _addUnitsNames, uint256[] _addUnitsCount, string[] _removeUnitsNames, uint256[] _removeUnitsCount) public
-```
-
-Sets and withdraw units to/from siege
-
-_Provides ability to atomically setup/re-setup siege_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _addUnitsNames | string[] |  |
-| _addUnitsCount | uint256[] |  |
-| _removeUnitsNames | string[] |  |
-| _removeUnitsCount | uint256[] |  |
-
-
-
-### startSiege
-
-```solidity
-function startSiege(string[] _unitNames, uint256[] _unitsCount) internal
-```
-
-
-
-_Sets specified units in siege_
-
-
-
-
-### withdrawUnitsFromSiege
-
-```solidity
-function withdrawUnitsFromSiege(string[] _unitNames, uint256[] _unitsCount) internal
-```
-
-
-
-_Withdraws units from siege_
-
-
-
-
-### setSiegeAddress
-
-```solidity
-function setSiegeAddress(address _siegeAddress) public
-```
-
-Sets army in siege
-
-_Can only be called by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _siegeAddress | address |  |
-
-
-
-### claimResources
-
-```solidity
-function claimResources(address buildingAddress, uint256 _points) public
-```
-
-Swaps accumulated robbery tokens in siege for resource
-
-_Amount of points will be taken may be lesser if building does not have resources in its treasury_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingAddress | address | Address of the building treasury of which will be robbed |
-| _points | uint256 |  |
-
-
-
-### getTotalSiegeSupport
-
-```solidity
-function getTotalSiegeSupport() public view returns (uint256 totalSiegeSupport)
-```
-
-Calculates total siege support of the army
-
-_For every unit type placed in siege calculates sum of all of them_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| totalSiegeSupport | uint256 | Total siege support of the army |
-
-
-### isHomePosition
-
-```solidity
-function isHomePosition() public view returns (bool)
-```
-
-Calculates is army on its home position
-
-_Takes into account if army movement is finished_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool |  |
 
 

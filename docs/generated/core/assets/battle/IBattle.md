@@ -7,7 +7,7 @@ Functions to read state/modify state in order to get current battle parameters a
 
 
 
-### Casualty
+### BattleTimeInfo
 
 
 
@@ -17,84 +17,17 @@ Functions to read state/modify state in order to get current battle parameters a
 
 
 ```solidity
-struct Casualty {
-  uint256 unitSpec;
-  uint256 casualties;
+struct BattleTimeInfo {
+  uint64 beginTime;
+  uint64 duration;
+  uint64 endTime;
 }
 ```
-
-### Timing
-
-
-
-
-
-
-
-
-```solidity
-struct Timing {
-  uint64 creationTime;
-  uint64 lobbyDuration;
-  uint64 ongoingDuration;
-  uint64 finishTime;
-}
-```
-
-### Joined
-
-```solidity
-event Joined(address armyAddress, bool isSideA)
-```
-
-Emitted when army joined battle
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Address of the joined army |
-| isSideA | bool | Side to which army is joined |
-
-
-
-### CasualtiesAdded
-
-```solidity
-event CasualtiesAdded(bool isSideA, uint256 unitSpec, uint256 casualities)
-```
-
-Emitted when #startBattle is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isSideA | bool | Side of which casualties where added |
-| unitSpec | uint256 | Type of unit |
-| casualities | uint256 | Amount of casualties |
-
-
-
-### Finished
-
-```solidity
-event Finished(uint256 finishTime, uint256[] casualitiesA, uint256[] casualitiesB)
-```
-
-Emitted when #startBattle is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| finishTime | uint256 | Time at which battle is finished |
-| casualitiesA | uint256[] | Amount of total casualties from side A |
-| casualitiesB | uint256[] | Amount of total casualties from side B |
-
-
 
 ### position
 
 ```solidity
-function position() external view returns (uint32)
+function position() external view returns (uint64)
 ```
 
 Position at which battle is being held
@@ -104,48 +37,10 @@ _Immutable, initialized on the battle creation_
 
 
 
-### sideA
+### sideUnitsAmount
 
 ```solidity
-function sideA(uint256 index) external view returns (address armyAddress)
-```
-
-An array of armies joined to side A
-
-_Updated when army joins side A_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| index | uint256 | Index inside the array |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Army address at the specified index |
-
-
-### sideB
-
-```solidity
-function sideB(uint256 index) external view returns (address armyAddress)
-```
-
-An array of armies joined to side B
-
-_Updated when army joins side B_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| index | uint256 | Index inside the array |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Army address at the specified index |
-
-
-### sideUnitsCount
-
-```solidity
-function sideUnitsCount(bool isSideA, string unitName) external view returns (uint256 unitsCount)
+function sideUnitsAmount(uint256 side, bytes32 unitTypeId) external view returns (uint256 unitsAmount)
 ```
 
 Mapping that contains units amount by side and unit type
@@ -154,18 +49,18 @@ _Updated when army joins side_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isSideA | bool | Side of which query units amount (sideA = true, sideB = false) |
-| unitName | string | Unit type to query |
+| side | uint256 | Side of which query units amount (sideA = 1, sideB = 2) |
+| unitTypeId | bytes32 | Unit type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitsCount | uint256 | Amount of units by specified side and unit type |
+| unitsAmount | uint256 | Amount of units by specified side and unit type |
 
 
-### userUnitsCount
+### armyUnitsAmount
 
 ```solidity
-function userUnitsCount(address armyAddress, string unitName) external view returns (uint256 unitsCount)
+function armyUnitsAmount(address armyAddress, bytes32 unitTypeId) external view returns (uint256 unitsAmount)
 ```
 
 Mapping that contains amount of units by army address and unit type
@@ -174,324 +69,111 @@ _Updated when army joins battle_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| armyAddress | address | Address of the army |
-| unitName | string | Unit type to query |
+| armyAddress | address | Army address |
+| unitTypeId | bytes32 | Unit type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitsCount | uint256 | Amount of units by army address and unit type |
+| unitsAmount | uint256 | Amount of units by army address and unit type |
+
+
+### armyUnitsAdditionalMultipliers
+
+```solidity
+function armyUnitsAdditionalMultipliers(address armyAddress, bytes32 unitTypeId) external view returns (uint256 unitAmountMultiplier)
+```
+
+Mapping that contains unit multiplier by army address and unit type
+
+_Updated when army joins battle_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| armyAddress | address | Army address |
+| unitTypeId | bytes32 | Unit type id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitAmountMultiplier | uint256 | Unit amount multiplier |
 
 
 ### casualties
 
 ```solidity
-function casualties(bool isSideA, string unitName) external view returns (uint256 casualtiesCount)
+function casualties(uint256 side, bytes32 unitTypeId) external view returns (uint256 casualtiesCount)
 ```
 
-Mapping that contains amount of casualties after battle is finished
+Mapping that contains amount of casualties
 
-_Updated when #startBattle is called_
+_Updated when #acceptArmyInBattle is called_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isSideA | bool | Side of which query casualties amount (sideA = true, sideB = false) |
-| unitName | string | Unit type to query |
+| side | uint256 | Side of which query casualties amount (sideA = 1, sideB = 2) |
+| unitTypeId | bytes32 | Unit type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | casualtiesCount | uint256 | Amount of casualties by side and unit type |
 
 
-### isOnSideA
+### armySide
 
 ```solidity
-function isOnSideA(address armyAddress) external view returns (bool isSideA)
+function armySide(address armyAddress) external view returns (uint256 armySide)
 ```
 
 Mapping that contains side at which joined army is on
 
-_Updated when #joinBattle is called_
+_Updated when #acceptArmyInBattle is called_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| armyAddress | address | Address of the army |
+| armyAddress | address | Army address |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isSideA | bool | Side of specified army (sideA = true, sideB = false) |
+| armySide | uint256 | Side of specified army (sideA = 1, sideB = 2) |
 
 
-### timing
+### battleTimeInfo
 
 ```solidity
-function timing() external view returns (uint64 creationTime, uint64 lobbyDuration, uint64 ongoingDuration, uint64 finishTime)
+function battleTimeInfo() external view returns (uint64 beginTime, uint64 duration, uint64 endTime)
 ```
 
-Battle time parameters
+Battle time info
 
-_Updated when battle initialized, first armies joined and finished (#initBattle, #joinBattle, #startBattle)_
+_Updated when battle initialized, first armies joined and ended (#initBattle, #acceptArmyInBattle, #endBattle)_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| creationTime | uint64 | Time when battle is created |
-| lobbyDuration | uint64 | Lobby duration, initialized when first two armies joined |
-| ongoingDuration | uint64 | Ongoing duration, initialized when first two armies joined |
-| finishTime | uint64 | Time when battle is finished |
+| beginTime | uint64 | Time when battle is began |
+| duration | uint64 | Battle duration, initialized when first two armies joined |
+| endTime | uint64 | Time when battle is ended |
 
 
-### init
+### winningSide
 
 ```solidity
-function init(address attackerArmyAddress) external
+function winningSide() external view returns (uint256 winningSide)
 ```
 
-Proxy initializer
+Winning side
 
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| attackerArmyAddress | address | Attacker army address |
-
-
-
-### getSideALength
-
-```solidity
-function getSideALength() external view returns (uint256 armiesCount)
-```
-
-Calculates amount of armies joined to side A
-
-_Basically returns length of sideA array_
+_Updated when #endBattle is called_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| armiesCount | uint256 | Amount of armies joined to side A |
+| winningSide | uint256 | Winning side (no winner = 0, sideA = 1, sideB = 2) |
 
 
-### getSideBLength
-
-```solidity
-function getSideBLength() external view returns (uint256 armiesCount)
-```
-
-Calculates amount of armies joined to side B
-
-_Basically returns length of sideA array_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armiesCount | uint256 | Amount of armies joined to side B |
-
-
-### joinBattle
+### ArmyJoined
 
 ```solidity
-function joinBattle(bool isSideA) external
-```
-
-Join msg.sender in battle
-
-_Even though function is open, only army can join battle_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isSideA | bool | Side to which army will join |
-
-
-
-### exitBattle
-
-```solidity
-function exitBattle() external
-```
-
-Exits battle as msg.sender
-
-_Even though function is open, only army can exit battle_
-
-
-
-
-### startBattle
-
-```solidity
-function startBattle() external
-```
-
-Starts battle
-
-_Even though function is called start battle, it finishes battle calculating and updating casualties_
-
-
-
-
-### getLobbyDuration
-
-```solidity
-function getLobbyDuration(bool isOccultistsAttacked) external view returns (uint64 duration)
-```
-
-Calculates lobby duration
-
-_Will be deprecated in favor of #calculateTimings_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isOccultistsAttacked | bool | Is occultists attacked |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| duration | uint64 | Lobby duration |
-
-
-### getOngoingDuration
-
-```solidity
-function getOngoingDuration(bool isOccultistsAttacked) external view returns (uint64 duration)
-```
-
-Calculates lobby duration
-
-_Will be deprecated in favor of #calculateTimings_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isOccultistsAttacked | bool | Is occultists attacked |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| duration | uint64 | Ongoing duration |
-
-
-### canExitFromBattle
-
-```solidity
-function canExitFromBattle() external view returns (bool isBattleFinished)
-```
-
-Calculates if battle is finished
-
-_Checks if finishTime is set and current block.timestamp > finishTime_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isBattleFinished | bool | Is battle finished |
-
-
-### calculateUserCasualties
-
-```solidity
-function calculateUserCasualties(address armyAddress) external view returns (string[] unitNames, uint256[] unitsCount)
-```
-
-Calculates casualties for specified army
-
-_Provides valid results only for finished battle_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Address of army presented in battle |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitNames | string[] | Unit types |
-| unitsCount | uint256[] | Amount of casualties for related unit types |
-
-
-### isJoinTime
-
-```solidity
-function isJoinTime() external view returns (bool isJoinTime)
-```
-
-Calculates if lobby is opened
-
-_Will be deprecated_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isJoinTime | bool | Is lobby is opened |
-
-
-### calculateTimings
-
-```solidity
-function calculateTimings(uint256 globalMultiplier, uint256 baseLobbyDuration, uint256 baseOngoingDuration, bool isOccultistsAttacked, uint256 units1, uint256 units2) external view returns (uint64 lobbyDuration, uint64 ongoingDuration)
-```
-
-Calculates lobby duration and ongoing duration based on specified parameters
-
-_globalMultiplier, baseLobbyDuration, baseOngoingDuration parameters from registry_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| globalMultiplier | uint256 | Global multiplier (from registry) |
-| baseLobbyDuration | uint256 | Base lobby duration (from registry) |
-| baseOngoingDuration | uint256 | Base ongoing duration (from registry) |
-| isOccultistsAttacked | bool | Is occultists attacked |
-| units1 | uint256 | Amount of units from attacker army |
-| units2 | uint256 | Amount of units from attacked army |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| lobbyDuration | uint64 | Lobby duration |
-| ongoingDuration | uint64 | Ongoing duration |
-
-
-## IBattle
-
-
-Functions to read state/modify state in order to get current battle parameters and/or interact with it
-
-
-
-
-
-### Casualty
-
-
-
-
-
-
-
-
-```solidity
-struct Casualty {
-  uint256 unitSpec;
-  uint256 casualties;
-}
-```
-
-### Timing
-
-
-
-
-
-
-
-
-```solidity
-struct Timing {
-  uint64 creationTime;
-  uint64 lobbyDuration;
-  uint64 ongoingDuration;
-  uint64 finishTime;
-}
-```
-
-### Joined
-
-```solidity
-event Joined(address armyAddress, bool isSideA)
+event ArmyJoined(address armyAddress, uint256 side)
 ```
 
 Emitted when army joined battle
@@ -500,346 +182,260 @@ Emitted when army joined battle
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | armyAddress | address | Address of the joined army |
-| isSideA | bool | Side to which army is joined |
+| side | uint256 | Side to which army is joined (sideA = 1, sideB = 2) |
 
 
 
-### CasualtiesAdded
+### BattleEnded
 
 ```solidity
-event CasualtiesAdded(bool isSideA, uint256 unitSpec, uint256 casualities)
+event BattleEnded(uint256 endTime)
 ```
 
-Emitted when #startBattle is called
+Emitted when #endBattle is called
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isSideA | bool | Side of which casualties where added |
-| unitSpec | uint256 | Type of unit |
-| casualities | uint256 | Amount of casualties |
+| endTime | uint256 | Time at which battle is ended |
 
 
 
-### Finished
+### BattleCannotBeCreatedWhenArmyUnitsExceedDesiredAmountToAttack
 
 ```solidity
-event Finished(uint256 finishTime, uint256[] casualitiesA, uint256[] casualitiesB)
+error BattleCannotBeCreatedWhenArmyUnitsExceedDesiredAmountToAttack()
 ```
 
-Emitted when #startBattle is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| finishTime | uint256 | Time at which battle is finished |
-| casualitiesA | uint256[] | Amount of total casualties from side A |
-| casualitiesB | uint256[] | Amount of total casualties from side B |
+Thrown when attempting to begin battle by attacking army with MAX amount of units to attack, but their value increased to more than MAX
 
 
 
-### position
+
+
+### BattleCannotBeCreatedByDesiringToAttackCultistsArmyWithoutUnits
 
 ```solidity
-function position() external view returns (uint32)
+error BattleCannotBeCreatedByDesiringToAttackCultistsArmyWithoutUnits()
 ```
 
-Position at which battle is being held
-
-_Immutable, initialized on the battle creation_
+Thrown when attempting to begin battle by attacking cultists army with desire to draw zero units to the battle
 
 
 
 
-### sideA
+
+### BattleCannotBeCreatedWithArmiesHavingZeroUnits
 
 ```solidity
-function sideA(uint256 index) external view returns (address armyAddress)
+error BattleCannotBeCreatedWithArmiesHavingZeroUnits()
 ```
 
-An array of armies joined to side A
-
-_Updated when army joins side A_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| index | uint256 | Index inside the array |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Army address at the specified index |
+Thrown when attempting to begin battle with armies either of which has zero units
 
 
-### sideB
+
+
+
+### BattleCannotBeCreatedWhenAttackedArmyIsAlmostOnAnotherPosition
 
 ```solidity
-function sideB(uint256 index) external view returns (address armyAddress)
+error BattleCannotBeCreatedWhenAttackedArmyIsAlmostOnAnotherPosition()
 ```
 
-An array of armies joined to side B
-
-_Updated when army joins side B_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| index | uint256 | Index inside the array |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Army address at the specified index |
+Thrown when attempting to start battle by attacking army when maneuver duration left less than minimum battle duration
 
 
-### sideUnitsCount
+
+
+
+### BattleCannotAcceptCultistsArmyWhenCultistsAmountChangedToLowerValueThanDesired
 
 ```solidity
-function sideUnitsCount(bool isSideA, string unitName) external view returns (uint256 unitsCount)
+error BattleCannotAcceptCultistsArmyWhenCultistsAmountChangedToLowerValueThanDesired()
 ```
 
-Mapping that contains units amount by side and unit type
-
-_Updated when army joins side_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isSideA | bool | Side of which query units amount (sideA = true, sideB = false) |
-| unitName | string | Unit type to query |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitsCount | uint256 | Amount of units by specified side and unit type |
+Thrown when attempting to accept cultists army to the battle but their amount got smaller than desired to attack
 
 
-### userUnitsCount
+
+
+
+### BattleCannotBeFinishedAtThisTime
 
 ```solidity
-function userUnitsCount(address armyAddress, string unitName) external view returns (uint256 unitsCount)
+error BattleCannotBeFinishedAtThisTime()
 ```
 
-Mapping that contains amount of units by army address and unit type
-
-_Updated when army joins battle_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Address of the army |
-| unitName | string | Unit type to query |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitsCount | uint256 | Amount of units by army address and unit type |
+Thrown when attempting to finish battle while time for it has not yet come
 
 
-### casualties
+
+
+
+### BattleCannotBeFinishedMoreThanOnce
 
 ```solidity
-function casualties(bool isSideA, string unitName) external view returns (uint256 casualtiesCount)
+error BattleCannotBeFinishedMoreThanOnce()
 ```
 
-Mapping that contains amount of casualties after battle is finished
-
-_Updated when #startBattle is called_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isSideA | bool | Side of which query casualties amount (sideA = true, sideB = false) |
-| unitName | string | Unit type to query |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| casualtiesCount | uint256 | Amount of casualties by side and unit type |
+Thrown when attempting to finish battle when it is already finished
 
 
-### isOnSideA
+
+
+
+### acceptArmyInBattle
 
 ```solidity
-function isOnSideA(address armyAddress) external view returns (bool isSideA)
+function acceptArmyInBattle(address armyAddress, uint256 side) external
 ```
 
-Mapping that contains side at which joined army is on
+Accepts army in battle
 
-_Updated when #joinBattle is called_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Address of the army |
+_Even though function is opened, it can only be called by world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isSideA | bool | Side of specified army (sideA = true, sideB = false) |
+| armyAddress | address | Army address |
+| side | uint256 | Side to which army will join |
 
 
-### timing
+
+### endBattle
 
 ```solidity
-function timing() external view returns (uint64 creationTime, uint64 lobbyDuration, uint64 ongoingDuration, uint64 finishTime)
+function endBattle() external
 ```
 
-Battle time parameters
+Ends battle
 
-_Updated when battle initialized, first armies joined and finished (#initBattle, #joinBattle, #startBattle)_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| creationTime | uint64 | Time when battle is created |
-| lobbyDuration | uint64 | Lobby duration, initialized when first two armies joined |
-| ongoingDuration | uint64 | Ongoing duration, initialized when first two armies joined |
-| finishTime | uint64 | Time when battle is finished |
+_Sets end time_
 
 
-### init
+
+
+### calculateStage1Casualties
 
 ```solidity
-function init(address attackerArmyAddress) external
+function calculateStage1Casualties() external view returns (uint256[] sideACasualties, uint256[] sideBCasualties, bytes stageParams)
 ```
 
-Proxy initializer
+Calculates casualties for first battle stage
 
-_Called by factory contract which creates current instance_
+_Uses values from battles' sideUnitsAmount in order to calculate casualties (can be executed while battle is still not fully formed)_
+
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| attackerArmyAddress | address | Attacker army address |
+| sideACasualties | uint256[] | Side A casualties |
+| sideBCasualties | uint256[] | Side B casualties |
+| stageParams | bytes | Stage params (encoded abi.encode(sideAOffense, sideBOffense, sideADefence, sideBDefence)) |
 
 
-
-### getSideALength
+### calculateStage2Casualties
 
 ```solidity
-function getSideALength() external view returns (uint256 armiesCount)
+function calculateStage2Casualties(uint256[] stage1SideACasualties, uint256[] stage1SideBCasualties) external view returns (uint256[] sideACasualties, uint256[] sideBCasualties, bytes stageParams)
 ```
 
-Calculates amount of armies joined to side A
+Calculates casualties for second battle stage (based on casualties from first battle stage)
 
-_Basically returns length of sideA array_
-
+_Uses values from battles' sideUnitsAmount in order to calculate casualties (can be executed while battle is still not fully formed)_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| armiesCount | uint256 | Amount of armies joined to side A |
+| stage1SideACasualties | uint256[] | Stage 1 side A casualties |
+| stage1SideBCasualties | uint256[] | Stage 1 side B casualties |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| sideACasualties | uint256[] | Side A casualties |
+| sideBCasualties | uint256[] | Side B casualties |
+| stageParams | bytes | Stage params (encoded abi.encode(sideAOffense, sideBOffense, sideADefence, sideBDefence)) |
 
 
-### getSideBLength
+### calculateAllCasualties
 
 ```solidity
-function getSideBLength() external view returns (uint256 armiesCount)
+function calculateAllCasualties() external view returns (uint256[] sideACasualties, uint256[] sideBCasualties, uint256 winningSide)
 ```
 
-Calculates amount of armies joined to side B
+Calculates casualties for all battle stages
 
-_Basically returns length of sideA array_
+_Uses values from battles' sideUnitsAmount in order to calculate casualties (can be executed while battle is still not fully formed)_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| armiesCount | uint256 | Amount of armies joined to side B |
+| sideACasualties | uint256[] | Side A casualties |
+| sideBCasualties | uint256[] | Side A casualties |
+| winningSide | uint256 | Winning side (0 - both sides lost, 1 - side A Won, 2 - side B Won |
 
 
-### joinBattle
+### getBattleDuration
 
 ```solidity
-function joinBattle(bool isSideA) external
+function getBattleDuration(bool isCultistsAttacked, uint256 maxBattleDuration, uint256 sideAUnitsAmount, uint256 sideBUnitsAmount) external view returns (uint64 battleDuration)
 ```
 
-Join msg.sender in battle
+Calculates battle duration
 
-_Even though function is open, only army can join battle_
+_Returns same value as #calculateBattlesDuration but without the need to provide all parameters_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isSideA | bool | Side to which army will join |
+| isCultistsAttacked | bool | Is cultists attacked |
+| maxBattleDuration | uint256 | Max allowed battle duration |
+| sideAUnitsAmount | uint256 | Side A units amount |
+| sideBUnitsAmount | uint256 | Side B units amount |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| battleDuration | uint64 | Battle duration |
 
 
-
-### exitBattle
+### canEndBattle
 
 ```solidity
-function exitBattle() external
+function canEndBattle() external view returns (bool canEndBattle)
 ```
 
-Exits battle as msg.sender
+Calculates if battle can be ended
 
-_Even though function is open, only army can exit battle_
-
-
+_Checks if endTime is set and current block.timestamp > beginTime + duration_
 
 
-### startBattle
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| canEndBattle | bool | Can battle be ended |
+
+
+### isEndedBattle
 
 ```solidity
-function startBattle() external
+function isEndedBattle() external view returns (bool isEndedBattle)
 ```
 
-Starts battle
+Calculates if battle is ended
 
-_Even though function is called start battle, it finishes battle calculating and updating casualties_
-
-
+_Checks if endTime is not zero_
 
 
-### getLobbyDuration
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| isEndedBattle | bool | Is ended battle |
+
+
+### calculateArmyCasualties
 
 ```solidity
-function getLobbyDuration(bool isOccultistsAttacked) external view returns (uint64 duration)
-```
-
-Calculates lobby duration
-
-_Will be deprecated in favor of #calculateTimings_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isOccultistsAttacked | bool | Is occultists attacked |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| duration | uint64 | Lobby duration |
-
-
-### getOngoingDuration
-
-```solidity
-function getOngoingDuration(bool isOccultistsAttacked) external view returns (uint64 duration)
-```
-
-Calculates lobby duration
-
-_Will be deprecated in favor of #calculateTimings_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isOccultistsAttacked | bool | Is occultists attacked |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| duration | uint64 | Ongoing duration |
-
-
-### canExitFromBattle
-
-```solidity
-function canExitFromBattle() external view returns (bool isBattleFinished)
-```
-
-Calculates if battle is finished
-
-_Checks if finishTime is set and current block.timestamp > finishTime_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isBattleFinished | bool | Is battle finished |
-
-
-### calculateUserCasualties
-
-```solidity
-function calculateUserCasualties(address armyAddress) external view returns (string[] unitNames, uint256[] unitsCount)
+function calculateArmyCasualties(address armyAddress) external view returns (bool isArmyWon, uint256[] unitsAmounts)
 ```
 
 Calculates casualties for specified army
 
-_Provides valid results only for finished battle_
+_Provides valid results only for ended battle_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -847,48 +443,48 @@ _Provides valid results only for finished battle_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitNames | string[] | Unit types |
-| unitsCount | uint256[] | Amount of casualties for related unit types |
+| isArmyWon | bool | Is army won |
+| unitsAmounts | uint256[] | Amount of casualties for related unit types |
 
 
-### isJoinTime
+### isLobbyTime
 
 ```solidity
-function isJoinTime() external view returns (bool isJoinTime)
+function isLobbyTime() external view returns (bool isLobbyTime)
 ```
 
 Calculates if lobby is opened
 
-_Will be deprecated_
+_Calculates if lobby is opened_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isJoinTime | bool | Is lobby is opened |
+| isLobbyTime | bool | Is lobby is opened |
 
 
-### calculateTimings
+### calculateBattleDuration
 
 ```solidity
-function calculateTimings(uint256 globalMultiplier, uint256 baseLobbyDuration, uint256 baseOngoingDuration, bool isOccultistsAttacked, uint256 units1, uint256 units2) external view returns (uint64 lobbyDuration, uint64 ongoingDuration)
+function calculateBattleDuration(uint256 globalMultiplier, uint256 baseBattleDuration, uint256 minBattleDuration, bool isCultistsAttacked, uint256 units1, uint256 units2, uint256 maxBattleDuration) external view returns (uint64 battleDuration)
 ```
 
-Calculates lobby duration and ongoing duration based on specified parameters
+Calculates battle duration based on specified parameters
 
-_globalMultiplier, baseLobbyDuration, baseOngoingDuration parameters from registry_
+_globalMultiplier, baseBattleDuration parameters from registry_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | globalMultiplier | uint256 | Global multiplier (from registry) |
-| baseLobbyDuration | uint256 | Base lobby duration (from registry) |
-| baseOngoingDuration | uint256 | Base ongoing duration (from registry) |
-| isOccultistsAttacked | bool | Is occultists attacked |
+| baseBattleDuration | uint256 | Base battle duration (from registry) |
+| minBattleDuration | uint256 | Minimum battle duration (from registry) |
+| isCultistsAttacked | bool | Is cultists attacked |
 | units1 | uint256 | Amount of units from attacker army |
 | units2 | uint256 | Amount of units from attacked army |
+| maxBattleDuration | uint256 | Max allowed battle duration |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| lobbyDuration | uint64 | Lobby duration |
-| ongoingDuration | uint64 | Ongoing duration |
+| battleDuration | uint64 | Battle duration |
 
 

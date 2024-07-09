@@ -59,6 +59,18 @@ _Updated when #setSafeApprovedAddress_
 
 
 
+### UnableToQueryBalanceOfZeroAddress
+
+```solidity
+error UnableToQueryBalanceOfZeroAddress()
+```
+
+Thrown when attempting to query balance of zero address
+
+
+
+
+
 ### constructor
 
 ```solidity

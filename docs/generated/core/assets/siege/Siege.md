@@ -7,10 +7,10 @@
 
 
 
-### currentSettlement
+### relatedSettlement
 
 ```solidity
-contract ISettlement currentSettlement
+contract ISettlement relatedSettlement
 ```
 
 Settlement address to which this siege belongs
@@ -28,59 +28,46 @@ mapping(address => struct ISiege.ArmyInfo) armyInfo
 
 Mapping containing army information related to current siege
 
-_Updated when #addUnits, #withdrawUnits, #claimResource, #liqudate is called_
+_Updated when #modifyArmySiege, #swapRobberyPointsForResourceFromBuildingTreasury is called_
 
 
 
 
-### storedUnits
+### besiegingArmyUnitsByType
 
 ```solidity
-mapping(address => mapping(string => uint256)) storedUnits
+mapping(address => mapping(bytes32 => uint256)) besiegingArmyUnitsByType
 ```
 
 Mapping containing amount of stored units in siege for specified army
 
-_Updated when #addUnits, #withdrawUnits, #liqudate is called_
+_Updated when #modifyArmySiege is called_
 
 
 
 
-### armyLiquidationStartTime
-
-```solidity
-mapping(address => uint256) armyLiquidationStartTime
-```
-
-Mapping containing time at which army began to be able to be liquidated
-
-_Updated when amount of units in army or siege decreased_
-
-
-
-
-### lastUpdate
+### robberyPointsPerOneDamage
 
 ```solidity
-uint256 lastUpdate
+uint256 robberyPointsPerOneDamage
 ```
 
-Last time at which siege was updated
-
-_Updated when siege parameters related to pointsPerShare were changed_
-
-
-
-
-### pointsPerShare
-
-```solidity
-uint256 pointsPerShare
-```
-
-Amount of point per share
+Amount of robbery point per one damage
 
 _Updated when siege parameters related to armies were changed_
+
+
+
+
+### totalSiegePower
+
+```solidity
+uint256 totalSiegePower
+```
+
+Total siege power
+
+_Updated when #modifyArmySiege is called_
 
 
 
@@ -88,133 +75,42 @@ _Updated when siege parameters related to armies were changed_
 ### init
 
 ```solidity
-function init(address settlementAddress) public
+function init(bytes initParams) public
 ```
 
-Proxy initializer
 
-_Called by factory contract which creates current instance_
+
+_World asset initializer_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
+| initParams | bytes | Encoded init params (every world asset has own knowledge how to extract data from it) |
 
 
 
-### getTotalDamageLastPeriod
+### canLiquidateArmyBesiegingUnits
 
 ```solidity
-function getTotalDamageLastPeriod() public view returns (uint256)
+function canLiquidateArmyBesiegingUnits(address armyAddress) public view returns (bool)
 ```
 
-Calculates total damage for period from lastUpdate and block.timestamp
+Calculates if besieging units of provided army can be liquidated from current siege
 
-
+_Does not take into an account if army's battle is ended and army isn't left the battle_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getTotalDamageByPeriod
-
-```solidity
-function getTotalDamageByPeriod(uint256 _period) public view returns (uint256)
-```
-
-Calculates total damage for provided period of time
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _period | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### _returnUnitsToArmy
-
-```solidity
-function _returnUnitsToArmy(address _to, string _unitName, uint256 _amount) internal
-```
-
-
-
-_Returns stored units to the army_
-
-
-
-
-### checkLiquidation
-
-```solidity
-function checkLiquidation() public
-```
-
-Checks and marks msg.sender for liquidation, if it is liquidatable
-
-_Even though function is opened, msg.sender will be taken as army address that will be checked for liquidation, and will be marked as liquidatable_
-
-
-
-
-### _checkLiquidation
-
-```solidity
-function _checkLiquidation(address _armyAddress) internal
-```
-
-
-
-_Checks for liquidation and stores time at which specified army began to be liquidatable_
-
-
-
-
-### canLiquidate
-
-```solidity
-function canLiquidate(address _armyAddress) public view returns (bool)
-```
-
-Calculates if provided army address can be liquidated from current siege
-
-_Does not take into an account if army's battle is finished and army isn't left the battle_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
+| armyAddress | address | Address of the army |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | bool |  |
 
 
-### getLiquidationUnits
-
-```solidity
-function getLiquidationUnits(address _armyAddress) public view returns (uint256[] res)
-```
-
-Calculates amount of units that will be liquidated for specified army address
-
-_Function returns only amounts without types, index in returned array for each unit type is same as in 'registry.getUnits'_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| res | uint256[] |  |
-
-
 ### liquidate
 
 ```solidity
-function liquidate(address _armyAddress) public
+function liquidate(address armyAddress) public
 ```
 
 Liquidates army
@@ -223,152 +119,97 @@ _Can be called by anyone, caller will receive a reward_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _armyAddress | address |  |
+| armyAddress | address | Address of army to liquidate |
 
 
 
-### addUnits
+### modifyArmySiege
 
 ```solidity
-function addUnits(string[] _unitsNames, uint256[] _unitsCount) public
+function modifyArmySiege(address armyAddress, bytes32[] unitTypeIds, bool[] toAddIndication, uint256[] unitsAmounts, uint256 newRobberyMultiplier) public
 ```
 
-Adds units to siege
+Modifies army robbery multiplier
 
 _Even though function is opened, it can be called only by world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _unitsNames | string[] |  |
-| _unitsCount | uint256[] |  |
+| armyAddress | address | Army address |
+| unitTypeIds | bytes32[] | Unit type ids |
+| toAddIndication | bool[] | Indication array whether to add units or to withdraw (add = true, withdraw = false) |
+| unitsAmounts | uint256[] | Units amounts |
+| newRobberyMultiplier | uint256 | New robbery multiplier |
 
 
 
-### withdrawUnits
+### calculateArmyUnitsSiegePower
 
 ```solidity
-function withdrawUnits(string[] _unitsNames, uint256[] _unitsCount) public
+function calculateArmyUnitsSiegePower(address armyAddress) public view returns (uint256)
 ```
 
-Withdraws units from siege
+Calculates army units siege power
 
-_Even though function is opened, it can be called only by world asset_
+_Value are calculated for specified army that is present in siege_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _unitsNames | string[] |  |
-| _unitsCount | uint256[] |  |
-
-
-
-### calculateTotalSiegeStats
-
-```solidity
-function calculateTotalSiegeStats() public view returns (uint256 _power, uint256 _supply)
-```
-
-Calculates total siege stats
-
-_Values are calculated for all armies that are present in siege_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _power | uint256 |  |
-| _supply | uint256 |  |
-
-
-### calculateArmySiegeStats
-
-```solidity
-function calculateArmySiegeStats(address _armyAddress) public view returns (uint256 _power, uint256 _supply)
-```
-
-Calculates army siege stats
-
-_Values are calculated for specified army that is present in siege_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _power | uint256 |  |
-| _supply | uint256 |  |
-
-
-### calculateSiegeStats
-
-```solidity
-function calculateSiegeStats(uint256[] _unitsCount) internal view returns (uint256 power_, uint256 supply_)
-```
-
-
-
-_Calculates siege stats for specified unitsCount_
-
-
-
-
-### update
-
-```solidity
-function update() public
-```
-
-Updates current siege to the current state
-
-_Synchronizes health up to current state, produces points for besieging armies_
-
-
-
-
-### systemUpdate
-
-```solidity
-function systemUpdate(uint256 _totalDamage) public
-```
-
-Updates siege with new amount of damage fort taken
-
-_Even though function is opened, it can be called only by world asset_
-
-
-
-
-### getUserPoints
-
-```solidity
-function getUserPoints(address _armyAddress) public view returns (uint256)
-```
-
-Calculates amount of points army has
-
-_Uses block.timestamp at #getUserPointsOnTime_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
+| armyAddress | address | Address of army |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### getUserPointsOnTime
+### calculateArmyTotalSiegePower
 
 ```solidity
-function getUserPointsOnTime(address _armyAddress, uint256 timestamp) public view returns (uint256)
+function calculateArmyTotalSiegePower(address armyAddress) public view returns (uint256)
 ```
 
-Calculates amount of points army will have at specified time
+Calculates army total siege power (including its current robbery multiplier)
+
+_Value are calculated for specified army that is present in siege_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| armyAddress | address | Army address |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 |  |
+
+
+### applyDamage
+
+```solidity
+function applyDamage(uint256 damage) public
+```
+
+Updates siege with new amount of damage fort has taken
+
+_Even though function is opened, it can be called only by world asset_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| damage | uint256 | Damage which has been done to the settlement |
+
+
+
+### getArmyRobberyPoints
+
+```solidity
+function getArmyRobberyPoints(address armyAddress, uint256 timestamp) public view returns (uint256)
+```
+
+Calculates amount of robbery points army will have at specified time
 
 _If timestamp=0, returns value as if timestamp=block.timestamp_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _armyAddress | address |  |
+| armyAddress | address | Address of the army |
 | timestamp | uint256 | Time at which calculate points |
 
 | Name | Type | Description |
@@ -376,453 +217,78 @@ _If timestamp=0, returns value as if timestamp=block.timestamp_
 | [0] | uint256 |  |
 
 
-### claimResources
+### swapRobberyPointsForResourceFromBuildingTreasury
 
 ```solidity
-function claimResources(address buildingAddress, uint256 _points) public
+function swapRobberyPointsForResourceFromBuildingTreasury(address buildingAddress, uint256 maxPointsToSpend) public
 ```
 
-Claims resources for specified points from building related to siege
+Swaps army robbery points for resources from building in related settlement
 
 _Even though function is opened, it can be called only by world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | buildingAddress | address | Address of building to rob |
-| _points | uint256 |  |
+| maxPointsToSpend | uint256 |  |
 
 
 
-### getStoredUnits
+### getArmyBesiegingUnitsAmounts
 
 ```solidity
-function getStoredUnits(address _armyAddress) public view returns (uint256[] res)
+function getArmyBesiegingUnitsAmounts(address armyAddress) public view returns (uint256[])
 ```
 
-Returns amount of stored units for specified army in siege
+Returns amount of besieging units for specified army in siege
 
 _Function returns only amounts without types, index in returned array for each unit type is same as in 'registry.getUnits'_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _armyAddress | address |  |
+| armyAddress | address | Address of the army |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| res | uint256[] |  |
+| [0] | uint256[] |  |
 
 
-## Siege
-
-
-
-
-
-
-
-
-### currentSettlement
+### _updateArmySiegeProgress
 
 ```solidity
-contract ISettlement currentSettlement
-```
-
-Settlement address to which this siege belongs
-
-_Immutable, initialized on the siege creation_
-
-
-
-
-### armyInfo
-
-```solidity
-mapping(address => struct ISiege.ArmyInfo) armyInfo
-```
-
-Mapping containing army information related to current siege
-
-_Updated when #addUnits, #withdrawUnits, #claimResource, #liqudate is called_
-
-
-
-
-### storedUnits
-
-```solidity
-mapping(address => mapping(string => uint256)) storedUnits
-```
-
-Mapping containing amount of stored units in siege for specified army
-
-_Updated when #addUnits, #withdrawUnits, #liqudate is called_
-
-
-
-
-### armyLiquidationStartTime
-
-```solidity
-mapping(address => uint256) armyLiquidationStartTime
-```
-
-Mapping containing time at which army began to be able to be liquidated
-
-_Updated when amount of units in army or siege decreased_
-
-
-
-
-### lastUpdate
-
-```solidity
-uint256 lastUpdate
-```
-
-Last time at which siege was updated
-
-_Updated when siege parameters related to pointsPerShare were changed_
-
-
-
-
-### pointsPerShare
-
-```solidity
-uint256 pointsPerShare
-```
-
-Amount of point per share
-
-_Updated when siege parameters related to armies were changed_
-
-
-
-
-### init
-
-```solidity
-function init(address settlementAddress) public
-```
-
-Proxy initializer
-
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
-
-
-
-### getTotalDamageLastPeriod
-
-```solidity
-function getTotalDamageLastPeriod() public view returns (uint256)
-```
-
-Calculates total damage for period from lastUpdate and block.timestamp
-
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getTotalDamageByPeriod
-
-```solidity
-function getTotalDamageByPeriod(uint256 _period) public view returns (uint256)
-```
-
-Calculates total damage for provided period of time
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _period | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### _returnUnitsToArmy
-
-```solidity
-function _returnUnitsToArmy(address _to, string _unitName, uint256 _amount) internal
+function _updateArmySiegeProgress(address armyAddress) internal
 ```
 
 
 
-_Returns stored units to the army_
+_Updates army siege progress_
 
 
 
 
-### checkLiquidation
-
-```solidity
-function checkLiquidation() public
-```
-
-Checks and marks msg.sender for liquidation, if it is liquidatable
-
-_Even though function is opened, msg.sender will be taken as army address that will be checked for liquidation, and will be marked as liquidatable_
-
-
-
-
-### _checkLiquidation
+### _calculateAdditionalRobberyPointsPerOneDamage
 
 ```solidity
-function _checkLiquidation(address _armyAddress) internal
+function _calculateAdditionalRobberyPointsPerOneDamage(uint256 damage, uint256 siegePower) internal view returns (uint256)
 ```
 
 
 
-_Checks for liquidation and stores time at which specified army began to be liquidatable_
+_Calculates additional robbery points per one damage by damage and total siege power_
 
 
 
 
-### canLiquidate
-
-```solidity
-function canLiquidate(address _armyAddress) public view returns (bool)
-```
-
-Calculates if provided army address can be liquidated from current siege
-
-_Does not take into an account if army's battle is finished and army isn't left the battle_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool |  |
-
-
-### getLiquidationUnits
+### _calculateArmyTotalSiegePower
 
 ```solidity
-function getLiquidationUnits(address _armyAddress) public view returns (uint256[] res)
-```
-
-Calculates amount of units that will be liquidated for specified army address
-
-_Function returns only amounts without types, index in returned array for each unit type is same as in 'registry.getUnits'_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| res | uint256[] |  |
-
-
-### liquidate
-
-```solidity
-function liquidate(address _armyAddress) public
-```
-
-Liquidates army
-
-_Can be called by anyone, caller will receive a reward_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-
-
-
-### addUnits
-
-```solidity
-function addUnits(string[] _unitsNames, uint256[] _unitsCount) public
-```
-
-Adds units to siege
-
-_Even though function is opened, it can be called only by world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _unitsNames | string[] |  |
-| _unitsCount | uint256[] |  |
-
-
-
-### withdrawUnits
-
-```solidity
-function withdrawUnits(string[] _unitsNames, uint256[] _unitsCount) public
-```
-
-Withdraws units from siege
-
-_Even though function is opened, it can be called only by world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _unitsNames | string[] |  |
-| _unitsCount | uint256[] |  |
-
-
-
-### calculateTotalSiegeStats
-
-```solidity
-function calculateTotalSiegeStats() public view returns (uint256 _power, uint256 _supply)
-```
-
-Calculates total siege stats
-
-_Values are calculated for all armies that are present in siege_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _power | uint256 |  |
-| _supply | uint256 |  |
-
-
-### calculateArmySiegeStats
-
-```solidity
-function calculateArmySiegeStats(address _armyAddress) public view returns (uint256 _power, uint256 _supply)
-```
-
-Calculates army siege stats
-
-_Values are calculated for specified army that is present in siege_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _power | uint256 |  |
-| _supply | uint256 |  |
-
-
-### calculateSiegeStats
-
-```solidity
-function calculateSiegeStats(uint256[] _unitsCount) internal view returns (uint256 power_, uint256 supply_)
+function _calculateArmyTotalSiegePower(uint256 armyUnitsSiegePower, uint256 robberyMultiplier) internal pure returns (uint256)
 ```
 
 
 
-_Calculates siege stats for specified unitsCount_
+_Calculates army total siege power by armySiegePower from units and robberyMultiplier_
 
 
-
-
-### update
-
-```solidity
-function update() public
-```
-
-Updates current siege to the current state
-
-_Synchronizes health up to current state, produces points for besieging armies_
-
-
-
-
-### systemUpdate
-
-```solidity
-function systemUpdate(uint256 _totalDamage) public
-```
-
-Updates siege with new amount of damage fort taken
-
-_Even though function is opened, it can be called only by world asset_
-
-
-
-
-### getUserPoints
-
-```solidity
-function getUserPoints(address _armyAddress) public view returns (uint256)
-```
-
-Calculates amount of points army has
-
-_Uses block.timestamp at #getUserPointsOnTime_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getUserPointsOnTime
-
-```solidity
-function getUserPointsOnTime(address _armyAddress, uint256 timestamp) public view returns (uint256)
-```
-
-Calculates amount of points army will have at specified time
-
-_If timestamp=0, returns value as if timestamp=block.timestamp_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-| timestamp | uint256 | Time at which calculate points |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### claimResources
-
-```solidity
-function claimResources(address buildingAddress, uint256 _points) public
-```
-
-Claims resources for specified points from building related to siege
-
-_Even though function is opened, it can be called only by world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingAddress | address | Address of building to rob |
-| _points | uint256 |  |
-
-
-
-### getStoredUnits
-
-```solidity
-function getStoredUnits(address _armyAddress) public view returns (uint256[] res)
-```
-
-Returns amount of stored units for specified army in siege
-
-_Function returns only amounts without types, index in returned array for each unit type is same as in 'registry.getUnits'_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _armyAddress | address |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| res | uint256[] |  |
 
 

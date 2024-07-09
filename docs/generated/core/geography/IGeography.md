@@ -7,7 +7,7 @@
 
 
 
-### TileType
+### TileBonusType
 
 
 
@@ -17,17 +17,14 @@
 
 
 ```solidity
-enum TileType {
-  VOID,
-  SAND,
-  ROAD,
-  GRASS,
-  SWAMP,
-  WATER
+enum TileBonusType {
+  NO_BONUS,
+  ADVANCED_PRODUCTION,
+  ARMY_BATTLE_STATS
 }
 ```
 
-### GameTile
+### TileBonus
 
 
 
@@ -37,54 +34,107 @@ enum TileType {
 
 
 ```solidity
-struct GameTile {
-  uint16 zoneId;
-  uint16 tileType;
+struct TileBonus {
+  enum IGeography.TileBonusType tileBonusType;
+  uint8 tileBonusVariation;
 }
 ```
 
-### ZoneActivationParams
-
-
-
-
-
-
-
+### RegionIncluded
 
 ```solidity
-struct ZoneActivationParams {
-  uint32 occultistsPosition;
-}
+event RegionIncluded(uint64 regionId)
 ```
 
-### NewZoneCreated
-
-```solidity
-event NewZoneCreated(uint256 zoneIndex, uint32[] positions, uint16[] tileTypes, uint256 occultistsPosition)
-```
-
-Emitted when #_createZone is called
+Emitted when #includeRegion is called
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| zoneIndex | uint256 | Zone index |
-| positions | uint32[] | Positions |
-| tileTypes | uint16[] | Tile types |
-| occultistsPosition | uint256 | Occultists position |
+| regionId | uint64 | Region id |
 
 
 
-### packedGameTileMap
+### FirstRegionCanOnlyBeIncludedByMightyCreator
 
 ```solidity
-function packedGameTileMap(uint32 slotNumber) external view returns (uint256)
+error FirstRegionCanOnlyBeIncludedByMightyCreator()
 ```
 
-Mapping containing packed tiles by specified slot number
+Thrown when attempting to include first region by non mighty creator address
 
-_Each returned element is is packed GameTile structures (8 per slot). Updated when zone is created_
+
+
+
+
+### CannotIncludeRegionWithInvalidRegionInclusionProofProvided
+
+```solidity
+error CannotIncludeRegionWithInvalidRegionInclusionProofProvided()
+```
+
+Thrown when attempting to include region by providing invalid region inclusion proof
+
+
+
+
+
+### CannotIncludeAlreadyIncludedRegion
+
+```solidity
+error CannotIncludeAlreadyIncludedRegion()
+```
+
+Thrown when attempting to include already included region
+
+
+
+
+
+### CannotIncludeRegionDueToInsufficientValueSent
+
+```solidity
+error CannotIncludeRegionDueToInsufficientValueSent()
+```
+
+Thrown when attempting to include region with insufficient value sent (only if world.erc20ForRegionInclusion == address(0), which is equivalent of native token)
+
+
+
+
+
+### CannotIncludeRegionDueToInsufficientUserSettlementsCountInNeighboringRegion
+
+```solidity
+error CannotIncludeRegionDueToInsufficientUserSettlementsCountInNeighboringRegion()
+```
+
+Thrown when attempting to include region with insufficient amount of user settlements in neighboring region
+
+
+
+
+
+### InvalidNeighborDirectionSpecified
+
+```solidity
+error InvalidNeighborDirectionSpecified()
+```
+
+Thrown when attempting to _getNeighborPosition with invalid neighbor direction. It should not be thrown ever, if it does this will indicate logic error
+
+
+
+
+
+### InvalidTileBonusConfiguration
+
+```solidity
+error InvalidTileBonusConfiguration()
+```
+
+Thrown when attempting to calculate tile bonus. It should not be thrown ever, if it does this will indicate logic error
+
 
 
 
@@ -105,358 +155,169 @@ _Called by address which created current instance_
 
 
 
-### getZonesLength
+### getRegionOwner
 
 ```solidity
-function getZonesLength() external view returns (uint256 zonesLength)
+function getRegionOwner(uint64 regionId) external view returns (address regionOwner)
 ```
 
-Returns created zones length
+Returns region owner
 
-_Updated when #createZone is called_
-
+_Updated when #includeRegion is called_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| zonesLength | uint256 | Zones length |
+| regionId | uint64 | Region id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionOwner | address | Region owner |
 
 
-### isPathValid
+### getRegionTier
 
 ```solidity
-function isPathValid(uint32[] path) external view returns (bool isValid)
+function getRegionTier(uint64 regionId) external view returns (uint256 regionTier)
 ```
 
-Validates provided path
+Returns region tier
 
-_Useful for determining positions path according to current hex grid_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| path | uint32[] | Path |
+_Updated when #includeRegion is called_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isValid | bool | Is path valid |
+| regionId | uint64 | Region id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionTier | uint256 | Region tier |
 
 
-### isNeighborTo
+### getRegionsCount
 
 ```solidity
-function isNeighborTo(uint32 position, uint32 neighbor) external pure returns (bool isNeighbor)
+function getRegionsCount() external view returns (uint256 regionsCount)
 ```
 
-Calculates if provided position are neighbor to other position
+Returns created regions count
+
+_Updated when #includeRegion is called_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| position | uint32 | Provided position |
-| neighbor | uint32 | Other position |
+| regionsCount | uint256 | Regions count |
 
 
-
-### getGameTile
+### includeRegion
 
 ```solidity
-function getGameTile(uint32 position) external view returns (struct IGeography.GameTile gameTile)
+function includeRegion(uint64 newRegionPosition, uint64 neighborRegionPosition) external payable
 ```
 
-Calculates gameTile structure from provided position
+Includes new region to the game
 
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| position | uint32 | Provided position |
+_In case if there is more than zero regions in the game caller must provide two neighboring positions: first for new region, second of already existing region
+In case if zero included regions -> second param is ignored_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| gameTile | struct IGeography.GameTile | Game tile struct |
+| newRegionPosition | uint64 | New region position |
+| neighborRegionPosition | uint64 | Neighbor region position |
 
 
-### getNeighborPositions
+
+### isRegionIncluded
 
 ```solidity
-function getNeighborPositions(uint32 position) external pure returns (uint32[] neighbors)
+function isRegionIncluded(uint64 regionId) external view returns (bool isRegionIncluded)
 ```
 
-Calculates all neighbor positions by provided position
+Checks if region is included to the game
 
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| position | uint32 | Position |
+_Used to determine whether region can be activated or not_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| neighbors | uint32[] | Neighbors positions |
+| regionId | uint64 | Region id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| isRegionIncluded | bool | Is region included |
 
 
-### createZone
+### getRegionIdByPosition
 
 ```solidity
-function createZone(uint32[] positions, uint16[] tileTypes, uint256 occultistsCoordinateIndex) external
+function getRegionIdByPosition(uint64 position) external view returns (uint64 regionId, bool isPositionExist)
 ```
 
-Creates zone with provided positions and tile types
+Returns region id by position
 
-_Even though function is opened, it can be called only by mightyCreator_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| positions | uint32[] | Zone positions |
-| tileTypes | uint16[] | Zone tile types |
-| occultistsCoordinateIndex | uint256 | Coordinate index inside 'positions', where occultists will be placed |
+| position | uint64 | Provided position |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionId | uint64 | Region id |
+| isPositionExist | bool | Is position exist (may not exist due to region cavities) |
 
 
-
-### getZoneActivationParams
+### getRingPositions
 
 ```solidity
-function getZoneActivationParams(uint256 zoneIndex) external view returns (struct IGeography.ZoneActivationParams params)
+function getRingPositions(uint64 position, uint256 radius) external pure returns (uint64[] ringPositions, uint256 ringPositionsLength)
 ```
 
-Returns zone activation params for provided zone index
+Calculates all ring positions by provided position and radius
 
-_New values are accessible when #createZone is called_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| zoneIndex | uint256 | Zone index |
+| position | uint64 | Position |
+| radius | uint256 | Ring radius |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| params | struct IGeography.ZoneActivationParams | Zone activation params struct |
+| ringPositions | uint64[] | Ring positions |
+| ringPositionsLength | uint256 | Ring positions length (array is initialized 6 * radius, however not all values should be used) |
 
 
-## IGeography
-
-
-
-
-
-
-
-
-### TileType
-
-
-
-
-
-
-
+### getTileBonus
 
 ```solidity
-enum TileType {
-  VOID,
-  SAND,
-  ROAD,
-  GRASS,
-  SWAMP,
-  WATER
-}
+function getTileBonus(bytes32 tileBonusesSeed, uint256 chanceForTileWithBonus, uint64 position) external pure returns (struct IGeography.TileBonus tileBonus)
 ```
 
-### GameTile
+Returns tile bonus by provided position
 
 
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tileBonusesSeed | bytes32 | Tile bonuses seed |
+| chanceForTileWithBonus | uint256 | Chance for tile with bonus (in 1e18 precision) |
+| position | uint64 | Position |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tileBonus | struct IGeography.TileBonus | Tile bonus struct |
 
 
-
-
-
+### getDistanceBetweenPositions
 
 ```solidity
-struct GameTile {
-  uint16 zoneId;
-  uint16 tileType;
-}
+function getDistanceBetweenPositions(uint64 position1, uint64 position2) external pure returns (uint64 distance)
 ```
 
-### ZoneActivationParams
-
-
-
-
-
-
-
-
-```solidity
-struct ZoneActivationParams {
-  uint32 occultistsPosition;
-}
-```
-
-### NewZoneCreated
-
-```solidity
-event NewZoneCreated(uint256 zoneIndex, uint32[] positions, uint16[] tileTypes, uint256 occultistsPosition)
-```
-
-Emitted when #_createZone is called
+Calculates distance between positions
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| zoneIndex | uint256 | Zone index |
-| positions | uint32[] | Positions |
-| tileTypes | uint16[] | Tile types |
-| occultistsPosition | uint256 | Occultists position |
+| position1 | uint64 | First position |
+| position2 | uint64 | Second position |
 
-
-
-### packedGameTileMap
-
-```solidity
-function packedGameTileMap(uint32 slotNumber) external view returns (uint256)
-```
-
-Mapping containing packed tiles by specified slot number
-
-_Each returned element is is packed GameTile structures (8 per slot). Updated when zone is created_
-
-
-
-
-### init
-
-```solidity
-function init(address worldAddress) external
-```
-
-Proxy initializer
-
-_Called by address which created current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| worldAddress | address | World address |
-
-
-
-### getZonesLength
-
-```solidity
-function getZonesLength() external view returns (uint256 zonesLength)
-```
-
-Returns created zones length
-
-_Updated when #createZone is called_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| zonesLength | uint256 | Zones length |
-
-
-### isPathValid
-
-```solidity
-function isPathValid(uint32[] path) external view returns (bool isValid)
-```
-
-Validates provided path
-
-_Useful for determining positions path according to current hex grid_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| path | uint32[] | Path |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isValid | bool | Is path valid |
-
-
-### isNeighborTo
-
-```solidity
-function isNeighborTo(uint32 position, uint32 neighbor) external pure returns (bool isNeighbor)
-```
-
-Calculates if provided position are neighbor to other position
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| position | uint32 | Provided position |
-| neighbor | uint32 | Other position |
-
-
-
-### getGameTile
-
-```solidity
-function getGameTile(uint32 position) external view returns (struct IGeography.GameTile gameTile)
-```
-
-Calculates gameTile structure from provided position
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| position | uint32 | Provided position |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| gameTile | struct IGeography.GameTile | Game tile struct |
-
-
-### getNeighborPositions
-
-```solidity
-function getNeighborPositions(uint32 position) external pure returns (uint32[] neighbors)
-```
-
-Calculates all neighbor positions by provided position
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| position | uint32 | Position |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| neighbors | uint32[] | Neighbors positions |
-
-
-### createZone
-
-```solidity
-function createZone(uint32[] positions, uint16[] tileTypes, uint256 occultistsCoordinateIndex) external
-```
-
-Creates zone with provided positions and tile types
-
-_Even though function is opened, it can be called only by mightyCreator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| positions | uint32[] | Zone positions |
-| tileTypes | uint16[] | Zone tile types |
-| occultistsCoordinateIndex | uint256 | Coordinate index inside 'positions', where occultists will be placed |
-
-
-
-### getZoneActivationParams
-
-```solidity
-function getZoneActivationParams(uint256 zoneIndex) external view returns (struct IGeography.ZoneActivationParams params)
-```
-
-Returns zone activation params for provided zone index
-
-_New values are accessible when #createZone is called_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| zoneIndex | uint256 | Zone index |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| params | struct IGeography.ZoneActivationParams | Zone activation params struct |
 
 

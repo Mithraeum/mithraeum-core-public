@@ -20,7 +20,7 @@ Functions related to current game configuration
 struct GameResource {
   string tokenName;
   string tokenSymbol;
-  string worldResourceName;
+  bytes32 resourceTypeId;
 }
 ```
 
@@ -37,23 +37,7 @@ struct GameResource {
 struct GameUnit {
   string tokenName;
   string tokenSymbol;
-  string worldUnitName;
-}
-```
-
-### ExtraResource
-
-
-
-
-
-
-
-
-```solidity
-struct ExtraResource {
-  string resourceName;
-  uint256 value;
+  bytes32 unitTypeId;
 }
 ```
 
@@ -68,12 +52,11 @@ struct ExtraResource {
 
 ```solidity
 struct UnitStats {
-  uint256 weaponPowerStage1;
-  uint256 armourPowerStage1;
-  uint256 weaponPowerStage2;
-  uint256 armourPowerStage2;
+  uint256 offenseStage1;
+  uint256 defenceStage1;
+  uint256 offenseStage2;
+  uint256 defenceStage2;
   uint256 siegePower;
-  uint256 siegeMaxSupply;
   uint256 siegeSupport;
 }
 ```
@@ -91,56 +74,15 @@ _Immutable, initialized on the registry creation_
 
 
 
-### isFactoryContract
+### worldAssetFactory
 
 ```solidity
-function isFactoryContract(address factoryAddress) external view returns (bool)
+function worldAssetFactory() external view returns (contract IWorldAssetFactory)
 ```
 
-Mapping containing is provided address a factory contract or not
+World asset factory
 
-_Updated when #setFactoryContract is called_
-
-
-
-
-### factoryContracts
-
-```solidity
-function factoryContracts(bytes32 scriptId) external view returns (address)
-```
-
-Mapping containing factory contracts addresses by provided asset types
-
-_Updated when #setFactoryContract is called
-During new world asset creation process registry is asked for factory contract for exact world asset type, which will contain creation method for new world asset_
-
-
-
-
-### scriptContracts
-
-```solidity
-function scriptContracts(bytes32 scriptId) external view returns (address)
-```
-
-Mapping containing assets implementations addresses by provided asset types
-
-_Updated when #setScriptContractName is called
-Every worlds assets implementation (code, not data) will be defined by value from this mapping_
-
-
-
-
-### unitsStats
-
-```solidity
-function unitsStats(string unitName) external view returns (uint256 weaponPowerStage1, uint256 armourPowerStage1, uint256 weaponPowerStage2, uint256 armourPowerStage2, uint256 siegePower, uint256 siegeMaxSupply, uint256 siegeSupport)
-```
-
-Mapping containing units stats by provided unit types
-
-_Updated when #setUnitStats is called_
+_During new world asset creation process registry is asked for factory contract_
 
 
 
@@ -171,6 +113,30 @@ _Immutable, initialized on the registry creation_
 
 
 
+### OnlyMightyCreator
+
+```solidity
+error OnlyMightyCreator()
+```
+
+Thrown when attempting to call action which can only be called by mighty creator
+
+
+
+
+
+### UnknownInputParameter
+
+```solidity
+error UnknownInputParameter()
+```
+
+Thrown when attempting to call function by providing unknown parameter
+
+
+
+
+
 ### init
 
 ```solidity
@@ -188,234 +154,147 @@ _Called by address which created current instance_
 
 
 
-### setFactoryContract
+### setMightyCreator
 
 ```solidity
-function setFactoryContract(bytes32 assetType, address factoryAddress) external
+function setMightyCreator(address newMightyCreator) external
 ```
 
-Sets provided address as factory contract for provided asset type
+Sets new mighty creator
 
 _Even though function is opened, it can be called only by mightyCreator_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| assetType | bytes32 | Type of the asset |
-| factoryAddress | address | Factory address |
+| newMightyCreator | address | New mighty creator |
 
 
 
-### setScriptContractName
+### setWorldAssetFactory
 
 ```solidity
-function setScriptContractName(string assetGroup, string assetType, address implementationAddress) external
+function setWorldAssetFactory(address worldAssetFactoryAddress) external
 ```
 
-Sets provided address as implementation for provided asset group and asset type (for ex. group - "settlement", type - "OCCULTISTS")
+Sets provided address as world asset factory contract
 
 _Even though function is opened, it can be called only by mightyCreator_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| assetGroup | string | Asset group |
-| assetType | string | Type of the asset |
-| implementationAddress | address | Implementation address |
-
-
-
-### setUnitStats
-
-```solidity
-function setUnitStats(string unitName, struct IRegistry.UnitStats unitStats) external
-```
-
-Sets units stats for provided unit type
-
-_Even though function is opened, it can be called only by mightyCreator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitName | string | Unit type |
-| unitStats | struct IRegistry.UnitStats | Unit stats struct |
+| worldAssetFactoryAddress | address | World asset factory address |
 
 
 
 ### getWorkerCapacityCoefficient
 
 ```solidity
-function getWorkerCapacityCoefficient(string buildingName) external pure returns (uint256 workerCapacityCoefficient)
+function getWorkerCapacityCoefficient(bytes32 buildingTypeId) external pure returns (uint256 workerCapacityCoefficient)
 ```
 
-Calculates worker capacity coefficient for provided building type
+Calculates worker capacity coefficient for provided building type id
 
 _Used for internal calculation of max workers for each building_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| buildingName | string | Building type |
+| buildingTypeId | bytes32 | Building type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | workerCapacityCoefficient | uint256 | Worker capacity coefficient |
 
 
-### hasStartingTreasury
+### getBasicProductionBuildingCoefficient
 
 ```solidity
-function hasStartingTreasury(string buildingName) external pure returns (bool hasStartingTreasury)
+function getBasicProductionBuildingCoefficient(bytes32 buildingTypeId) external pure returns (uint256 basicProductionBuildingCoefficient)
 ```
 
-Calculates if provided building has starting treasury on creation
+Calculates basic production building coefficient
 
-_Used for determination if treasury should be filled on settlement creation_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingName | string | Building type |
+_used for internal calculation of production result_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| hasStartingTreasury | bool | If treasury should be filled |
+| buildingTypeId | bytes32 | Building type id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| basicProductionBuildingCoefficient | uint256 | Basic production building coefficient |
 
 
-### getToxicityByResource
+### getCorruptionIndexByResource
 
 ```solidity
-function getToxicityByResource(string resourceName) external pure returns (uint256 toxicity)
+function getCorruptionIndexByResource(bytes32 resourceTypeId) external pure returns (uint256 corruptionIndex)
 ```
 
-Calculates toxicity by resource ratio
+Returns corruptionIndex by resource type id
 
-_Used for minting/burning toxicity_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Resource name |
+_Used for calculation of how much corruptionIndex increased/decreased_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| toxicity | uint256 | Amount of toxicity per 1 resource (both are in 1e18 precision) |
+| resourceTypeId | bytes32 | Resource type id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| corruptionIndex | uint256 | Amount of corruptionIndex per 1 resource (both are in 1e18 precision) |
 
 
 ### getResourceWeight
 
 ```solidity
-function getResourceWeight(string resourceName) external pure returns (uint256 resourceWeight)
+function getResourceWeight(bytes32 resourceTypeId) external pure returns (uint256 resourceWeight)
 ```
 
-Calculates resource weight
+Returns resource weight
 
-_Used for calculation how much prosperity will be produced by resource in treasury, building upgrade costs_
+_Used for calculation how much prosperity will be produced by resource in treasury_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| resourceName | string | Resource name |
+| resourceTypeId | bytes32 | Resource type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | resourceWeight | uint256 | Resource weight (in 1e0 precision) |
 
 
-### getResourceDifficulty
+### getRobberyPointsPerDamageMultiplier
 
 ```solidity
-function getResourceDifficulty(string resourceName) external view returns (uint256 resourceDifficulty)
+function getRobberyPointsPerDamageMultiplier() external pure returns (uint256 robberyPointsPerDamageMultiplier)
 ```
 
-Calculates resource difficulty
+Returns robbery points per damage multiplier
 
-_Used for internal calculation of building upgrade costs_
+_Used for determination how much robbery points will be given_
+
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| resourceName | string | Resource name |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceDifficulty | uint256 | Resource difficulty |
+| robberyPointsPerDamageMultiplier | uint256 | Robbery points per damage multiplier (in 1e18 precision) |
 
 
-### noWoodInUpgradeLvl
+### getRobberyPointsToResourceMultiplier
 
 ```solidity
-function noWoodInUpgradeLvl() external pure returns (uint256 noWoodInUpgradeLvl)
+function getRobberyPointsToResourceMultiplier(bytes32 resourceTypeId) external view returns (uint256 robberyPointsToResourceMultiplier)
 ```
 
-Returns level from which wood will not be required in building upgrades
+Returns robbery point multiplier by provided resource type id
 
-_Used for internal calculation of building upgrade costs_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| noWoodInUpgradeLvl | uint256 | Level from which wood will not be required in building upgrades |
-
-
-### oreInUpgradeLvl
-
-```solidity
-function oreInUpgradeLvl() external pure returns (uint256 oreInUpgradeLvl)
-```
-
-Returns level from which ore will be required in building upgrades
-
-_Used for internal calculation of building upgrade costs_
-
+_Used in calculation how many resources can be exchanged for robbery points_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| oreInUpgradeLvl | uint256 | Level from which ore will be required in building upgrades |
-
-
-### getSiegePowerToSiegePointsMultiplier
-
-```solidity
-function getSiegePowerToSiegePointsMultiplier() external pure returns (uint256 siegePowerToSiegePointsMultiplier)
-```
-
-Returns siege power to siege siege points multiplier
-
-_Used for determination how much siege points will be given_
-
+| resourceTypeId | bytes32 | Resource type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| siegePowerToSiegePointsMultiplier | uint256 | Siege power to siege siege points multiplier (in 1e18 precision) |
-
-
-### getSiegePointsToResourceMultiplier
-
-```solidity
-function getSiegePointsToResourceMultiplier(string resourceName) external view returns (uint256 siegePointsToResourceMultiplier)
-```
-
-Returns siege point multiplier by provided resource
-
-_Used in calculation how many resources can be exchanged for siege points_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Resource name |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| siegePointsToResourceMultiplier | uint256 | Siege point multiplier (in 1e18 precision) |
-
-
-### getRobberyFee
-
-```solidity
-function getRobberyFee() external view returns (uint256 robberyFee)
-```
-
-Returns robbery fee
-
-_Used in determination how much of resource will be burned during robbery_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| robberyFee | uint256 | Robbery fee (in 1e18 precision, where 1e18 is 100%) |
+| robberyPointsToResourceMultiplier | uint256 | Robbery point multiplier (in 1e18 precision) |
 
 
 ### getGlobalMultiplier
@@ -434,13 +313,32 @@ _Used everywhere, where time is involved. Essentially determines game speed_
 | globalMultiplier | uint256 | Global multiplier |
 
 
-### getToReservePercent
+### getUnitStats
 
 ```solidity
-function getToReservePercent() external pure returns (uint256 toReservePercent)
+function getUnitStats(bytes32 unitTypeId) external pure returns (struct IRegistry.UnitStats unitStats)
 ```
 
-Returns production to reserve percent
+Returns unit stats by provided unit type
+
+_Used everywhere, where game logic based on unit stats_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeId | bytes32 | Unit type id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitStats | struct IRegistry.UnitStats | Unit stats |
+
+
+### getToTreasuryPercent
+
+```solidity
+function getToTreasuryPercent() external pure returns (uint256 toTreasuryPercent)
+```
+
+Returns production to treasury percent
 
 _Determines how much of buildings production will go to treasury (if not full)_
 
@@ -449,83 +347,100 @@ _Determines how much of buildings production will go to treasury (if not full)_
 
 
 
-### getBaseBattleLobbyDuration
+### getBaseBattleDuration
 
 ```solidity
-function getBaseBattleLobbyDuration() external view returns (uint256 baseBattleLobbyDuration)
+function getBaseBattleDuration() external view returns (uint256 baseBattleDuration)
 ```
 
-Returns base battle lobby phase duration
+Returns base battle duration
 
-_Used internally to determine how long lobby phase will last_
+_Used internally to determine how long battle will last_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| baseBattleLobbyDuration | uint256 | Base battle lobby phase duration |
+| baseBattleDuration | uint256 | Base battle duration |
 
 
-### getBaseBattleOngoingDuration
+### getBattleDurationLosingArmyStunMultiplier
 
 ```solidity
-function getBaseBattleOngoingDuration() external view returns (uint256 baseBattleOngoingDuration)
+function getBattleDurationLosingArmyStunMultiplier() external pure returns (uint256 battleDurationLosingArmyStunMultiplier)
 ```
 
-Returns base battle ongoing phase duration
+Returns battle duration losing army stun multiplier
 
-_Used internally to determine how long ongoing phase will last_
+_Used internally to determine how long stun will last after army lost the battle_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| baseBattleOngoingDuration | uint256 | Base battle ongoing phase duration |
+| battleDurationLosingArmyStunMultiplier | uint256 | Battle duration losing army stun multiplier |
 
 
-### getBuildings
+### getBattleDurationWinningArmyStunMultiplier
 
 ```solidity
-function getBuildings() external view returns (string[] buildings)
+function getBattleDurationWinningArmyStunMultiplier() external pure returns (uint256 battleDurationWinningArmyStunMultiplier)
 ```
 
-Returns game buildings
+Returns battle duration winning army stun multiplier
+
+_Used internally to determine how long stun will last after army won the battle_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| battleDurationWinningArmyStunMultiplier | uint256 | Battle duration winning army stun multiplier |
+
+
+### getManeuverDurationStunMultiplier
+
+```solidity
+function getManeuverDurationStunMultiplier() external pure returns (uint256 maneuverDurationStunMultiplier)
+```
+
+Returns maneuver duration stun multiplier
+
+_Used internally to determine how long stun will last after armies' maneuver_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| maneuverDurationStunMultiplier | uint256 | Maneuver duration stun multiplier |
+
+
+### getBuildingTypeIds
+
+```solidity
+function getBuildingTypeIds() external view returns (bytes32[] buildingTypeIds)
+```
+
+Returns game building type ids
 
 _Used internally to determine which buildings will be created on placing settlement_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| buildings | string[] | Buildings |
+| buildingTypeIds | bytes32[] | Building type ids |
 
 
-### getResources
-
-```solidity
-function getResources() external view returns (string[] resources)
-```
-
-Returns game resources
-
-_Used internally to determine upgrade costs and providing initial resources for settlement owner based on his tier_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-
-
-
-### getUnits
+### getUnitTypeIds
 
 ```solidity
-function getUnits() external view returns (string[] units)
+function getUnitTypeIds() external view returns (bytes32[] unitTypeIds)
 ```
 
-Returns game units
+Returns game unit type ids
 
 _Used internally in many places where interaction with units is necessary_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| units | string[] | Game units |
+| unitTypeIds | bytes32[] | Unit type ids |
 
 
 ### getGameResources
@@ -575,135 +490,151 @@ _Used to determine how much units in army can be presented based on its current 
 | unitHiringFortHpMultiplier | uint256 | Unit hiring fort hp multiplier |
 
 
-### getUnitMaxFoodToSpendOnMove
+### getUnitResourceUsagePer1SecondOfDecreasedManeuverDuration
 
 ```solidity
-function getUnitMaxFoodToSpendOnMove(string unitName) external pure returns (uint256 unitMaxFoodToSpendOnMove)
+function getUnitResourceUsagePer1SecondOfDecreasedManeuverDuration(bytes32 unitTypeId) external pure returns (uint256 unitResourceUsagePer1SecondOfDecreasedManeuverDuration)
 ```
 
-Returns how much food unit can take from treasury to increase its army movement speed
+Returns how much resource unit can take from treasury to reduce maneuver duration
 
-_Used internally to calculate army's movement speed_
+_Used internally to calculate army's maneuver speed_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitName | string | Unit type |
+| unitTypeId | bytes32 | Unit type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitMaxFoodToSpendOnMove | uint256 | Maximum amount of food to spend on move (in 1e18 precision) |
+| unitResourceUsagePer1SecondOfDecreasedManeuverDuration | uint256 | Amount of resource to spend per unit per 1 second of decreased maneuver duration (in 1e18 precision) |
 
 
-### getDemilitarizationProsperityPerWeapon
+### getProsperityForUnitLiquidation
 
 ```solidity
-function getDemilitarizationProsperityPerWeapon() external pure returns (uint256 prosperityPerWeapon)
+function getProsperityForUnitLiquidation(bytes32 unitTypeId) external pure returns (uint256 prosperityPerUnit)
 ```
 
-Returns how much prosperity will be given for each weapon of demilitarization result
+Returns how much prosperity will be given for provided unit type id
 
 _Used internally to calculate how much prosperity will be given_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| prosperityPerWeapon | uint256 | Prosperity amount per one weapon (in 1e18 precision) |
+| prosperityPerUnit | uint256 | Prosperity amount per one unit (in 1e18 precision) |
 
 
-### getOccultistsSummonDelay
+### getWorkersForUnitLiquidation
 
 ```solidity
-function getOccultistsSummonDelay() external pure returns (uint256 occultistsSummonDelay)
+function getWorkersForUnitLiquidation(bytes32 unitTypeId) external pure returns (uint256 workersPerUnit)
 ```
 
-Returns occultists summon delay
+Returns how much workers will be given for provided unit type id
 
-_Used to determine is occultists can be re-summoned_
+_Used internally to calculate how much workers will be given_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| occultistsSummonDelay | uint256 | Occultists summon delay (in seconds) |
+| workersPerUnit | uint256 | Workers amount per one unit (in 1e18 precision) |
 
 
-### getMaxSettlementPerZone
+### getCultistsSummonDelay
 
 ```solidity
-function getMaxSettlementPerZone() external pure returns (uint256 maxSettlementPerZone)
+function getCultistsSummonDelay() external pure returns (uint256 cultistsSummonDelay)
 ```
 
-Returns max settlement that can be placed in one zone
+Returns cultists summon delay
 
-_Occultists does not count (so +1 with occultists)_
+_Used to determine is cultists can be re-summoned_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| maxSettlementPerZone | uint256 | Max settlement that can be placed in one zone |
+| cultistsSummonDelay | uint256 | Cultists summon delay (in seconds) |
 
 
-### getOccultistsNoDestructionDelay
+### getMaxSettlementsPerRegion
 
 ```solidity
-function getOccultistsNoDestructionDelay() external pure returns (uint256 occultistsNoDestructionDelay)
+function getMaxSettlementsPerRegion() external pure returns (uint256 maxSettlementsPerRegion)
 ```
 
-Returns interval duration where world is not destructible after recent occultists summon
+Returns max settlements that can be placed in one region
+
+_Cultists does not count (so +1 with cultists)_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| maxSettlementsPerRegion | uint256 | Max settlements that can be placed in one region |
+
+
+### getCultistsNoDestructionDelay
+
+```solidity
+function getCultistsNoDestructionDelay() external pure returns (uint256 cultistsNoDestructionDelay)
+```
+
+Returns interval duration where world is not destructible after recent cultists summon
 
 _Used to determine if destruction is available or not_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| occultistsNoDestructionDelay | uint256 | No destruction interval duration (in seconds) |
+| cultistsNoDestructionDelay | uint256 | No destruction interval duration (in seconds) |
 
 
-### getOccultistsPerZoneMultiplier
+### getCultistsPerRegionMultiplier
 
 ```solidity
-function getOccultistsPerZoneMultiplier() external pure returns (uint256 occultistsPerZoneMultiplier)
+function getCultistsPerRegionMultiplier() external pure returns (uint256 cultistsPerRegionMultiplier)
 ```
 
-Returns value of occultists per zone which determines occultists threshold for world destruction
+Returns value of cultists per region which determines cultists threshold for world destruction
 
-_Used to determine amount of occultists that have to be present for world destruction_
+_Used to determine amount of cultists that have to be present for world destruction_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| occultistsPerZoneMultiplier | uint256 | Value of occultists per zone |
+| cultistsPerRegionMultiplier | uint256 | Value of cultists per region |
 
 
-### getMaxOccultistsPerZone
+### getMaxCultistsPerRegion
 
 ```solidity
-function getMaxOccultistsPerZone() external pure returns (uint256 maxOccultistsPerZone)
+function getMaxCultistsPerRegion() external pure returns (uint256 maxCultistsPerRegion)
 ```
 
-Returns maximum amount of occultists that can be present in zone
+Returns maximum amount of cultists that can be present in region
 
-_Used to determine how many occultists will be summoned_
+_Used to determine how many cultists will be summoned_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| maxOccultistsPerZone | uint256 | Maximum amount of occultists |
+| maxCultistsPerRegion | uint256 | Maximum amount of cultists |
 
 
-### getOccultistUnitType
+### getCultistUnitTypeId
 
 ```solidity
-function getOccultistUnitType() external pure returns (string occultistUnitType)
+function getCultistUnitTypeId() external pure returns (bytes32 cultistUnitTypeId)
 ```
 
-Returns unit type of occultists army
+Returns unit type id of cultists army
 
-_Determines type of unit in occultists army_
+_Determines type of unit in cultists army_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| occultistUnitType | string | Occultists unit type |
+| cultistUnitTypeId | bytes32 | Cultists unit type id |
 
 
 ### getBuildingTokenTransferThresholdPercent
@@ -720,22 +651,6 @@ _Used to determine is building token transfer allowed based on treasury percent_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | buildingTokenTransferThresholdPercent | uint256 | Building token transfer threshold percent |
-
-
-### getNewSettlementExtraResources
-
-```solidity
-function getNewSettlementExtraResources() external view returns (struct IRegistry.ExtraResource[] extraResources)
-```
-
-Returns extra resources which will be minted to user when new settlement is placed
-
-_During settlement creation continent contract uses output from this function to determine how much extra resources to mint_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| extraResources | struct IRegistry.ExtraResource[] | Extra resources which will be minted to user when new settlement is placed |
 
 
 ### getNewSettlementStartingPrice
@@ -770,35 +685,16 @@ _Used for production calculation_
 | ticks | uint256 | Amount of production ticks |
 
 
-### getDemilitarizationCooldown
+### getUnitPriceIncreaseForEachUnit
 
 ```solidity
-function getDemilitarizationCooldown() external pure returns (uint256 cooldown)
+function getUnitPriceIncreaseForEachUnit() external pure returns (uint256 numerator, uint256 denominator)
 ```
 
-Returns army demilitarization cooldown in seconds
+Returns unit price increase in unit pool for each extra unit to buy (value returned as numerator and denominator)
 
-_Used for army demilitarization restriction_
+_Used for determination of unit price_
 
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| cooldown | uint256 | Demilitarization cooldown in seconds |
-
-
-### getUnitPriceDropByUnitType
-
-```solidity
-function getUnitPriceDropByUnitType(string unitType) external pure returns (uint256 numerator, uint256 denominator)
-```
-
-Returns unit pool price drop per second for provided unit type, provided as numerator and denominator
-
-_Used for determination of current unit pool price_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitType | string | Unit type |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -806,811 +702,544 @@ _Used for determination of current unit pool price_
 | denominator | uint256 | Denominator |
 
 
-## IRegistry
-
-
-Functions related to current game configuration
-
-
-
-
-
-### GameResource
-
-
-
-
-
-
-
+### getMaxAllowedUnitsToBuyPerTransaction
 
 ```solidity
-struct GameResource {
-  string tokenName;
-  string tokenSymbol;
-  string worldResourceName;
-}
+function getMaxAllowedUnitsToBuyPerTransaction() external pure returns (uint256 maxAllowedUnitsToBuy)
 ```
 
-### GameUnit
+Returns max allowed units to buy per transaction
 
-
-
-
-
-
-
-
-```solidity
-struct GameUnit {
-  string tokenName;
-  string tokenSymbol;
-  string worldUnitName;
-}
-```
-
-### ExtraResource
-
-
-
-
-
-
-
-
-```solidity
-struct ExtraResource {
-  string resourceName;
-  uint256 value;
-}
-```
-
-### UnitStats
-
-
-
-
-
-
-
-
-```solidity
-struct UnitStats {
-  uint256 weaponPowerStage1;
-  uint256 armourPowerStage1;
-  uint256 weaponPowerStage2;
-  uint256 armourPowerStage2;
-  uint256 siegePower;
-  uint256 siegeMaxSupply;
-  uint256 siegeSupport;
-}
-```
-
-### mightyCreator
-
-```solidity
-function mightyCreator() external view returns (address)
-```
-
-An address which can configure/reconfigure current game
-
-_Immutable, initialized on the registry creation_
-
-
-
-
-### isFactoryContract
-
-```solidity
-function isFactoryContract(address factoryAddress) external view returns (bool)
-```
-
-Mapping containing is provided address a factory contract or not
-
-_Updated when #setFactoryContract is called_
-
-
-
-
-### factoryContracts
-
-```solidity
-function factoryContracts(bytes32 scriptId) external view returns (address)
-```
-
-Mapping containing factory contracts addresses by provided asset types
-
-_Updated when #setFactoryContract is called
-During new world asset creation process registry is asked for factory contract for exact world asset type, which will contain creation method for new world asset_
-
-
-
-
-### scriptContracts
-
-```solidity
-function scriptContracts(bytes32 scriptId) external view returns (address)
-```
-
-Mapping containing assets implementations addresses by provided asset types
-
-_Updated when #setScriptContractName is called
-Every worlds assets implementation (code, not data) will be defined by value from this mapping_
-
-
-
-
-### unitsStats
-
-```solidity
-function unitsStats(string unitName) external view returns (uint256 weaponPowerStage1, uint256 armourPowerStage1, uint256 weaponPowerStage2, uint256 armourPowerStage2, uint256 siegePower, uint256 siegeMaxSupply, uint256 siegeSupport)
-```
-
-Mapping containing units stats by provided unit types
-
-_Updated when #setUnitStats is called_
-
-
-
-
-### globalMultiplier
-
-```solidity
-function globalMultiplier() external view returns (uint256)
-```
-
-Global multiplier
-
-_Immutable, initialized on the registry creation_
-
-
-
-
-### settlementStartingPrice
-
-```solidity
-function settlementStartingPrice() external view returns (uint256)
-```
-
-Settlement starting price
-
-_Immutable, initialized on the registry creation_
-
-
-
-
-### init
-
-```solidity
-function init(uint256 globalMultiplier, uint256 settlementStartingPrice) external
-```
-
-Proxy initializer
-
-_Called by address which created current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| globalMultiplier | uint256 | Global multiplier |
-| settlementStartingPrice | uint256 | Settlement starting price |
-
-
-
-### setFactoryContract
-
-```solidity
-function setFactoryContract(bytes32 assetType, address factoryAddress) external
-```
-
-Sets provided address as factory contract for provided asset type
-
-_Even though function is opened, it can be called only by mightyCreator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| assetType | bytes32 | Type of the asset |
-| factoryAddress | address | Factory address |
-
-
-
-### setScriptContractName
-
-```solidity
-function setScriptContractName(string assetGroup, string assetType, address implementationAddress) external
-```
-
-Sets provided address as implementation for provided asset group and asset type (for ex. group - "settlement", type - "OCCULTISTS")
-
-_Even though function is opened, it can be called only by mightyCreator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| assetGroup | string | Asset group |
-| assetType | string | Type of the asset |
-| implementationAddress | address | Implementation address |
-
-
-
-### setUnitStats
-
-```solidity
-function setUnitStats(string unitName, struct IRegistry.UnitStats unitStats) external
-```
-
-Sets units stats for provided unit type
-
-_Even though function is opened, it can be called only by mightyCreator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitName | string | Unit type |
-| unitStats | struct IRegistry.UnitStats | Unit stats struct |
-
-
-
-### getWorkerCapacityCoefficient
-
-```solidity
-function getWorkerCapacityCoefficient(string buildingName) external pure returns (uint256 workerCapacityCoefficient)
-```
-
-Calculates worker capacity coefficient for provided building type
-
-_Used for internal calculation of max workers for each building_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingName | string | Building type |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| workerCapacityCoefficient | uint256 | Worker capacity coefficient |
-
-
-### hasStartingTreasury
-
-```solidity
-function hasStartingTreasury(string buildingName) external pure returns (bool hasStartingTreasury)
-```
-
-Calculates if provided building has starting treasury on creation
-
-_Used for determination if treasury should be filled on settlement creation_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingName | string | Building type |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| hasStartingTreasury | bool | If treasury should be filled |
-
-
-### getToxicityByResource
-
-```solidity
-function getToxicityByResource(string resourceName) external pure returns (uint256 toxicity)
-```
-
-Calculates toxicity by resource ratio
-
-_Used for minting/burning toxicity_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Resource name |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| toxicity | uint256 | Amount of toxicity per 1 resource (both are in 1e18 precision) |
-
-
-### getResourceWeight
-
-```solidity
-function getResourceWeight(string resourceName) external pure returns (uint256 resourceWeight)
-```
-
-Calculates resource weight
-
-_Used for calculation how much prosperity will be produced by resource in treasury, building upgrade costs_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Resource name |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceWeight | uint256 | Resource weight (in 1e0 precision) |
-
-
-### getResourceDifficulty
-
-```solidity
-function getResourceDifficulty(string resourceName) external view returns (uint256 resourceDifficulty)
-```
-
-Calculates resource difficulty
-
-_Used for internal calculation of building upgrade costs_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Resource name |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceDifficulty | uint256 | Resource difficulty |
-
-
-### noWoodInUpgradeLvl
-
-```solidity
-function noWoodInUpgradeLvl() external pure returns (uint256 noWoodInUpgradeLvl)
-```
-
-Returns level from which wood will not be required in building upgrades
-
-_Used for internal calculation of building upgrade costs_
+_Limit specified in order to limit potential price overflows (value is returned in 1e18 precision)_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| noWoodInUpgradeLvl | uint256 | Level from which wood will not be required in building upgrades |
+| maxAllowedUnitsToBuy | uint256 | Max allowed units to buy |
 
 
-### oreInUpgradeLvl
-
-```solidity
-function oreInUpgradeLvl() external pure returns (uint256 oreInUpgradeLvl)
-```
-
-Returns level from which ore will be required in building upgrades
-
-_Used for internal calculation of building upgrade costs_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| oreInUpgradeLvl | uint256 | Level from which ore will be required in building upgrades |
-
-
-### getSiegePowerToSiegePointsMultiplier
+### getUnitPriceDropByUnitTypeId
 
 ```solidity
-function getSiegePowerToSiegePointsMultiplier() external pure returns (uint256 siegePowerToSiegePointsMultiplier)
+function getUnitPriceDropByUnitTypeId(bytes32 unitTypeId) external pure returns (uint256 numerator, uint256 denominator)
 ```
 
-Returns siege power to siege siege points multiplier
-
-_Used for determination how much siege points will be given_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| siegePowerToSiegePointsMultiplier | uint256 | Siege power to siege siege points multiplier (in 1e18 precision) |
-
-
-### getSiegePointsToResourceMultiplier
-
-```solidity
-function getSiegePointsToResourceMultiplier(string resourceName) external view returns (uint256 siegePointsToResourceMultiplier)
-```
-
-Returns siege point multiplier by provided resource
-
-_Used in calculation how many resources can be exchanged for siege points_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Resource name |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| siegePointsToResourceMultiplier | uint256 | Siege point multiplier (in 1e18 precision) |
-
-
-### getRobberyFee
-
-```solidity
-function getRobberyFee() external view returns (uint256 robberyFee)
-```
-
-Returns robbery fee
-
-_Used in determination how much of resource will be burned during robbery_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| robberyFee | uint256 | Robbery fee (in 1e18 precision, where 1e18 is 100%) |
-
-
-### getGlobalMultiplier
-
-```solidity
-function getGlobalMultiplier() external view returns (uint256 globalMultiplier)
-```
-
-Returns global multiplier
-
-_Used everywhere, where time is involved. Essentially determines game speed_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| globalMultiplier | uint256 | Global multiplier |
-
-
-### getToReservePercent
-
-```solidity
-function getToReservePercent() external pure returns (uint256 toReservePercent)
-```
-
-Returns production to reserve percent
-
-_Determines how much of buildings production will go to treasury (if not full)_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-
-
-
-### getBaseBattleLobbyDuration
-
-```solidity
-function getBaseBattleLobbyDuration() external view returns (uint256 baseBattleLobbyDuration)
-```
-
-Returns base battle lobby phase duration
-
-_Used internally to determine how long lobby phase will last_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| baseBattleLobbyDuration | uint256 | Base battle lobby phase duration |
-
-
-### getBaseBattleOngoingDuration
-
-```solidity
-function getBaseBattleOngoingDuration() external view returns (uint256 baseBattleOngoingDuration)
-```
-
-Returns base battle ongoing phase duration
-
-_Used internally to determine how long ongoing phase will last_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| baseBattleOngoingDuration | uint256 | Base battle ongoing phase duration |
-
-
-### getBuildings
-
-```solidity
-function getBuildings() external view returns (string[] buildings)
-```
-
-Returns game buildings
-
-_Used internally to determine which buildings will be created on placing settlement_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildings | string[] | Buildings |
-
-
-### getResources
-
-```solidity
-function getResources() external view returns (string[] resources)
-```
-
-Returns game resources
-
-_Used internally to determine upgrade costs and providing initial resources for settlement owner based on his tier_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-
-
-
-### getUnits
-
-```solidity
-function getUnits() external view returns (string[] units)
-```
-
-Returns game units
-
-_Used internally in many places where interaction with units is necessary_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| units | string[] | Game units |
-
-
-### getGameResources
-
-```solidity
-function getGameResources() external view returns (struct IRegistry.GameResource[] resources)
-```
-
-Returns game resources
-
-_Used internally to determine upgrade costs and providing initial resources for settlement owner based on his tier_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-
-
-
-### getGameUnits
-
-```solidity
-function getGameUnits() external view returns (struct IRegistry.GameUnit[] units)
-```
-
-Returns game units
-
-_Used internally in many places where interaction with units is necessary_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| units | struct IRegistry.GameUnit[] | Game units |
-
-
-### getUnitHiringFortHpMultiplier
-
-```solidity
-function getUnitHiringFortHpMultiplier() external pure returns (uint256 unitHiringFortHpMultiplier)
-```
-
-Returns unit hiring fort hp multiplier
-
-_Used to determine how much units in army can be presented based on its current fort hp and this parameter_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitHiringFortHpMultiplier | uint256 | Unit hiring fort hp multiplier |
-
-
-### getUnitMaxFoodToSpendOnMove
-
-```solidity
-function getUnitMaxFoodToSpendOnMove(string unitName) external pure returns (uint256 unitMaxFoodToSpendOnMove)
-```
-
-Returns how much food unit can take from treasury to increase its army movement speed
-
-_Used internally to calculate army's movement speed_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitName | string | Unit type |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitMaxFoodToSpendOnMove | uint256 | Maximum amount of food to spend on move (in 1e18 precision) |
-
-
-### getDemilitarizationProsperityPerWeapon
-
-```solidity
-function getDemilitarizationProsperityPerWeapon() external pure returns (uint256 prosperityPerWeapon)
-```
-
-Returns how much prosperity will be given for each weapon of demilitarization result
-
-_Used internally to calculate how much prosperity will be given_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| prosperityPerWeapon | uint256 | Prosperity amount per one weapon (in 1e18 precision) |
-
-
-### getOccultistsSummonDelay
-
-```solidity
-function getOccultistsSummonDelay() external pure returns (uint256 occultistsSummonDelay)
-```
-
-Returns occultists summon delay
-
-_Used to determine is occultists can be re-summoned_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| occultistsSummonDelay | uint256 | Occultists summon delay (in seconds) |
-
-
-### getMaxSettlementPerZone
-
-```solidity
-function getMaxSettlementPerZone() external pure returns (uint256 maxSettlementPerZone)
-```
-
-Returns max settlement that can be placed in one zone
-
-_Occultists does not count (so +1 with occultists)_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| maxSettlementPerZone | uint256 | Max settlement that can be placed in one zone |
-
-
-### getOccultistsNoDestructionDelay
-
-```solidity
-function getOccultistsNoDestructionDelay() external pure returns (uint256 occultistsNoDestructionDelay)
-```
-
-Returns interval duration where world is not destructible after recent occultists summon
-
-_Used to determine if destruction is available or not_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| occultistsNoDestructionDelay | uint256 | No destruction interval duration (in seconds) |
-
-
-### getOccultistsPerZoneMultiplier
-
-```solidity
-function getOccultistsPerZoneMultiplier() external pure returns (uint256 occultistsPerZoneMultiplier)
-```
-
-Returns value of occultists per zone which determines occultists threshold for world destruction
-
-_Used to determine amount of occultists that have to be present for world destruction_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| occultistsPerZoneMultiplier | uint256 | Value of occultists per zone |
-
-
-### getMaxOccultistsPerZone
-
-```solidity
-function getMaxOccultistsPerZone() external pure returns (uint256 maxOccultistsPerZone)
-```
-
-Returns maximum amount of occultists that can be present in zone
-
-_Used to determine how many occultists will be summoned_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| maxOccultistsPerZone | uint256 | Maximum amount of occultists |
-
-
-### getOccultistUnitType
-
-```solidity
-function getOccultistUnitType() external pure returns (string occultistUnitType)
-```
-
-Returns unit type of occultists army
-
-_Determines type of unit in occultists army_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| occultistUnitType | string | Occultists unit type |
-
-
-### getBuildingTokenTransferThresholdPercent
-
-```solidity
-function getBuildingTokenTransferThresholdPercent() external pure returns (uint256 buildingTokenTransferThresholdPercent)
-```
-
-Returns building token transfer threshold percent
-
-_Used to determine is building token transfer allowed based on treasury percent_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingTokenTransferThresholdPercent | uint256 | Building token transfer threshold percent |
-
-
-### getNewSettlementExtraResources
-
-```solidity
-function getNewSettlementExtraResources() external view returns (struct IRegistry.ExtraResource[] extraResources)
-```
-
-Returns extra resources which will be minted to user when new settlement is placed
-
-_During settlement creation continent contract uses output from this function to determine how much extra resources to mint_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| extraResources | struct IRegistry.ExtraResource[] | Extra resources which will be minted to user when new settlement is placed |
-
-
-### getNewSettlementStartingPrice
-
-```solidity
-function getNewSettlementStartingPrice() external view returns (uint256 newSettlementStartingPrice)
-```
-
-Returns new settlement starting price in settlements market
-
-_Used to determine how much base price for first settlement will be_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| newSettlementStartingPrice | uint256 | New settlement starting price |
-
-
-### getProductionTicksInSecond
-
-```solidity
-function getProductionTicksInSecond() external view returns (uint256 ticks)
-```
-
-Returns amount of production ticks
-
-_Used for production calculation_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| ticks | uint256 | Amount of production ticks |
-
-
-### getDemilitarizationCooldown
-
-```solidity
-function getDemilitarizationCooldown() external pure returns (uint256 cooldown)
-```
-
-Returns army demilitarization cooldown in seconds
-
-_Used for army demilitarization restriction_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| cooldown | uint256 | Demilitarization cooldown in seconds |
-
-
-### getUnitPriceDropByUnitType
-
-```solidity
-function getUnitPriceDropByUnitType(string unitType) external pure returns (uint256 numerator, uint256 denominator)
-```
-
-Returns unit pool price drop per second for provided unit type, provided as numerator and denominator
+Returns unit pool price drop per second for provided unit type id (value returned as numerator and denominator)
 
 _Used for determination of current unit pool price_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitType | string | Unit type |
+| unitTypeId | bytes32 | Unit type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | numerator | uint256 | Numerator |
 | denominator | uint256 | Denominator |
+
+
+### getWorkerPriceIncreaseForEachWorker
+
+```solidity
+function getWorkerPriceIncreaseForEachWorker() external pure returns (uint256 numerator, uint256 denominator)
+```
+
+Returns worker pool price drop per second for each worker (value returned as numerator and denominator)
+
+_Used for determination of worker price_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| numerator | uint256 | Numerator |
+| denominator | uint256 | Denominator |
+
+
+### getMaxAllowedWorkersToBuyPerTransaction
+
+```solidity
+function getMaxAllowedWorkersToBuyPerTransaction() external pure returns (uint256 maxAllowedWorkersToBuy)
+```
+
+Returns max allowed workers to buy per transaction
+
+_Limit specified in order to limit potential price overflows (value is returned in 1e18 precision)_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| maxAllowedWorkersToBuy | uint256 | Max allowed workers to buy |
+
+
+### getWorkerPriceDrop
+
+```solidity
+function getWorkerPriceDrop() external pure returns (uint256 numerator, uint256 denominator)
+```
+
+Returns workers pool price drop per second, provided as numerator and denominator
+
+_Used for determination of current workers pool price_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| numerator | uint256 | Numerator |
+| denominator | uint256 | Denominator |
+
+
+### getMaxAdvancedProductionTileBuff
+
+```solidity
+function getMaxAdvancedProductionTileBuff() external pure returns (uint256 maxAdvancedProductionTileBuff)
+```
+
+Returns max potential advanced production buff gain from capturing tiles
+
+_Used for determination advanced production multiplier_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| maxAdvancedProductionTileBuff | uint256 | Max potential advanced production from tile buff |
+
+
+### getCaptureTileDurationPerTile
+
+```solidity
+function getCaptureTileDurationPerTile() external pure returns (uint256 captureTileDurationPerTile)
+```
+
+Returns capture tile duration per each tile in distance from settlement to selected tile
+
+_Used to capture tile duration calculation_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| captureTileDurationPerTile | uint256 | Capture tile duration per tile |
+
+
+### getNextCaptureProsperityBasicThreshold
+
+```solidity
+function getNextCaptureProsperityBasicThreshold() external pure returns (uint256 nextCaptureProsperityBasicThreshold)
+```
+
+Returns next capture prosperity basic threshold
+
+_Used to determine if new bid on captured tile is possible_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| nextCaptureProsperityBasicThreshold | uint256 | Next capture prosperity basic threshold |
+
+
+### getNextCaptureProsperityPerTileThreshold
+
+```solidity
+function getNextCaptureProsperityPerTileThreshold() external pure returns (uint256 nextCaptureProsperityPerTileThreshold)
+```
+
+Returns next capture prosperity per tile threshold
+
+_Used to determine if new bid on captured tile is possible_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| nextCaptureProsperityPerTileThreshold | uint256 | Next capture prosperity per tile threshold |
+
+
+### getNecessaryProsperityPercentForClaimingTileCapture
+
+```solidity
+function getNecessaryProsperityPercentForClaimingTileCapture() external pure returns (uint256 necessaryProsperityPercentForClaimingTileCapture)
+```
+
+Returns percent of prosperity that has to be in settlement for claiming captured tile
+
+_Used to determine if tile claim is possible_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| necessaryProsperityPercentForClaimingTileCapture | uint256 | Necessary prosperity percent for claiming tile capture |
+
+
+### getTileCaptureCancellationFee
+
+```solidity
+function getTileCaptureCancellationFee() external pure returns (uint256 tileCaptureCancellationFee)
+```
+
+Returns tile capture cancellation fee
+
+_Used to determine how much prosperity has to be given in order to cancel tile capture_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tileCaptureCancellationFee | uint256 | Tile capture cancellation fee |
+
+
+### getMaxCapturedTilesForSettlement
+
+```solidity
+function getMaxCapturedTilesForSettlement(uint8 tileBonusType) external pure returns (uint256 maxCapturedTilesForSettlement)
+```
+
+Returns max captured tiles for settlement
+
+_Used to determine whether settlement can initiate tile capture_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tileBonusType | uint8 | Tile bonus type |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| maxCapturedTilesForSettlement | uint256 | Max captured tiles for settlement with this bonus type |
+
+
+### getAdvancedProductionTileBonusByVariation
+
+```solidity
+function getAdvancedProductionTileBonusByVariation(uint8 tileBonusVariation) external pure returns (bytes32 buildingTypeId, uint256 capacityAmountMultiplier)
+```
+
+Returns advanced production tile bonus by variation
+
+_Used to determine tile bonus by tile bonus variation_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tileBonusVariation | uint8 | Tile bonus variation |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| buildingTypeId | bytes32 | Building type id |
+| capacityAmountMultiplier | uint256 | Capacity amount multiplier |
+
+
+### getUnitBattleMultiplierTileBonusByVariation
+
+```solidity
+function getUnitBattleMultiplierTileBonusByVariation(uint8 tileBonusVariation) external pure returns (bytes32 unitTypeId, uint256 unitBattleMultiplier)
+```
+
+Returns unit battle multiplier tile bonus by variation
+
+_Used to determine tile bonus by tile bonus variation_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tileBonusVariation | uint8 | Tile bonus variation |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeId | bytes32 | Unit type id |
+| unitBattleMultiplier | uint256 | Unit battle multiplier |
+
+
+### getMaxRegionTier
+
+```solidity
+function getMaxRegionTier() external pure returns (uint256 maxRegionTier)
+```
+
+Returns max region tier
+
+_Used in validation in region tier increase_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| maxRegionTier | uint256 | Max region tier |
+
+
+### getInitialCultistsAmountPerRegionTier
+
+```solidity
+function getInitialCultistsAmountPerRegionTier() external pure returns (uint256 initialCultistsAmount)
+```
+
+Returns initial cultists amount per region tier
+
+_Used in region activation_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| initialCultistsAmount | uint256 | Initial cultists amount |
+
+
+### getInitialCorruptionIndexAmountPerRegionTier
+
+```solidity
+function getInitialCorruptionIndexAmountPerRegionTier() external pure returns (uint256 initialCorruptionIndexAmount)
+```
+
+Returns initial corruptionIndex amount per region tier
+
+_Used in region activation and region tier increase handler_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| initialCorruptionIndexAmount | uint256 | Initial corruptionIndex amount |
+
+
+### getSettlementPriceMultiplierPerIncreasedRegionTier
+
+```solidity
+function getSettlementPriceMultiplierPerIncreasedRegionTier() external pure returns (uint256 settlementPriceMultiplierPerIncreasedRegionTier)
+```
+
+Returns settlement price multiplier per increased region tier
+
+_Used in calculation of new settlement price_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| settlementPriceMultiplierPerIncreasedRegionTier | uint256 | Settlement price multiplier per increased region tier |
+
+
+### getStunDurationMultiplierOfCancelledSecretManeuver
+
+```solidity
+function getStunDurationMultiplierOfCancelledSecretManeuver() external pure returns (uint256 stunMultiplierOfCancelledSecretManeuver)
+```
+
+Returns stun duration multiplier of cancelled secret maneuver
+
+_Used in calculation of stun duration during cancelling secret maneuver_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| stunMultiplierOfCancelledSecretManeuver | uint256 | Stun multiplier of cancelled secret maneuver |
+
+
+### getMaxAllowedRobberyMultiplierIncreaseValue
+
+```solidity
+function getMaxAllowedRobberyMultiplierIncreaseValue() external pure returns (uint256 maxAllowedRobberyMultiplierIncreaseValue)
+```
+
+Returns max allowed robbery multiplier increase value
+
+_Used in army siege modification_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| maxAllowedRobberyMultiplierIncreaseValue | uint256 | Max allowed robbery multiplier increase value |
+
+
+### getArmyStunDurationPerRobberyMultiplier
+
+```solidity
+function getArmyStunDurationPerRobberyMultiplier() external pure returns (uint256 armyStunDurationPerRobberyMultiplier)
+```
+
+Returns army stun duration per one point of added robbery multiplier
+
+_Used in army siege modification_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| armyStunDurationPerRobberyMultiplier | uint256 | Army stun duration per robbery multiplier |
+
+
+### getChanceForTileWithBonusByRegionTier
+
+```solidity
+function getChanceForTileWithBonusByRegionTier(uint256 regionTier) external pure returns (uint256 chanceForTileWithBonus)
+```
+
+Returns chance for tile with bonus by region tier
+
+_Used to determine whether tile has bonus or not_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionTier | uint256 | Region tier |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| chanceForTileWithBonus | uint256 | Chance for tile with bonus (in 1e18 precision) |
+
+
+### getRegionInclusionPrice
+
+```solidity
+function getRegionInclusionPrice(uint256 regionTier) external pure returns (uint256 regionInclusionPrice)
+```
+
+Returns region inclusion price
+
+_Used to determine amount of token to be taken from msg.sender in order to include region_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionTier | uint256 | Region tier |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionInclusionPrice | uint256 | Region inclusion price |
+
+
+### getRegionOwnerSettlementPurchasePercent
+
+```solidity
+function getRegionOwnerSettlementPurchasePercent(uint256 regionTier) external pure returns (uint256 percent)
+```
+
+Returns region owner settlement purchase percent
+
+_Used to determine amount of tokens to be sent to region owner when another user buys settlement in his region_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionTier | uint256 | Region tier |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| percent | uint256 | Percent (in 1e18 precision) |
+
+
+### getUnitPoolType
+
+```solidity
+function getUnitPoolType(bytes32 unitTypeId) external pure returns (bytes32 unitPoolType)
+```
+
+Returns unit pool type by unit type id
+
+_Used to determine which implementation of unit pool to use for provided unit type_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeId | bytes32 | Unit type id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitPoolType | bytes32 | Unit pool type |
+
+
+### getArmyStunDurationByJoiningBattleAtAttackingSide
+
+```solidity
+function getArmyStunDurationByJoiningBattleAtAttackingSide() external pure returns (uint256 stunDuration)
+```
+
+Returns stun duration army will receive by joining battle at attacking side
+
+_Used to determine stun duration army will receive by joining battle at attacking side_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| stunDuration | uint256 | Stun duration |
+
+
+### getInitialCaptureProsperityBasicValue
+
+```solidity
+function getInitialCaptureProsperityBasicValue() external pure returns (uint256 initialCaptureProsperityBasicValue)
+```
+
+Returns initial capture prosperity basic value
+
+_Used to determine if new bid on captured tile is possible_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| initialCaptureProsperityBasicValue | uint256 | Initial capture prosperity basic value |
+
+
+### getInitialCaptureProsperityPerTileValue
+
+```solidity
+function getInitialCaptureProsperityPerTileValue() external pure returns (uint256 initialCaptureProsperityPerTileValue)
+```
+
+Returns initial capture prosperity per tile value
+
+_Used to determine if new bid on captured tile is possible_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| initialCaptureProsperityPerTileValue | uint256 | Initial capture prosperity per tile value |
+
+
+### getMinimumUserSettlementsCountInNeighboringRegionRequiredToIncludeRegion
+
+```solidity
+function getMinimumUserSettlementsCountInNeighboringRegionRequiredToIncludeRegion() external pure returns (uint256 minimumUserSettlementsCount)
+```
+
+Returns minimum user settlements count in neighboring region required to include region
+
+_Used to determine whether region can be included or not_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| minimumUserSettlementsCount | uint256 | Minimum user settlements count |
+
+
+### getSettlementPayToDecreaseCorruptionIndexPenaltyMultiplier
+
+```solidity
+function getSettlementPayToDecreaseCorruptionIndexPenaltyMultiplier() external pure returns (uint256 penaltyMultiplier)
+```
+
+Returns settlement pay to decrease corruptionIndex penalty multiplier
+
+_Used to determine how much corruptionIndex penalty settlement will endure whenever its corruptionIndex is lowered by paying to reward pool_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| penaltyMultiplier | uint256 | Penalty multiplier |
+
+
+### getMinimumBattleDuration
+
+```solidity
+function getMinimumBattleDuration() external pure returns (uint256 minimumBattleDuration)
+```
+
+Returns minimum battle duration
+
+_Used to determine battle duration ignoring current world multiplier_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| minimumBattleDuration | uint256 | Minimum battle duration |
+
+
+### getNewSettlementPriceIncreaseMultiplier
+
+```solidity
+function getNewSettlementPriceIncreaseMultiplier() external pure returns (uint256 newSettlementPriceIncreaseMultiplier)
+```
+
+Returns new settlement price increase multiplier
+
+_Used to determine new settlement purchase price (in 1e18 precision)_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newSettlementPriceIncreaseMultiplier | uint256 | New settlement price increase multiplier |
 
 

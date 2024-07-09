@@ -7,15 +7,15 @@
 
 
 
-### currentZone
+### relatedRegion
 
 ```solidity
-contract IZone currentZone
+contract IRegion relatedRegion
 ```
 
-Zone to which this pool belongs
+Region to which this pool belongs
 
-_Immutable, initialized on the zone creation_
+_Immutable, initialized on the region creation_
 
 
 
@@ -33,13 +33,13 @@ _Updated every time when #swapProsperityForExactWorkers is called_
 
 
 
-### startingPrice
+### workerPrice
 
 ```solidity
-uint256 startingPrice
+uint256 workerPrice
 ```
 
-Starting unit price
+Worker price
 
 _Updated every time when #swapProsperityForExactWorkers is called_
 
@@ -49,80 +49,28 @@ _Updated every time when #swapProsperityForExactWorkers is called_
 ### init
 
 ```solidity
-function init(address zoneAddress) public
+function init(bytes initParams) public
 ```
 
-Proxy initializer
 
-_Called by factory contract which creates current instance_
+
+_World asset initializer_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| zoneAddress | address | Zone address |
+| initParams | bytes | Encoded init params (every world asset has own knowledge how to extract data from it) |
 
 
 
-### prosperity
-
-```solidity
-function prosperity() internal view returns (contract IProsperity)
-```
-
-
-
-_Returns prosperity_
-
-
-
-
-### workers
+### calculateProsperityForExactWorkers
 
 ```solidity
-function workers() internal view returns (contract IWorkers)
-```
-
-
-
-_Returns workers_
-
-
-
-
-### getDroppedPrice
-
-```solidity
-function getDroppedPrice() internal view returns (int128)
-```
-
-
-
-_Calculates dropped price after last purchase time_
-
-
-
-
-### calculatePriceShiftForUnits
-
-```solidity
-function calculatePriceShiftForUnits(uint256 amountOfWorkers, int128 priceShiftPerWorker64) internal view returns (uint256, uint256)
-```
-
-
-
-_Calculates amount of prosperity and new starting price according to amount of workers and price shift per worker interaction with the pool_
-
-
-
-
-### getAmountIn
-
-```solidity
-function getAmountIn(uint256 unitsToBuy) public view returns (uint256, uint256)
+function calculateProsperityForExactWorkers(uint256 unitsToBuy) public view returns (uint256, uint256)
 ```
 
 Calculates input of prosperity based on output whole amount of workers
 
-_Returns valid output only for integer workersToBuy value_
+_Returns valid output only for integer workersToBuy value (in 1e0 precision)_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -137,15 +85,16 @@ _Returns valid output only for integer workersToBuy value_
 ### swapProsperityForExactWorkers
 
 ```solidity
-function swapProsperityForExactWorkers(uint256 workersToBuy, uint256 maxProsperityToSell) public returns (uint256)
+function swapProsperityForExactWorkers(address settlementAddress, uint256 workersToBuy, uint256 maxProsperityToSell) public returns (uint256)
 ```
 
-Swaps prosperity() for exact workers()
+Swaps prosperity for exact workers
 
-_Even though function is opened, it can be executed only by ISettlement because only ISettlement can have prosperity_
+_Even though function is opened, it can only be called by world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
+| settlementAddress | address | Settlement address |
 | workersToBuy | uint256 | Exact amount of workers |
 | maxProsperityToSell | uint256 | Maximum amount of prosperity to be taken for exact amount of workers |
 
@@ -154,159 +103,29 @@ _Even though function is opened, it can be executed only by ISettlement because 
 | [0] | uint256 |  |
 
 
-## WorkersPool
-
-
-
-
-
-
-
-
-### currentZone
+### _getDroppedWorkerPrice
 
 ```solidity
-contract IZone currentZone
-```
-
-Zone to which this pool belongs
-
-_Immutable, initialized on the zone creation_
-
-
-
-
-### lastPurchaseTime
-
-```solidity
-uint256 lastPurchaseTime
-```
-
-Time at which last purchase is performed
-
-_Updated every time when #swapProsperityForExactWorkers is called_
-
-
-
-
-### startingPrice
-
-```solidity
-uint256 startingPrice
-```
-
-Starting unit price
-
-_Updated every time when #swapProsperityForExactWorkers is called_
-
-
-
-
-### init
-
-```solidity
-function init(address zoneAddress) public
-```
-
-Proxy initializer
-
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| zoneAddress | address | Zone address |
-
-
-
-### prosperity
-
-```solidity
-function prosperity() internal view returns (contract IProsperity)
+function _getDroppedWorkerPrice() internal view returns (int128)
 ```
 
 
 
-_Returns prosperity_
+_Calculates dropped worker price after last purchase time_
 
 
 
 
-### workers
+### _calculatePriceShiftForUnits
 
 ```solidity
-function workers() internal view returns (contract IWorkers)
+function _calculatePriceShiftForUnits(uint256 amountOfWorkers, int128 priceShiftPerWorker64) internal view returns (uint256, uint256)
 ```
 
 
 
-_Returns workers_
+_Calculates amount of prosperity and new worker price according to amount of workers and price shift per worker interaction with the pool_
 
 
-
-
-### getDroppedPrice
-
-```solidity
-function getDroppedPrice() internal view returns (int128)
-```
-
-
-
-_Calculates dropped price after last purchase time_
-
-
-
-
-### calculatePriceShiftForUnits
-
-```solidity
-function calculatePriceShiftForUnits(uint256 amountOfWorkers, int128 priceShiftPerWorker64) internal view returns (uint256, uint256)
-```
-
-
-
-_Calculates amount of prosperity and new starting price according to amount of workers and price shift per worker interaction with the pool_
-
-
-
-
-### getAmountIn
-
-```solidity
-function getAmountIn(uint256 unitsToBuy) public view returns (uint256, uint256)
-```
-
-Calculates input of prosperity based on output whole amount of workers
-
-_Returns valid output only for integer workersToBuy value_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitsToBuy | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-| [1] | uint256 |  |
-
-
-### swapProsperityForExactWorkers
-
-```solidity
-function swapProsperityForExactWorkers(uint256 workersToBuy, uint256 maxProsperityToSell) public returns (uint256)
-```
-
-Swaps prosperity() for exact workers()
-
-_Even though function is opened, it can be executed only by ISettlement because only ISettlement can have prosperity_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| workersToBuy | uint256 | Exact amount of workers |
-| maxProsperityToSell | uint256 | Maximum amount of prosperity to be taken for exact amount of workers |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
 
 

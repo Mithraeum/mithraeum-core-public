@@ -7,102 +7,23 @@ Functions to read state/modify state in order to get current settlement paramete
 
 
 
-### NewBuilding
+### relatedRegion
 
 ```solidity
-event NewBuilding(address contractAddress, string scriptName)
+function relatedRegion() external view returns (contract IRegion)
 ```
 
-Emitted when new building is placed, all building are placed on settlement creation
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| contractAddress | address | New building address |
-| scriptName | string | Building name |
-
-
-
-### NewArmy
-
-```solidity
-event NewArmy(address armyAddress, uint32 position)
-```
-
-Emitted when settlements army is created, is it created on settlement creation
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | New army address |
-| position | uint32 | Position |
-
-
-
-### SiegeCreated
-
-```solidity
-event SiegeCreated(address siegeAddress)
-```
-
-Emitted when siege is created on settlement if not present. During settlements lifetime multiple sieges can be created (one after another, not multiple simultaneously)
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| siegeAddress | address | New siege address |
-
-
-
-### GovernorChanged
-
-```solidity
-event GovernorChanged(uint256 currentEpoch, address governorAddress, bool status)
-```
-
-Emitted when #addGovernor or #removeGovernor is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| currentEpoch | uint256 | Current governor epoch |
-| governorAddress | address | Address of the governor event is applicable |
-| status | bool | Is governor became active/inactive |
-
-
-
-### NewSettlementEpoch
-
-```solidity
-event NewSettlementEpoch(uint256 currentEpoch)
-```
-
-Emitted when #removeGovernors is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| currentEpoch | uint256 | New governor epoch |
-
-
-
-### currentZone
-
-```solidity
-function currentZone() external view returns (contract IZone)
-```
-
-Zone to which this settlement belongs
+Region to which this settlement belongs
 
 _Immutable, initialized on the settlement creation_
 
 
 
 
-### ownerTokenId
+### bannerId
 
 ```solidity
-function ownerTokenId() external view returns (uint256)
+function bannerId() external view returns (uint256)
 ```
 
 Banner token id to which current settlement belongs
@@ -120,7 +41,7 @@ function siege() external view returns (contract ISiege)
 
 Siege of the settlement
 
-_If any army is sieging settlement not address(0), otherwise address(0)_
+_If any army is besieging settlement not address(0), otherwise address(0)_
 
 
 
@@ -128,7 +49,7 @@ _If any army is sieging settlement not address(0), otherwise address(0)_
 ### buildings
 
 ```solidity
-function buildings(string buildingName) external view returns (contract IBuilding)
+function buildings(bytes32 buildingTypeId) external view returns (contract IBuilding)
 ```
 
 Mapping containing settlements buildings
@@ -138,13 +59,13 @@ _Types of buildings supported can be queried from registry_
 
 
 
-### currentGovernorsEpoch
+### currentGovernorsGeneration
 
 ```solidity
-function currentGovernorsEpoch() external view returns (uint256)
+function currentGovernorsGeneration() external view returns (uint256)
 ```
 
-Current governors epoch
+Current governors generation
 
 _Modified when #removeGovernors is called_
 
@@ -154,7 +75,7 @@ _Modified when #removeGovernors is called_
 ### governors
 
 ```solidity
-function governors(uint256 epoch, address isGovernor) external view returns (bool)
+function governors(uint256 era, address isGovernor) external view returns (bool)
 ```
 
 Current settlements governors
@@ -177,13 +98,13 @@ Immutable, initialized on the settlement creation
 
 
 
-### extraProsperity
+### extendedProsperityAmount
 
 ```solidity
-function extraProsperity() external view returns (uint256)
+function extendedProsperityAmount() external view returns (uint256)
 ```
 
-Extra prosperity amount gained from demilitarization of any army on this settlement
+Amount of extended prosperity (currently gained units liquidation)
 
 _Used for determination amount of real prosperity this settlement has_
 
@@ -193,7 +114,7 @@ _Used for determination amount of real prosperity this settlement has_
 ### position
 
 ```solidity
-function position() external view returns (uint32)
+function position() external view returns (uint64)
 ```
 
 Position on which settlement is created
@@ -203,102 +124,263 @@ _Immutable, initialized on the settlement creation_
 
 
 
-### init
+### producedCorruptionIndex
 
 ```solidity
-function init(uint256 createdWithOwnerTokenId, address zoneAddress, uint32 settlementPosition) external
+function producedCorruptionIndex() external view returns (int256)
 ```
 
-Proxy initializer
+Amount of corruptionIndex produced by this settlement
 
-_Called by factory contract which creates current instance_
+_Modified when #increaseProducedCorruptionIndex or #decreaseProducedCorruptionIndex is called_
+
+
+
+
+### BuildingCreated
+
+```solidity
+event BuildingCreated(address buildingAddress, bytes32 buildingTypeId)
+```
+
+Emitted when new building is placed, all building are placed on settlement creation
+
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| createdWithOwnerTokenId | uint256 | Banner token id to which current settlement belongs |
-| zoneAddress | address | Zone address to which this settlement belongs |
-| settlementPosition | uint32 | Position on which settlement is created |
+| buildingAddress | address | New building address |
+| buildingTypeId | bytes32 | Building type id |
 
 
 
-### transferWorkers
+### ArmyCreated
 
 ```solidity
-function transferWorkers(address buildingAddress, uint256 amount) external
+event ArmyCreated(address armyAddress, uint64 position)
 ```
 
-Transfers workers from settlement to building
+Emitted when settlements army is created, is it created on settlement creation
 
-_Amount of workers to transfer is in 1e18 precision, however only integer amount can be transferred_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| buildingAddress | address | Address of the building transfer workers to |
-| amount | uint256 | Amount of workers to transfer |
+| armyAddress | address | Army address |
+| position | uint64 | Position |
 
 
 
-### transferResources
+### SiegeCreated
 
 ```solidity
-function transferResources(string resourceName, address to, uint256 amount) external
+event SiegeCreated(address siegeAddress)
 ```
 
-Transfers game resource from settlement to specified address
+Emitted when siege is created on settlement
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| siegeAddress | address | Siege address |
+
+
+
+### GovernorStatusChanged
+
+```solidity
+event GovernorStatusChanged(uint256 currentGovernorsGeneration, address governorAddress, address modifiedByAddress, bool newStatus)
+```
+
+Emitted when #addGovernor or #removeGovernor is called
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| currentGovernorsGeneration | uint256 | Current governors generation |
+| governorAddress | address | Address of the governor event is applicable |
+| modifiedByAddress | address | Address which modified governor status |
+| newStatus | bool | Is governor became active/inactive |
+
+
+
+### GovernorsGenerationChanged
+
+```solidity
+event GovernorsGenerationChanged(uint256 newGovernorsGeneration)
+```
+
+Emitted when #removeGovernors is called
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newGovernorsGeneration | uint256 | New governors generation |
+
+
+
+### Destroyed
+
+```solidity
+event Destroyed()
+```
+
+Emitted when #destroyRottenSettlement is called
+
+
+
+
+
+### OnlySettlementOwner
+
+```solidity
+error OnlySettlementOwner()
+```
+
+Thrown when attempting to call action which can be called only by settlement owner
+
+
+
+
+
+### OnlyRulerOrWorldAsset
+
+```solidity
+error OnlyRulerOrWorldAsset()
+```
+
+Thrown when attempting to call action which can be called only by ruler or world asset
+
+
+
+
+
+### GovernorCannotBeAddedIfSenderNotSettlementOwnerOrAnotherGovernor
+
+```solidity
+error GovernorCannotBeAddedIfSenderNotSettlementOwnerOrAnotherGovernor()
+```
+
+Thrown when attempting to add governor by address which is neither settlement owner or another governor
+
+
+
+
+
+### SettlementCannotBeDestroyedIfItsNotRotten
+
+```solidity
+error SettlementCannotBeDestroyedIfItsNotRotten()
+```
+
+Thrown when attempting to destroy settlement but its not rotten
+
+
+
+
+
+### SettlementCannotBeDestroyedIfItsAlreadyRebuilt
+
+```solidity
+error SettlementCannotBeDestroyedIfItsAlreadyRebuilt()
+```
+
+Thrown when attempting to destroy settlement when it is already rebuilt
+
+
+
+
+
+### SettlementCannotSendWorkersWithFractions
+
+```solidity
+error SettlementCannotSendWorkersWithFractions()
+```
+
+Thrown when attempting to transfer workers from settlement with non integer value
+
+
+
+
+
+### SettlementCannotSendWorkersToBuildingOverMaximumAllowedCapacity
+
+```solidity
+error SettlementCannotSendWorkersToBuildingOverMaximumAllowedCapacity()
+```
+
+Thrown when attempting to transfer workers from settlement to building over maximum allowed workers capacity
+
+
+
+
+
+### SettlementCannotDecreaseCorruptionIndexViaPaymentInInactiveEra
+
+```solidity
+error SettlementCannotDecreaseCorruptionIndexViaPaymentInInactiveEra()
+```
+
+Thrown when attempting to decrease corruptionIndex via payment in inactive era
+
+
+
+
+
+### SettlementCannotDecreaseCorruptionIndexViaPaymentWrongParamProvided
+
+```solidity
+error SettlementCannotDecreaseCorruptionIndexViaPaymentWrongParamProvided()
+```
+
+Thrown when attempting to specify 'tokensAmount' parameter anything but zero whenever world.erc20ForSettlementPurchase is zero address
+
+
+
+
+
+### withdrawResources
+
+```solidity
+function withdrawResources(bytes32 resourceTypeId, address to, uint256 amount) external
+```
+
+Withdraws resources from settlement to specified address
 
 _In case if someone accidentally transfers game resource to the settlement_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| resourceName | string | Game resource name |
+| resourceTypeId | bytes32 | Resource type id |
 | to | address | Address that will receive resources |
 | amount | uint256 | Amount to transfer |
 
 
 
-### newBuilding
+### assignResourcesAndWorkersToBuilding
 
 ```solidity
-function newBuilding(string buildingName) external returns (address buildingAddress)
+function assignResourcesAndWorkersToBuilding(address resourcesOwner, address buildingAddress, uint256 workersAmount, bytes32[] resourceTypeIds, uint256[] resourcesAmounts) external
 ```
 
-Creates new building
+Transfers game resources from msg.sender and workers from settlement to building
 
-_All buildings are created on settlement creation_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingName | string | Building name |
+_Assigns resources+workers to building in single transaction
+If resourcesOwner == address(0) -> resources will be taken from msg.sender
+If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resourcesOwner_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| buildingAddress | address | Address of created building |
+| resourcesOwner | address |  |
+| buildingAddress | address | Building address |
+| workersAmount | uint256 | Workers amount (in 1e18 precision) |
+| resourceTypeIds | bytes32[] | Resource type ids |
+| resourcesAmounts | uint256[] | Resources amounts |
 
 
-### calculateCurrentHealthAndDamage
+
+### updateFortHealth
 
 ```solidity
-function calculateCurrentHealthAndDamage(uint256 timestamp) external view returns (uint256 currentHealth, uint256 damage)
-```
-
-Calculates current fort health and damage dealt at specified timestamp
-
-_Uses fort production and siege parameters to forecast health and damage will be dealt at specified time_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| timestamp | uint256 | Time at which calculate parameters |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| currentHealth | uint256 | Health value at specified time |
-| damage | uint256 | Amount of damage dealt from fort.production.lastApplyState to specified timestamp |
-
-
-### updateCurrentHealth
-
-```solidity
-function updateCurrentHealth() external
+function updateFortHealth() external
 ```
 
 Updates settlement health to current block
@@ -308,82 +390,17 @@ _Can be called by everyone_
 
 
 
-### createSiege
+### updateProsperityAmount
 
 ```solidity
-function createSiege() external
+function updateProsperityAmount() external
 ```
 
-Creates empty siege
-
-_Can be called by everyone_
-
-
-
-
-### updateHealthByApplyState
-
-```solidity
-function updateHealthByApplyState(uint256 healthDiff, bool isProduced) external
-```
-
-Updates fort health
-
-_Even though function is opened it can be called only by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| healthDiff | uint256 | Health delta between current value and new value |
-| isProduced | bool | Banner, whether health is produced or removed |
-
-
-
-### massUpdate
-
-```solidity
-function massUpdate() external
-```
-
-Harvests all buildings
+Applies production of every building which produces prosperity
 
 _Can be used by everyone_
 
 
-
-
-### accumulatedCurrentProsperity
-
-```solidity
-function accumulatedCurrentProsperity(uint256 timestamp) external view returns (int256 currentProsperity)
-```
-
-Calculates current prosperity at specified timestamp
-
-_Uses buildings productions to forecast amount of prosperity will settlement will have at specified time_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| timestamp | uint256 | Time at which calculate current prosperity |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| currentProsperity | int256 | Amount of prosperity at specified time |
-
-
-### getCurrentSiegePower
-
-```solidity
-function getCurrentSiegePower() external view returns (uint256 currentSiegePower)
-```
-
-Calculates total siege power presented at current time
-
-_Updated when army add/remove units from siege_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| currentSiegePower | uint256 | Amount of total siege power at current time |
 
 
 ### getSettlementOwner
@@ -394,12 +411,74 @@ function getSettlementOwner() external view returns (address settlementOwner)
 
 Calculates current settlement owner
 
-_Settlements owner is considered an address, which holds ownerTokenId NFT_
+_Settlements owner is considered an address, which holds bannerId Nft_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | settlementOwner | address | Settlement owner |
+
+
+### addGovernor
+
+```solidity
+function addGovernor(address governorAddress) external
+```
+
+Adds settlement governor
+
+_Settlement owner and other governor can add governor_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| governorAddress | address | Address to add as the governor |
+
+
+
+### removeGovernor
+
+```solidity
+function removeGovernor(address governorAddress) external
+```
+
+Removes settlement governor
+
+_Only settlement owner can remove governor_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| governorAddress | address | Address to remove from governors |
+
+
+
+### removeGovernors
+
+```solidity
+function removeGovernors() external
+```
+
+Removes all settlement governors
+
+_Only settlement owner can remove all governors_
+
+
+
+
+### swapProsperityForExactWorkers
+
+```solidity
+function swapProsperityForExactWorkers(uint256 workersToBuy, uint256 maxProsperityToSell) external
+```
+
+Swaps current settlement prosperity for exact workers
+
+_Only ruler or world asset can perform swap_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| workersToBuy | uint256 | Exact amount of workers to buy |
+| maxProsperityToSell | uint256 | Maximum amount of prosperity to spend for exact workers |
+
 
 
 ### isRuler
@@ -437,442 +516,141 @@ _Even though function is opened it can be called only by world or world asset_
 
 
 
-## ISettlement
-
-
-Functions to read state/modify state in order to get current settlement parameters and/or interact with it
-
-
-
-
-
-### NewBuilding
+### beginTileCapture
 
 ```solidity
-event NewBuilding(address contractAddress, string scriptName)
+function beginTileCapture(uint64 position, uint256 prosperityStake) external
 ```
 
-Emitted when new building is placed, all building are placed on settlement creation
+Begins tile capture
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| contractAddress | address | New building address |
-| scriptName | string | Building name |
+| position | uint64 | Position |
+| prosperityStake | uint256 | Prosperity stake |
 
 
 
-### NewArmy
+### cancelTileCapture
 
 ```solidity
-event NewArmy(address armyAddress, uint32 position)
+function cancelTileCapture(uint64 position) external
 ```
 
-Emitted when settlements army is created, is it created on settlement creation
+Cancels tile capture
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| armyAddress | address | New army address |
-| position | uint32 | Position |
+| position | uint64 | Position |
 
 
 
-### SiegeCreated
+### giveUpCapturedTile
 
 ```solidity
-event SiegeCreated(address siegeAddress)
+function giveUpCapturedTile(uint64 position) external
 ```
 
-Emitted when siege is created on settlement if not present. During settlements lifetime multiple sieges can be created (one after another, not multiple simultaneously)
+Gives up captured tile
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| siegeAddress | address | New siege address |
+| position | uint64 | Position |
 
 
 
-### GovernorChanged
+### claimCapturedTile
 
 ```solidity
-event GovernorChanged(uint256 currentEpoch, address governorAddress, bool status)
+function claimCapturedTile(uint64 position) external
 ```
 
-Emitted when #addGovernor or #removeGovernor is called
+Claims captured tile
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| currentEpoch | uint256 | Current governor epoch |
-| governorAddress | address | Address of the governor event is applicable |
-| status | bool | Is governor became active/inactive |
+| position | uint64 | Position |
 
 
 
-### NewSettlementEpoch
+### increaseProducedCorruptionIndex
 
 ```solidity
-event NewSettlementEpoch(uint256 currentEpoch)
+function increaseProducedCorruptionIndex(uint256 amount) external
 ```
 
-Emitted when #removeGovernors is called
+Increases produced corruptionIndex
+
+_Even though function is opened, it can only be called by world asset_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| amount | uint256 | Amount |
+
+
+
+### decreaseProducedCorruptionIndex
+
+```solidity
+function decreaseProducedCorruptionIndex(uint256 amount) external
+```
+
+Decreases produced corruptionIndex
+
+_Even though function is opened, it can only be called by world asset_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| amount | uint256 | Amount |
+
+
+
+### isRottenSettlement
+
+```solidity
+function isRottenSettlement() external returns (bool isRottenSettlement)
+```
+
+Calculates is settlement rotten or not
+
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| currentEpoch | uint256 | New governor epoch |
+| isRottenSettlement | bool | Is rotten settlement |
 
 
-
-### currentZone
-
-```solidity
-function currentZone() external view returns (contract IZone)
-```
-
-Zone to which this settlement belongs
-
-_Immutable, initialized on the settlement creation_
-
-
-
-
-### ownerTokenId
+### destroyRottenSettlement
 
 ```solidity
-function ownerTokenId() external view returns (uint256)
+function destroyRottenSettlement() external
 ```
 
-Banner token id to which current settlement belongs
+Destroys current settlement
 
-_Immutable, initialized on the settlement creation_
-
-
+_Settlement will be removed only from crossErasMemory in order to give free space to new settlements_
 
 
-### siege
+
+
+### payToDecreaseCorruptionIndex
 
 ```solidity
-function siege() external view returns (contract ISiege)
+function payToDecreaseCorruptionIndex(uint256 tokensAmount) external payable
 ```
 
-Siege of the settlement
+Lowers settlement corruptionIndex by paying to the reward pool
 
-_If any army is sieging settlement not address(0), otherwise address(0)_
-
-
-
-
-### buildings
-
-```solidity
-function buildings(string buildingName) external view returns (contract IBuilding)
-```
-
-Mapping containing settlements buildings
-
-_Types of buildings supported can be queried from registry_
-
-
-
-
-### currentGovernorsEpoch
-
-```solidity
-function currentGovernorsEpoch() external view returns (uint256)
-```
-
-Current governors epoch
-
-_Modified when #removeGovernors is called_
-
-
-
-
-### governors
-
-```solidity
-function governors(uint256 epoch, address isGovernor) external view returns (bool)
-```
-
-Current settlements governors
-
-_Modified when #addGovernor or #removeGovernor is called_
-
-
-
-
-### army
-
-```solidity
-function army() external view returns (contract IArmy)
-```
-
-Settlements army
-Immutable, initialized on the settlement creation
-
-
-
-
-
-### extraProsperity
-
-```solidity
-function extraProsperity() external view returns (uint256)
-```
-
-Extra prosperity amount gained from demilitarization of any army on this settlement
-
-_Used for determination amount of real prosperity this settlement has_
-
-
-
-
-### position
-
-```solidity
-function position() external view returns (uint32)
-```
-
-Position on which settlement is created
-
-_Immutable, initialized on the settlement creation_
-
-
-
-
-### init
-
-```solidity
-function init(uint256 createdWithOwnerTokenId, address zoneAddress, uint32 settlementPosition) external
-```
-
-Proxy initializer
-
-_Called by factory contract which creates current instance_
+_If world.erc20ForSettlementPurchase is address zero -> function is expected to receive Ether as msg.value in order to decrease corruptionIndex. If not address zero -> 'tokensAmount' parameter is used and it will be taken via 'erc20.transferFrom'
+Only settlement in active era can decrease its corruptionIndex_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| createdWithOwnerTokenId | uint256 | Banner token id to which current settlement belongs |
-| zoneAddress | address | Zone address to which this settlement belongs |
-| settlementPosition | uint32 | Position on which settlement is created |
-
-
-
-### transferWorkers
-
-```solidity
-function transferWorkers(address buildingAddress, uint256 amount) external
-```
-
-Transfers workers from settlement to building
-
-_Amount of workers to transfer is in 1e18 precision, however only integer amount can be transferred_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingAddress | address | Address of the building transfer workers to |
-| amount | uint256 | Amount of workers to transfer |
-
-
-
-### transferResources
-
-```solidity
-function transferResources(string resourceName, address to, uint256 amount) external
-```
-
-Transfers game resource from settlement to specified address
-
-_In case if someone accidentally transfers game resource to the settlement_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Game resource name |
-| to | address | Address that will receive resources |
-| amount | uint256 | Amount to transfer |
-
-
-
-### newBuilding
-
-```solidity
-function newBuilding(string buildingName) external returns (address buildingAddress)
-```
-
-Creates new building
-
-_All buildings are created on settlement creation_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingName | string | Building name |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingAddress | address | Address of created building |
-
-
-### calculateCurrentHealthAndDamage
-
-```solidity
-function calculateCurrentHealthAndDamage(uint256 timestamp) external view returns (uint256 currentHealth, uint256 damage)
-```
-
-Calculates current fort health and damage dealt at specified timestamp
-
-_Uses fort production and siege parameters to forecast health and damage will be dealt at specified time_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| timestamp | uint256 | Time at which calculate parameters |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| currentHealth | uint256 | Health value at specified time |
-| damage | uint256 | Amount of damage dealt from fort.production.lastApplyState to specified timestamp |
-
-
-### updateCurrentHealth
-
-```solidity
-function updateCurrentHealth() external
-```
-
-Updates settlement health to current block
-
-_Can be called by everyone_
-
-
-
-
-### createSiege
-
-```solidity
-function createSiege() external
-```
-
-Creates empty siege
-
-_Can be called by everyone_
-
-
-
-
-### updateHealthByApplyState
-
-```solidity
-function updateHealthByApplyState(uint256 healthDiff, bool isProduced) external
-```
-
-Updates fort health
-
-_Even though function is opened it can be called only by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| healthDiff | uint256 | Health delta between current value and new value |
-| isProduced | bool | Banner, whether health is produced or removed |
-
-
-
-### massUpdate
-
-```solidity
-function massUpdate() external
-```
-
-Harvests all buildings
-
-_Can be used by everyone_
-
-
-
-
-### accumulatedCurrentProsperity
-
-```solidity
-function accumulatedCurrentProsperity(uint256 timestamp) external view returns (int256 currentProsperity)
-```
-
-Calculates current prosperity at specified timestamp
-
-_Uses buildings productions to forecast amount of prosperity will settlement will have at specified time_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| timestamp | uint256 | Time at which calculate current prosperity |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| currentProsperity | int256 | Amount of prosperity at specified time |
-
-
-### getCurrentSiegePower
-
-```solidity
-function getCurrentSiegePower() external view returns (uint256 currentSiegePower)
-```
-
-Calculates total siege power presented at current time
-
-_Updated when army add/remove units from siege_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| currentSiegePower | uint256 | Amount of total siege power at current time |
-
-
-### getSettlementOwner
-
-```solidity
-function getSettlementOwner() external view returns (address settlementOwner)
-```
-
-Calculates current settlement owner
-
-_Settlements owner is considered an address, which holds ownerTokenId NFT_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementOwner | address | Settlement owner |
-
-
-### isRuler
-
-```solidity
-function isRuler(address potentialRuler) external view returns (bool isRuler)
-```
-
-Calculates whether provided address is settlement ruler or not
-
-_Settlements ruler is an address which owns settlement or an address(es) by which settlement is/are governed_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| potentialRuler | address | Address to check |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isRuler | bool | Banner, whether specified address is ruler or not |
-
-
-### extendProsperity
-
-```solidity
-function extendProsperity(uint256 prosperityAmount) external
-```
-
-Extends current settlement prosperity by specified amount
-
-_Even though function is opened it can be called only by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| prosperityAmount | uint256 | Amount of prosperity to which extend current prosperity |
+| tokensAmount | uint256 | Amount of tokens will be taken from sender (if world.erc20ForSettlementPurchase is not address zero) |
 
 
 

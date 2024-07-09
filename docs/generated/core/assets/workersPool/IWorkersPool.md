@@ -7,32 +7,15 @@ Functions to read state/modify state in order to mint workers/swap prosperity fo
 
 
 
-### WorkersBought
+### relatedRegion
 
 ```solidity
-event WorkersBought(address buyer, uint256 workersBought, uint256 prosperitySpent)
+function relatedRegion() external view returns (contract IRegion)
 ```
 
-Emitted when #swapProsperityForExactWorkers or #swapExactProsperityForWorkers is called
+Region to which this pool belongs
 
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buyer | address | The address of settlement which bought workers |
-| workersBought | uint256 | Amount of workers bought |
-| prosperitySpent | uint256 | Amount of prosperity spent |
-
-
-
-### currentZone
-
-```solidity
-function currentZone() external view returns (contract IZone)
-```
-
-Zone to which this pool belongs
-
-_Immutable, initialized on the zone creation_
+_Immutable, initialized on the region creation_
 
 
 
@@ -50,80 +33,15 @@ _Updated every time when #swapProsperityForExactWorkers is called_
 
 
 
-### startingPrice
+### workerPrice
 
 ```solidity
-function startingPrice() external view returns (uint256)
+function workerPrice() external view returns (uint256)
 ```
 
-Starting unit price
+Worker price
 
 _Updated every time when #swapProsperityForExactWorkers is called_
-
-
-
-
-### init
-
-```solidity
-function init(address zoneAddress) external
-```
-
-Proxy initializer
-
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| zoneAddress | address | Zone address |
-
-
-
-### swapProsperityForExactWorkers
-
-```solidity
-function swapProsperityForExactWorkers(uint256 workersToBuy, uint256 maxProsperityToSell) external returns (uint256 workersCount)
-```
-
-Swaps prosperity() for exact workers()
-
-_Even though function is opened, it can be executed only by ISettlement because only ISettlement can have prosperity_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| workersToBuy | uint256 | Exact amount of workers |
-| maxProsperityToSell | uint256 | Maximum amount of prosperity to be taken for exact amount of workers |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| workersCount | uint256 | Amount of workers bought by prosperity |
-
-
-### getAmountIn
-
-```solidity
-function getAmountIn(uint256 workersToBuy) external returns (uint256 prosperityToSell, uint256 newStartingPrice)
-```
-
-Calculates input of prosperity based on output whole amount of workers
-
-_Returns valid output only for integer workersToBuy value_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| workersToBuy | uint256 | Amount of workers to buy |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| prosperityToSell | uint256 | Amount of prosperity needed for workersToBuy |
-| newStartingPrice | uint256 | New starting price |
-
-
-## IWorkersPool
-
-
-Functions to read state/modify state in order to mint workers/swap prosperity for workers
-
 
 
 
@@ -131,87 +49,81 @@ Functions to read state/modify state in order to mint workers/swap prosperity fo
 ### WorkersBought
 
 ```solidity
-event WorkersBought(address buyer, uint256 workersBought, uint256 prosperitySpent)
+event WorkersBought(address buyerSettlementAddress, uint256 boughtWorkersAmount, uint256 spentProsperityAmount)
 ```
 
-Emitted when #swapProsperityForExactWorkers or #swapExactProsperityForWorkers is called
+Emitted when #swapProsperityForExactWorkers is called
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| buyer | address | The address of settlement which bought workers |
-| workersBought | uint256 | Amount of workers bought |
-| prosperitySpent | uint256 | Amount of prosperity spent |
+| buyerSettlementAddress | address | Address of the settlement which bought workers |
+| boughtWorkersAmount | uint256 | Amount of workers bought |
+| spentProsperityAmount | uint256 | Amount of prosperity spent |
 
 
 
-### currentZone
-
-```solidity
-function currentZone() external view returns (contract IZone)
-```
-
-Zone to which this pool belongs
-
-_Immutable, initialized on the zone creation_
-
-
-
-
-### lastPurchaseTime
+### CannotHireWorkersInvalidWorkersToBuySpecified
 
 ```solidity
-function lastPurchaseTime() external view returns (uint256)
+error CannotHireWorkersInvalidWorkersToBuySpecified()
 ```
 
-Time at which last purchase is performed
-
-_Updated every time when #swapProsperityForExactWorkers is called_
+Thrown when attempting to hire workers with invalid workers to buy specified
 
 
 
 
-### startingPrice
+
+### CannotHireWorkersDueToTheirCostIsHigherThanMaxProsperityToSellSpecified
 
 ```solidity
-function startingPrice() external view returns (uint256)
+error CannotHireWorkersDueToTheirCostIsHigherThanMaxProsperityToSellSpecified()
 ```
 
-Starting unit price
-
-_Updated every time when #swapProsperityForExactWorkers is called_
+Thrown when attempting to hire worker due to their cost is being higher than max prosperity to sell specified
 
 
 
 
-### init
+
+### CannotHireWorkersDueToNotEnoughProsperityInSettlement
 
 ```solidity
-function init(address zoneAddress) external
+error CannotHireWorkersDueToNotEnoughProsperityInSettlement()
 ```
 
-Proxy initializer
+Thrown when attempting to hire workers due to not having enough prosperity in settlement for the purchase
 
-_Called by factory contract which creates current instance_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| zoneAddress | address | Zone address |
+
+
+
+### CannotHireWorkersExceedingTransactionLimit
+
+```solidity
+error CannotHireWorkersExceedingTransactionLimit()
+```
+
+Thrown when attempting to hire more workers than transaction limit
+
+
 
 
 
 ### swapProsperityForExactWorkers
 
 ```solidity
-function swapProsperityForExactWorkers(uint256 workersToBuy, uint256 maxProsperityToSell) external returns (uint256 workersCount)
+function swapProsperityForExactWorkers(address settlementAddress, uint256 workersToBuy, uint256 maxProsperityToSell) external returns (uint256 workersCount)
 ```
 
-Swaps prosperity() for exact workers()
+Swaps prosperity for exact workers
 
-_Even though function is opened, it can be executed only by ISettlement because only ISettlement can have prosperity_
+_Even though function is opened, it can only be called by world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
+| settlementAddress | address | Settlement address |
 | workersToBuy | uint256 | Exact amount of workers |
 | maxProsperityToSell | uint256 | Maximum amount of prosperity to be taken for exact amount of workers |
 
@@ -220,15 +132,15 @@ _Even though function is opened, it can be executed only by ISettlement because 
 | workersCount | uint256 | Amount of workers bought by prosperity |
 
 
-### getAmountIn
+### calculateProsperityForExactWorkers
 
 ```solidity
-function getAmountIn(uint256 workersToBuy) external returns (uint256 prosperityToSell, uint256 newStartingPrice)
+function calculateProsperityForExactWorkers(uint256 workersToBuy) external returns (uint256 prosperityToSell, uint256 newWorkerPrice)
 ```
 
 Calculates input of prosperity based on output whole amount of workers
 
-_Returns valid output only for integer workersToBuy value_
+_Returns valid output only for integer workersToBuy value (in 1e0 precision)_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -237,6 +149,6 @@ _Returns valid output only for integer workersToBuy value_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | prosperityToSell | uint256 | Amount of prosperity needed for workersToBuy |
-| newStartingPrice | uint256 | New starting price |
+| newWorkerPrice | uint256 | New worker price |
 
 

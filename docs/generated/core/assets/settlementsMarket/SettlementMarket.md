@@ -7,41 +7,28 @@
 
 
 
-### currentZone
+### relatedRegion
 
 ```solidity
-contract IZone currentZone
+contract IRegion relatedRegion
 ```
 
-Zone to which this market belongs
+Region to which this market belongs
 
-_Immutable, initialized on the zone creation_
-
-
+_Immutable, initialized on the market creation_
 
 
-### lastPurchaseTime
+
+
+### marketCreationTime
 
 ```solidity
-uint256 lastPurchaseTime
+uint256 marketCreationTime
 ```
 
-Time at which last purchase occurred
+Time at which market was created
 
-_Updated when #buySettlement is called_
-
-
-
-
-### startingPrice
-
-```solidity
-uint256 startingPrice
-```
-
-Starting settlement price
-
-_Updated when #buySettlement is called_
+_Immutable, initialized on the market creation_
 
 
 
@@ -49,33 +36,63 @@ _Updated when #buySettlement is called_
 ### init
 
 ```solidity
-function init(address zoneAddress) public
+function init(bytes initParams) public
 ```
 
-Proxy initializer
 
-_Called by factory contract which creates current instance_
+
+_World asset initializer_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| zoneAddress | address | Zone address |
+| initParams | bytes | Encoded init params (every world asset has own knowledge how to extract data from it) |
+
+
+
+### updateState
+
+```solidity
+function updateState() public
+```
+
+Updates settlement market state to the current block
+
+_Called on every action which are based on settlement market state_
+
+
+
+
+### buySettlementForFreeByMightyCreator
+
+```solidity
+function buySettlementForFreeByMightyCreator(uint64 position, uint256 bannerId) public
+```
+
+Buys settlement in region
+
+_Even though function is opened, it can only be called by mighty creator and only before game begin time_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| position | uint64 | Position |
+| bannerId | uint256 | MithraeumBanners token id which will represent to which settlement will be attached to |
 
 
 
 ### buySettlement
 
 ```solidity
-function buySettlement(uint32 position, uint256 ownerTokenId, uint256 maxTokensToUse) public payable
+function buySettlement(uint64 position, uint256 bannerId, uint256 maxTokensToUse) public payable
 ```
 
-Buys settlement in zone
+Buys settlement in region
 
 _Tokens will be deducted from msg.sender_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| position | uint32 | Position |
-| ownerTokenId | uint256 | MithraeumBanners token id which will represent to which settlement will be attached to |
+| position | uint64 | Position |
+| bannerId | uint256 | MithraeumBanners token id which will represent to which settlement will be attached to |
 | maxTokensToUse | uint256 | Maximum amount of tokens to be withdrawn for settlement |
 
 
@@ -83,114 +100,58 @@ _Tokens will be deducted from msg.sender_
 ### getNewSettlementCost
 
 ```solidity
-function getNewSettlementCost() public view returns (uint256)
+function getNewSettlementCost(uint256 timestamp) public view returns (uint256)
 ```
 
 Returns amount of tokens new settlement will cost
 
 _Calculates cost of placing new settlement in tokens_
 
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| timestamp | uint256 | Time at which calculate new settlement cost. If timestamp=0 -> calculates as block.timestamp |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-## SettlementsMarket
-
-
-
-
-
-
-
-
-### currentZone
+### _getPriceDecayBeginTime
 
 ```solidity
-contract IZone currentZone
+function _getPriceDecayBeginTime(uint256 gameBeginTime, uint256 marketCreationTime, uint256 priceUpdateTime) internal pure returns (uint256)
 ```
 
-Zone to which this market belongs
-
-_Immutable, initialized on the zone creation_
 
 
+_Calculates price decay begin time based on provided params_
 
 
-### lastPurchaseTime
+
+
+### _getPriceDecayEndTime
 
 ```solidity
-uint256 lastPurchaseTime
+function _getPriceDecayEndTime(uint256 timestamp, uint256 gameEndTime) internal pure returns (uint256)
 ```
 
-Time at which last purchase occurred
-
-_Updated when #buySettlement is called_
 
 
+_Calculates price decay end time based on provided params_
 
 
-### startingPrice
+
+
+### _getCurrentTime
 
 ```solidity
-uint256 startingPrice
+function _getCurrentTime() internal view returns (uint256)
 ```
 
-Starting settlement price
-
-_Updated when #buySettlement is called_
 
 
+_Calculates current game time, taking into an account game end time_
 
 
-### init
-
-```solidity
-function init(address zoneAddress) public
-```
-
-Proxy initializer
-
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| zoneAddress | address | Zone address |
-
-
-
-### buySettlement
-
-```solidity
-function buySettlement(uint32 position, uint256 ownerTokenId, uint256 maxTokensToUse) public payable
-```
-
-Buys settlement in zone
-
-_Tokens will be deducted from msg.sender_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| position | uint32 | Position |
-| ownerTokenId | uint256 | MithraeumBanners token id which will represent to which settlement will be attached to |
-| maxTokensToUse | uint256 | Maximum amount of tokens to be withdrawn for settlement |
-
-
-
-### getNewSettlementCost
-
-```solidity
-function getNewSettlementCost() public view returns (uint256)
-```
-
-Returns amount of tokens new settlement will cost
-
-_Calculates cost of placing new settlement in tokens_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
 
 

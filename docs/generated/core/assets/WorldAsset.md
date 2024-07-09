@@ -3,6 +3,9 @@
 
 World asset must inherit this basic contract
 
+_IMPORTANT: be aware of proxy type of world asset deployed in 'WorldAssetFactory'
+Different network is optimized differently for contract deployment
+In order to support most of them it is required to recompile 'WorldAsset' contracts with 'WorldAssetStorageAccessorXXX' type specified in 'WorldAssetFactory'_
 
 
 
@@ -13,21 +16,24 @@ World asset must inherit this basic contract
 modifier onlyMightyCreator()
 ```
 
-Allows caller to be only mighty creator
+
+
+_Only mighty creator modifier
+Modifier is calling internal function in order to reduce contract size_
 
 
 
 
-
-### onlyWorldAssetFromSameEpoch
+### onlyWorldAssetFromSameEra
 
 ```solidity
-modifier onlyWorldAssetFromSameEpoch()
+modifier onlyWorldAssetFromSameEra()
 ```
 
 
 
-_Allows caller to be only world or world asset_
+_Only world asset from same era modifier
+Modifier is calling internal function in order to reduce contract size_
 
 
 
@@ -40,8 +46,25 @@ modifier onlyActiveGame()
 
 
 
-_Allows function to be callable only while game is active_
+_Only active game modifier
+Modifier is calling internal function in order to reduce contract size_
 
+
+
+
+### init
+
+```solidity
+function init(bytes initParams) public virtual
+```
+
+
+
+_World asset initializer_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| initParams | bytes | Encoded init params (every world asset has own knowledge how to extract data from it) |
 
 
 
@@ -71,44 +94,49 @@ _Value is dereferenced from world_
 
 
 
-### epoch
+### era
 
 ```solidity
-function epoch() public view returns (contract IEpoch)
+function era() public view returns (contract IEra)
 ```
 
-Epoch
+Era
 
 _Value is dereferenced from proxy storage and world_
 
 
 
 
-## WorldAsset
-
-
-World asset must inherit this basic contract
-
-
-
-
-
-### onlyMightyCreator
+### worldAssetFactory
 
 ```solidity
-modifier onlyMightyCreator()
+function worldAssetFactory() public view returns (contract IWorldAssetFactory)
 ```
 
-Allows caller to be only mighty creator
+Returns world asset factory from registry
+
+_Value is dereferenced from registry_
 
 
 
 
-
-### onlyWorldAssetFromSameEpoch
+### _onlyMightyCreator
 
 ```solidity
-modifier onlyWorldAssetFromSameEpoch()
+function _onlyMightyCreator() internal view
+```
+
+
+
+_Allows caller to be only mighty creator_
+
+
+
+
+### _onlyWorldAssetFromSameEra
+
+```solidity
+function _onlyWorldAssetFromSameEra() internal view
 ```
 
 
@@ -118,54 +146,15 @@ _Allows caller to be only world or world asset_
 
 
 
-### onlyActiveGame
+### _onlyActiveGame
 
 ```solidity
-modifier onlyActiveGame()
+function _onlyActiveGame() internal view
 ```
 
 
 
 _Allows function to be callable only while game is active_
-
-
-
-
-### world
-
-```solidity
-function world() public view returns (contract IWorld)
-```
-
-World
-
-_Value is dereferenced from proxy storage_
-
-
-
-
-### registry
-
-```solidity
-function registry() public view returns (contract IRegistry)
-```
-
-Registry
-
-_Value is dereferenced from world_
-
-
-
-
-### epoch
-
-```solidity
-function epoch() public view returns (contract IEpoch)
-```
-
-Epoch
-
-_Value is dereferenced from proxy storage and world_
 
 
 

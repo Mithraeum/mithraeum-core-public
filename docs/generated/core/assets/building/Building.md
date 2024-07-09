@@ -7,10 +7,10 @@
 
 
 
-### currentSettlement
+### relatedSettlement
 
 ```solidity
-contract ISettlement currentSettlement
+contract ISettlement relatedSettlement
 ```
 
 Settlement address to which this building belongs
@@ -20,28 +20,86 @@ _Immutable, initialized on the building creation_
 
 
 
-### buildingState
+### buildingTypeId
 
 ```solidity
-struct IBuilding.BuildingState buildingState
+bytes32 buildingTypeId
 ```
 
-Contains current common state of the building
+Building type id
 
-_Some parameters may depend on time (if upgrade is finished building must be considered as upgraded). 'upgrading' parameter will be deprecated in favor of presence 'timeUpgradeFinish' (whenever zero or not zero)_
+_Immutable, initialized on the building creation_
+
+
+
+
+### basicProduction
+
+```solidity
+struct IBuilding.BasicProduction basicProduction
+```
+
+Basic production
+
+_Contains basic production upgrade data_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 
 
-### production
+### advancedProduction
 
 ```solidity
-struct IBuilding.Production production
+struct IBuilding.AdvancedProduction advancedProduction
 ```
 
-Contains current production state of the building
+Advanced production
+
+_Contains advanced production upgrade data_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+
+
+### upgradeCooldownEndTime
+
+```solidity
+uint256 upgradeCooldownEndTime
+```
+
+Upgrade cooldown end time
+
+_Updated when #upgradeBasicProduction or #upgradeAdvancedProduction is called_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+
+
+### givenProsperityAmount
+
+```solidity
+uint256 givenProsperityAmount
+```
+
+Amount of prosperity given
+
+_Contains last written given prosperity amount by building treasury_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+
+
+### productionInfo
+
+```solidity
+struct IBuilding.ProductionInfo productionInfo
+```
+
+Contains production info of the building
 
 _Contains information related to how production is calculated_
 
@@ -63,6 +121,33 @@ _Initialized on creation and updated on #resetDistribution_
 
 
 
+### producedResourceDebt
+
+```solidity
+mapping(address => uint256) producedResourceDebt
+```
+
+Produced resource debt
+
+_Updated when #distributeToSingleHolder or #distributeToAllShareholders is called_
+
+
+
+
+### onlyDistributions
+
+```solidity
+modifier onlyDistributions()
+```
+
+
+
+_Only distributions contract modifier
+Modifier is calling internal function in order to reduce contract size_
+
+
+
+
 ### onlySettlementOwner
 
 ```solidity
@@ -71,150 +156,22 @@ modifier onlySettlementOwner()
 
 
 
-_Allows caller to be only settlement owner_
+_Only settlement owner modifier
+Modifier is calling internal function in order to reduce contract size_
 
 
 
 
-### onlyRulerOrWorldAssetFromSameEpoch
+### onlyRulerOrWorldAssetFromSameEra
 
 ```solidity
-modifier onlyRulerOrWorldAssetFromSameEpoch()
+modifier onlyRulerOrWorldAssetFromSameEra()
 ```
 
 
 
-_Allows caller to be ruler or world or world asset_
-
-
-
-
-### getBuildingCoefficient
-
-```solidity
-function getBuildingCoefficient(uint256 _level) internal view returns (uint256)
-```
-
-
-
-_Calculates building coefficient_
-
-
-
-
-### setDefaultDistribution
-
-```solidity
-function setDefaultDistribution() internal
-```
-
-
-
-_Creates default distribution (all possible tokens will be minted to current settlement owner)_
-
-
-
-
-### distribute
-
-```solidity
-function distribute(string resourceName, uint256 amount) internal
-```
-
-
-
-_Distributes produced amount of resource between treasury and building token holders_
-
-
-
-
-### updateReserves
-
-```solidity
-function updateReserves() internal virtual
-```
-
-
-
-_Updates building treasury according to changed amount of resources in building_
-
-
-
-
-### updateProsperity
-
-```solidity
-function updateProsperity(uint256 reservesBefore, uint256 reservesAfter) internal virtual
-```
-
-
-
-_Synchronizes settlement prosperity according to changed amount of resources in treasury_
-
-
-
-
-### recalculateProduction
-
-```solidity
-function recalculateProduction() internal virtual
-```
-
-
-
-_Recalculates production structure according to new resource balances_
-
-
-
-
-### getCurrentTime
-
-```solidity
-function getCurrentTime() internal view returns (uint256)
-```
-
-
-
-_Calculates current game time, taking into an account game finish time_
-
-
-
-
-### getProductionMultiplier
-
-```solidity
-function getProductionMultiplier() internal view returns (uint256)
-```
-
-
-
-_Calculates production multiplier according to current workers and global multiplier_
-
-
-
-
-### calculateProductionTicksAmount
-
-```solidity
-function calculateProductionTicksAmount() internal view returns (uint256)
-```
-
-
-
-_Calculates amount of production ticks for current building according to its resources balances_
-
-
-
-
-### isBuildingTokenRecallAllowed
-
-```solidity
-function isBuildingTokenRecallAllowed() internal returns (bool)
-```
-
-
-
-_Calculates is building token recall allowed according to building token transfer threshold_
+_Only ruler or world asset from same era modifier
+Modifier is calling internal function in order to reduce contract size_
 
 
 
@@ -222,95 +179,178 @@ _Calculates is building token recall allowed according to building token transfe
 ### init
 
 ```solidity
-function init(address settlementAddress) public virtual
+function init(bytes initParams) public virtual
 ```
 
-Proxy initializer
 
-_Called by factory contract which creates current instance_
+
+_World asset initializer_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
+| initParams | bytes | Encoded init params (every world asset has own knowledge how to extract data from it) |
 
 
 
-### productionChanged
+### onERC1155Received
 
 ```solidity
-function productionChanged() public virtual
+function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes data) external returns (bytes4)
 ```
 
-Callback which recalculates production. Called when workers or resources, which related to production of this building, is transferred from/to this building
+
+
+_Handles the receipt of a single ERC1155 token type. This function is
+called at the end of a `safeTransferFrom` after the balance has been updated.
+
+NOTE: To accept the transfer, this must return
+`bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))`
+(i.e. 0xf23a6e61, or its own function selector)._
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator | address | The address which initiated the transfer (i.e. msg.sender) |
+| from | address | The address which previously owned the token |
+| id | uint256 | The ID of the token being transferred |
+| value | uint256 | The amount of tokens being transferred |
+| data | bytes | Additional data with no specified format |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bytes4 | `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))` if transfer is allowed |
+
+
+### onERC1155BatchReceived
+
+```solidity
+function onERC1155BatchReceived(address operator, address from, uint256[] ids, uint256[] values, bytes data) external returns (bytes4)
+```
+
+
+
+_Handles the receipt of a multiple ERC1155 token types. This function
+is called at the end of a `safeBatchTransferFrom` after the balances have
+been updated.
+
+NOTE: To accept the transfer(s), this must return
+`bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`
+(i.e. 0xbc197c81, or its own function selector)._
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| operator | address | The address which initiated the batch transfer (i.e. msg.sender) |
+| from | address | The address which previously owned the token |
+| ids | uint256[] | An array containing ids of each token being transferred (order and length must match values array) |
+| values | uint256[] | An array containing amounts of each token being transferred (order and length must match ids array) |
+| data | bytes | Additional data with no specified format |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bytes4 | `bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))` if transfer is allowed |
+
+
+### handleProductionResourcesChanged
+
+```solidity
+function handleProductionResourcesChanged() public virtual
+```
+
+Callback which recalculates production. Called when resources related to production of this building is transferred from/to this building
 
 _Even though function is opened, it is auto-called by transfer method. Standalone calls provide 0 impact._
 
 
 
 
-### calcMaxWorkers
+### updateState
 
 ```solidity
-function calcMaxWorkers(uint256 _level) public view virtual returns (uint256)
+function updateState() public virtual
 ```
 
-Calculates maximum amount of workers for specified level
+Updates state of this building up to block.timestamp
 
-_Useful to determinate maximum amount of workers on any level_
+_Updates building production minting treasury and increasing #production.readyToBeDistributed_
+
+
+
+
+### updateDebtsAccordingToNewDistributionsAmounts
+
+```solidity
+function updateDebtsAccordingToNewDistributionsAmounts(address from, address to, uint256 amount) public
+```
+
+Updates debts for shareholders whenever their share part changes
+
+_Even though function is opened, it can be called only by distributions_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _level | uint256 |  |
+| from | address | From address |
+| to | address | To address |
+| amount | uint256 | Amount |
+
+
+
+### distributeToSingleShareholder
+
+```solidity
+function distributeToSingleShareholder(address holder) public
+```
+
+Distributes produced resource to single shareholder
+
+_Useful to taking part of the resource from the building for single shareholder (to not pay gas for minting for all shareholders)_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 |  |
+| holder | address | Holder |
 
 
-### applyState
+
+### distributeToAllShareholders
 
 ```solidity
-function applyState() public virtual
+function distributeToAllShareholders() public
 ```
 
-Applies state of this building up to block.timestamp
+Distributes produces resource to all shareholders
 
-_Useful if 'harvesting' resources from building production to building token holders_
-
-
+_Useful to get full produced resources to all shareholders_
 
 
-### calcCumulativeResource
+
+
+### getResourcesAmount
 
 ```solidity
-function calcCumulativeResource(string _resourceName, uint256 _timestamp) public view virtual returns (uint256)
+function getResourcesAmount(bytes32 resourceTypeId, uint256 timestamp) public view virtual returns (uint256)
 ```
 
 Calculates real amount of provided resource in building related to its production at provided time
 
-_Useful for determination how much of production resource (either producing and spending) at the specific time
-Probably will be renamed in near future for more representative formulation_
+_Useful for determination how much of production resource (either producing and spending) at the specific time_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _resourceName | string |  |
-| _timestamp | uint256 |  |
+| resourceTypeId | bytes32 | Type id of resource related to production |
+| timestamp | uint256 | Time at which calculate amount of resources in building. If timestamp=0 -> calculates as block.timestamp |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### calculateCumulativeState
+### getProductionResult
 
 ```solidity
-function calculateCumulativeState(uint256 timestamp) public view virtual returns (struct IBuilding.ProductionResult[])
+function getProductionResult(uint256 timestamp) public view virtual returns (struct IBuilding.ProductionResultItem[])
 ```
 
 Calculates production resources changes at provided time
 
-_Useful for determination how much of all production will be burned/produced at the specific time
-Probably will be renamed in near future for more representative formulation_
+_Useful for determination how much of all production will be burned/produced at the specific time_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -318,7 +358,26 @@ Probably will be renamed in near future for more representative formulation_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | struct IBuilding.ProductionResult[] |  |
+| [0] | struct IBuilding.ProductionResultItem[] |  |
+
+
+### getBuildingCoefficient
+
+```solidity
+function getBuildingCoefficient(uint256 level) public pure returns (uint256)
+```
+
+Calculates building coefficient by provided level
+
+_Used to determine max treasury amount and new production coefficients_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| level | uint256 | Building level |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 |  |
 
 
 ### resetDistribution
@@ -337,7 +396,7 @@ _Creates new distribution Nft and mints it to current settlement owner_
 ### isResourceAcceptable
 
 ```solidity
-function isResourceAcceptable(string _resourceName) public view returns (bool)
+function isResourceAcceptable(bytes32 resourceTypeId) public view returns (bool)
 ```
 
 Calculates if building is capable to accept resource
@@ -346,95 +405,61 @@ _Return value based on #getConfig_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _resourceName | string |  |
+| resourceTypeId | bytes32 | Resource type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | bool |  |
 
 
-### batchTransferResources
+### removeResourcesAndWorkers
 
 ```solidity
-function batchTransferResources(string[] resourcesNames, address to, uint256[] amounts) public
+function removeResourcesAndWorkers(address workersReceiverAddress, uint256 workersAmount, address resourcesReceiverAddress, bytes32[] resourceTypeIds, uint256[] resourcesAmounts) public
 ```
 
-Batch resource transfer
+Transfers game resources and workers from building to provided addresses
 
-_Same as #transferResources but for many resources at once_
+_Removes resources+workers from building in single transaction_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| resourcesNames | string[] | Names of resources to transfer |
-| to | address | An address transfer resources to |
-| amounts | uint256[] | Amounts of resources to transfer |
+| workersReceiverAddress | address | Workers receiver address (building or settlement) |
+| workersAmount | uint256 | Workers amount (in 1e18 precision) |
+| resourcesReceiverAddress | address | Resources receiver address |
+| resourceTypeIds | bytes32[] | Resource type ids |
+| resourcesAmounts | uint256[] | Resources amounts |
 
 
 
-### transferWorkers
-
-```solidity
-function transferWorkers(address to, uint256 amount) public
-```
-
-Transfers workers from current building to specified address
-
-_Currently workers can be transferred from building only to its settlement_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| to | address | An address transfer workers to |
-| amount | uint256 | Amount of workers to transfer |
-
-
-
-### transferResources
+### getUpgradePrice
 
 ```solidity
-function transferResources(string resourceName, address to, uint256 amount) public
+function getUpgradePrice(uint256 level) public view virtual returns (uint256)
 ```
 
-Transfer specified resource from current building
-
-_Used for withdrawing resources from production or overcapped treasury resources_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Name of resource to transfer |
-| to | address | An address transfer resources to |
-| amount | uint256 | Amount of resources to transfer |
-
-
-
-### calcUpgradePrice
-
-```solidity
-function calcUpgradePrice(uint256 _level, string resourceName) public view virtual returns (uint256)
-```
-
-Calculates upgrade price by resource and provided level
+Calculates upgrade price by provided level
 
 _Useful for determination how much upgrade will cost at any level_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _level | uint256 |  |
-| resourceName | string | Name of resource |
+| level | uint256 | Level at which calculate price |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### level
+### getBuildingLevel
 
 ```solidity
-function level() public view returns (uint256)
+function getBuildingLevel() public view returns (uint256)
 ```
 
 Calculates current level
 
-_Takes into an account if upgrade if finished or not_
+_Takes into an account if upgrades are ended or not_
 
 
 | Name | Type | Description |
@@ -442,10 +467,10 @@ _Takes into an account if upgrade if finished or not_
 | [0] | uint256 |  |
 
 
-### workers
+### getAssignedWorkers
 
 ```solidity
-function workers() public view virtual returns (uint256)
+function getAssignedWorkers() public view virtual returns (uint256)
 ```
 
 Calculates amount of workers currently sitting in this building
@@ -458,101 +483,105 @@ _Same as workers.balanceOf(buildingAddress)_
 | [0] | uint256 |  |
 
 
-### upgradeStart
+### upgradeBasicProduction
 
 ```solidity
-function upgradeStart() public virtual
+function upgradeBasicProduction(address resourcesOwner) public virtual
 ```
 
-Starts building upgrade
+Upgrades basic production
 
-_Resources required for upgrade will be taken from msg.sender_
-
-
-
-
-### calcUpgradeTime
-
-```solidity
-function calcUpgradeTime(uint256 _level) public view virtual returns (uint256)
-```
-
-Calculates upgrade time for provided level
-
-_If level=1 then returned value will be time which is taken for upgrading from 1 to 2 level_
+_Necessary resources for upgrade will be taken either from msg.sender or resourcesOwner (if resource.allowance allows it)
+If resourcesOwner == address(0) -> resources will be taken from msg.sender
+If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= upgradePrice -> resources will be taken from resourcesOwner_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _level | uint256 |  |
+| resourcesOwner | address | Resources owner |
+
+
+
+### upgradeAdvancedProduction
+
+```solidity
+function upgradeAdvancedProduction(address resourcesOwner) public virtual
+```
+
+Upgrades advanced production
+
+_Necessary resources for upgrade will be taken either from msg.sender or resourcesOwner (if resource.allowance allows it)
+If resourcesOwner == address(0) -> resources will be taken from msg.sender
+If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= upgradePrice -> resources will be taken from resourcesOwner_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| resourcesOwner | address | Resources owner |
+
+
+
+### getBasicUpgradeCooldownDuration
+
+```solidity
+function getBasicUpgradeCooldownDuration(uint256 level) public view virtual returns (uint256)
+```
+
+Calculates basic upgrade duration for provided level
+
+_If level=1 then returned value will be duration which is taken for upgrading from 1 to 2 level_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| level | uint256 | At which level calculate upgrade duration |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### calcWoodUpgradePrice
+### getAdvancedUpgradeCooldownDuration
 
 ```solidity
-function calcWoodUpgradePrice(uint256 _level) public view virtual returns (uint256)
+function getAdvancedUpgradeCooldownDuration(uint256 level) public view virtual returns (uint256)
 ```
 
-Calculates wood upgrade price for provided level
+Calculates advanced upgrade duration for provided level
 
-_Will be deprecated in favor of calcUpgradePrice(level, "WOOD")_
+_If level=1 then returned value will be duration which is taken for upgrading from 1 to 2 level_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _level | uint256 |  |
+| level | uint256 | At which level calculate upgrade duration |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### calcOreUpgradePrice
+### getProducingResourceTypeId
 
 ```solidity
-function calcOreUpgradePrice(uint256 _level) public view virtual returns (uint256)
+function getProducingResourceTypeId() public view virtual returns (bytes32)
 ```
 
-Calculates ore upgrade price for provided level
+Calculates producing resource type id for this building
 
-_Will be deprecated in favor of calcUpgradePrice(level, "ORE")_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getProducingResourceName
-
-```solidity
-function getProducingResourceName() public view virtual returns (string)
-```
-
-Calculates producing resource name for this building
-
-_Return value is value from #getConfig where 'isProduced'=true_
+_Return value is value from #getConfig where 'isProducing'=true_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | string |  |
+| [0] | bytes32 |  |
 
 
-### maxWorkers
+### getWorkersCapacity
 
 ```solidity
-function maxWorkers() public view returns (uint256)
+function getWorkersCapacity() public view returns (uint256)
 ```
 
-Calculates Maximum amount of workers this building can have
+Calculates workers capacity (maximum amount of workers)
 
-_Max amount of workers changed by building level. This function takes into account current block.timestamp for its current level. Basically if building is upgraded returns proper amount of max workers available._
+_Used in determination of determinate maximum amount of workers_
 
 
 | Name | Type | Description |
@@ -560,10 +589,10 @@ _Max amount of workers changed by building level. This function takes into accou
 | [0] | uint256 |  |
 
 
-### getReserves
+### getTreasuryAmount
 
 ```solidity
-function getReserves(uint256 _timestamp) public view virtual returns (uint256)
+function getTreasuryAmount(uint256 timestamp) public view virtual returns (uint256)
 ```
 
 Calculates treasury amount at specified time
@@ -572,17 +601,17 @@ _Useful for determination how much treasury will be at specific time_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _timestamp | uint256 |  |
+| timestamp | uint256 | Time at which calculate amount of treasury in building. If timestamp=0 -> calculates as block.timestamp |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### getMaxReservesByLevel
+### getMaxTreasuryByLevel
 
 ```solidity
-function getMaxReservesByLevel(uint256 _level) public view virtual returns (uint256)
+function getMaxTreasuryByLevel(uint256 level) public view virtual returns (uint256)
 ```
 
 Calculates maximum amount of treasury by provided level
@@ -591,39 +620,40 @@ _Can be used to determine maximum amount of treasury by any level_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _level | uint256 |  |
+| level | uint256 | Building level |
 
 
 
-### stealReserves
+### stealTreasury
 
 ```solidity
-function stealReserves(address to, uint256 amount) public returns (uint256)
+function stealTreasury(address stealerSettlementAddress, uint256 amount) public returns (uint256, uint256)
 ```
 
 Steals resources from treasury
 
-_Called by siege or building owner, in either case part of resources will be burned according to #registry.getRobberyFee_
+_Called by siege, resources will be stolen into stealer settlement building treasury_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| to | address | An address which will get resources |
-| amount | uint256 | Amount of resources to steal, 'to' will get only part of specified 'amount', some percent of specified 'amount' will be burned |
+| stealerSettlementAddress | address | Settlement address which will get resources |
+| amount | uint256 | Amount of resources to steal and burn |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
+| [1] | uint256 |  |
 
 
-### burnReserves
+### burnTreasury
 
 ```solidity
-function burnReserves(uint256 burnAmount) public
+function burnTreasury(uint256 burnAmount) public
 ```
 
 Burns building treasury
 
-_Can be called by world asset or building owner_
+_Can be called by world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -631,108 +661,98 @@ _Can be called by world asset or building owner_
 
 
 
+### increaseAdditionalWorkersCapacityMultiplier
+
+```solidity
+function increaseAdditionalWorkersCapacityMultiplier(uint256 capacityAmount) public
+```
+
+Increases additional workers capacity multiplier
+
+_Even though function is opened, it can be called only by world asset_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| capacityAmount | uint256 | Capacity amount |
+
+
+
+### decreaseAdditionalWorkersCapacityMultiplier
+
+```solidity
+function decreaseAdditionalWorkersCapacityMultiplier(uint256 capacityAmount) public
+```
+
+Decreases additional workers capacity multiplier
+
+_Even though function is opened, it can be called only by world asset_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| capacityAmount | uint256 | Capacity amount |
+
+
+
+### getAdditionalWorkersFromAdditionalWorkersCapacityMultiplier
+
+```solidity
+function getAdditionalWorkersFromAdditionalWorkersCapacityMultiplier() public view returns (uint256)
+```
+
+Calculates additional workers 'granted' from capacity multiplier
+
+_Return value based on current advancedProduction.additionalWorkersCapacityMultiplier_
+
+
+
+
+### getAvailableForAdvancedProductionWorkersCapacity
+
+```solidity
+function getAvailableForAdvancedProductionWorkersCapacity() public view returns (uint256)
+```
+
+Calculates capacity of available workers for advanced production
+
+_Difference between #getWorkersCapacity and #getAdditionalWorkersFromAdditionalWorkersCapacityMultiplier_
+
+
+
+
 ### getConfig
 
 ```solidity
-function getConfig() public view virtual returns (struct IBuilding.InitialResourceBlock[] initialResourceBlocks)
+function getConfig() public view virtual returns (struct IBuilding.ProductionConfigItem[] productionConfigItems)
 ```
 
 Returns production config for current building
 
 _Main config that determines which resources is produced/spend by production of this building
-InitialResourceBlock.perTick is value how much of resource is spend/produced by 1 worker in 1 second of production_
+ProductionConfigItem.amountPerTick is value how much of resource is spend/produced by 1 worker in 1 tick of production_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| initialResourceBlocks | struct IBuilding.InitialResourceBlock[] | Production config for current building |
+| productionConfigItems | struct IBuilding.ProductionConfigItem[] | Production config for current building |
 
 
-### buildingName
+### _onlyDistributions
 
 ```solidity
-function buildingName() public view virtual returns (string)
+function _onlyDistributions() internal view
 ```
 
-Returns building name
-
-_Same value as #assetName_
 
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | string |  |
-
-
-## Building
+_Allows caller to be only distributions contract_
 
 
 
 
-
-
-
-
-### currentSettlement
+### _onlySettlementOwner
 
 ```solidity
-contract ISettlement currentSettlement
-```
-
-Settlement address to which this building belongs
-
-_Immutable, initialized on the building creation_
-
-
-
-
-### buildingState
-
-```solidity
-struct IBuilding.BuildingState buildingState
-```
-
-Contains current common state of the building
-
-_Some parameters may depend on time (if upgrade is finished building must be considered as upgraded). 'upgrading' parameter will be deprecated in favor of presence 'timeUpgradeFinish' (whenever zero or not zero)_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-
-
-### production
-
-```solidity
-struct IBuilding.Production production
-```
-
-Contains current production state of the building
-
-_Contains information related to how production is calculated_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-
-
-### distributionId
-
-```solidity
-uint256 distributionId
-```
-
-Distribution id
-
-_Initialized on creation and updated on #resetDistribution_
-
-
-
-
-### onlySettlementOwner
-
-```solidity
-modifier onlySettlementOwner()
+function _onlySettlementOwner() internal view
 ```
 
 
@@ -742,10 +762,10 @@ _Allows caller to be only settlement owner_
 
 
 
-### onlyRulerOrWorldAssetFromSameEpoch
+### _onlyRulerOrWorldAssetFromSameEra
 
 ```solidity
-modifier onlyRulerOrWorldAssetFromSameEpoch()
+function _onlyRulerOrWorldAssetFromSameEra() internal view
 ```
 
 
@@ -755,23 +775,36 @@ _Allows caller to be ruler or world or world asset_
 
 
 
-### getBuildingCoefficient
+### _getProducedTicksByAdvancedProduction
 
 ```solidity
-function getBuildingCoefficient(uint256 _level) internal view returns (uint256)
+function _getProducedTicksByAdvancedProduction(uint256 advancedProductionBeginTime, uint256 advancedProductionEndTime, uint256 toBeProducedTicks) internal view returns (uint256)
 ```
 
 
 
-_Calculates building coefficient_
+_Calculates how many ticks produced by advanced production by provided begin time, end time and to be produced ticks_
 
 
 
 
-### setDefaultDistribution
+### _getProducedTicksByBasicProduction
 
 ```solidity
-function setDefaultDistribution() internal
+function _getProducedTicksByBasicProduction(uint256 basicProductionBeginTime, uint256 basicProductionEndTime) internal view returns (uint256)
+```
+
+
+
+_Calculates how many ticks produced by basic production by provided begin time, end time_
+
+
+
+
+### _createDefaultDistribution
+
+```solidity
+function _createDefaultDistribution() internal
 ```
 
 
@@ -781,88 +814,75 @@ _Creates default distribution (all possible tokens will be minted to current set
 
 
 
-### distribute
+### _saveProducedResource
 
 ```solidity
-function distribute(string resourceName, uint256 amount) internal
+function _saveProducedResource(bytes32 resourceTypeId, uint256 amount) internal
 ```
 
 
 
-_Distributes produced amount of resource between treasury and building token holders_
+_Saves produced amount of resource between treasury and productionInfo.readyToBeDistributed_
 
 
 
 
-### updateReserves
+### _updateProsperity
 
 ```solidity
-function updateReserves() internal virtual
+function _updateProsperity() internal virtual
 ```
 
 
 
-_Updates building treasury according to changed amount of resources in building_
+_Updates building prosperity according to changed amount of resources in building_
 
 
 
 
-### updateProsperity
+### _getCurrentTime
 
 ```solidity
-function updateProsperity(uint256 reservesBefore, uint256 reservesAfter) internal virtual
+function _getCurrentTime() internal view returns (uint256)
 ```
 
 
 
-_Synchronizes settlement prosperity according to changed amount of resources in treasury_
+_Calculates current game time, taking into an account game end time_
 
 
 
 
-### recalculateProduction
+### _getBasicProductionMultiplier
 
 ```solidity
-function recalculateProduction() internal virtual
+function _getBasicProductionMultiplier() internal view returns (uint256)
 ```
 
 
 
-_Recalculates production structure according to new resource balances_
+_Calculates basic production multiplier_
 
 
 
 
-### getCurrentTime
+### _getAdvancedProductionMultiplier
 
 ```solidity
-function getCurrentTime() internal view returns (uint256)
+function _getAdvancedProductionMultiplier() internal view returns (uint256)
 ```
 
 
 
-_Calculates current game time, taking into an account game finish time_
+_Calculates advanced production multiplier_
 
 
 
 
-### getProductionMultiplier
-
-```solidity
-function getProductionMultiplier() internal view returns (uint256)
-```
-
-
-
-_Calculates production multiplier according to current workers and global multiplier_
-
-
-
-
-### calculateProductionTicksAmount
+### _calculateProductionTicksAmount
 
 ```solidity
-function calculateProductionTicksAmount() internal view returns (uint256)
+function _calculateProductionTicksAmount() internal view returns (uint256)
 ```
 
 
@@ -872,10 +892,10 @@ _Calculates amount of production ticks for current building according to its res
 
 
 
-### isBuildingTokenRecallAllowed
+### _isBuildingTokenRecallAllowed
 
 ```solidity
-function isBuildingTokenRecallAllowed() internal returns (bool)
+function _isBuildingTokenRecallAllowed() internal returns (bool)
 ```
 
 
@@ -885,448 +905,68 @@ _Calculates is building token recall allowed according to building token transfe
 
 
 
-### init
+### _batchTransferResources
 
 ```solidity
-function init(address settlementAddress) public virtual
+function _batchTransferResources(bytes32[] resourceTypeIds, address to, uint256[] amounts) internal
 ```
 
-Proxy initializer
 
-_Called by factory contract which creates current instance_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
+_Batch transfer resources from building to specified address_
 
 
 
-### productionChanged
+
+### _transferWorkers
 
 ```solidity
-function productionChanged() public virtual
+function _transferWorkers(address to, uint256 amount) internal
 ```
 
-Callback which recalculates production. Called when workers or resources, which related to production of this building, is transferred from/to this building
-
-_Even though function is opened, it is auto-called by transfer method. Standalone calls provide 0 impact._
 
 
+_Transfers workers from building to specified address_
 
 
-### calcMaxWorkers
+
+
+### _transferResources
 
 ```solidity
-function calcMaxWorkers(uint256 _level) public view virtual returns (uint256)
+function _transferResources(bytes32 resourceTypeId, address to, uint256 amount) internal
 ```
 
-Calculates maximum amount of workers for specified level
-
-_Useful to determinate maximum amount of workers on any level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
 
 
-### applyState
+_Transfers resources from building to specified address_
+
+
+
+
+### _updateProductionInfo
 
 ```solidity
-function applyState() public virtual
+function _updateProductionInfo(uint256 newLastUpdateStateTime, uint256 newLastUpdateStateRegionTime, uint256 newReadyToBeDistributed, uint256 newTotalDebt) internal
 ```
 
-Applies state of this building up to block.timestamp
-
-_Useful if 'harvesting' resources from building production to building token holders_
 
 
+_Updates production info_
 
 
-### calcCumulativeResource
+
+
+### _updateProducedResourceDebt
 
 ```solidity
-function calcCumulativeResource(string _resourceName, uint256 _timestamp) public view virtual returns (uint256)
+function _updateProducedResourceDebt(address distributionNftHolder, uint256 newDebt) internal
 ```
 
-Calculates real amount of provided resource in building related to its production at provided time
 
-_Useful for determination how much of production resource (either producing and spending) at the specific time
-Probably will be renamed in near future for more representative formulation_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _resourceName | string |  |
-| _timestamp | uint256 |  |
+_Updates produced resource debt for specified nft holder_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
 
-
-### calculateCumulativeState
-
-```solidity
-function calculateCumulativeState(uint256 timestamp) public view virtual returns (struct IBuilding.ProductionResult[])
-```
-
-Calculates production resources changes at provided time
-
-_Useful for determination how much of all production will be burned/produced at the specific time
-Probably will be renamed in near future for more representative formulation_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| timestamp | uint256 | Time at which calculate amount of resources in building. If timestamp=0 -> calculates as block.timestamp |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | struct IBuilding.ProductionResult[] |  |
-
-
-### resetDistribution
-
-```solidity
-function resetDistribution() public virtual
-```
-
-Resets current building distribution
-
-_Creates new distribution Nft and mints it to current settlement owner_
-
-
-
-
-### isResourceAcceptable
-
-```solidity
-function isResourceAcceptable(string _resourceName) public view returns (bool)
-```
-
-Calculates if building is capable to accept resource
-
-_Return value based on #getConfig_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _resourceName | string |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | bool |  |
-
-
-### batchTransferResources
-
-```solidity
-function batchTransferResources(string[] resourcesNames, address to, uint256[] amounts) public
-```
-
-Batch resource transfer
-
-_Same as #transferResources but for many resources at once_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourcesNames | string[] | Names of resources to transfer |
-| to | address | An address transfer resources to |
-| amounts | uint256[] | Amounts of resources to transfer |
-
-
-
-### transferWorkers
-
-```solidity
-function transferWorkers(address to, uint256 amount) public
-```
-
-Transfers workers from current building to specified address
-
-_Currently workers can be transferred from building only to its settlement_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| to | address | An address transfer workers to |
-| amount | uint256 | Amount of workers to transfer |
-
-
-
-### transferResources
-
-```solidity
-function transferResources(string resourceName, address to, uint256 amount) public
-```
-
-Transfer specified resource from current building
-
-_Used for withdrawing resources from production or overcapped treasury resources_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| resourceName | string | Name of resource to transfer |
-| to | address | An address transfer resources to |
-| amount | uint256 | Amount of resources to transfer |
-
-
-
-### calcUpgradePrice
-
-```solidity
-function calcUpgradePrice(uint256 _level, string resourceName) public view virtual returns (uint256)
-```
-
-Calculates upgrade price by resource and provided level
-
-_Useful for determination how much upgrade will cost at any level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-| resourceName | string | Name of resource |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### level
-
-```solidity
-function level() public view returns (uint256)
-```
-
-Calculates current level
-
-_Takes into an account if upgrade if finished or not_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### workers
-
-```solidity
-function workers() public view virtual returns (uint256)
-```
-
-Calculates amount of workers currently sitting in this building
-
-_Same as workers.balanceOf(buildingAddress)_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### upgradeStart
-
-```solidity
-function upgradeStart() public virtual
-```
-
-Starts building upgrade
-
-_Resources required for upgrade will be taken from msg.sender_
-
-
-
-
-### calcUpgradeTime
-
-```solidity
-function calcUpgradeTime(uint256 _level) public view virtual returns (uint256)
-```
-
-Calculates upgrade time for provided level
-
-_If level=1 then returned value will be time which is taken for upgrading from 1 to 2 level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### calcWoodUpgradePrice
-
-```solidity
-function calcWoodUpgradePrice(uint256 _level) public view virtual returns (uint256)
-```
-
-Calculates wood upgrade price for provided level
-
-_Will be deprecated in favor of calcUpgradePrice(level, "WOOD")_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### calcOreUpgradePrice
-
-```solidity
-function calcOreUpgradePrice(uint256 _level) public view virtual returns (uint256)
-```
-
-Calculates ore upgrade price for provided level
-
-_Will be deprecated in favor of calcUpgradePrice(level, "ORE")_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getProducingResourceName
-
-```solidity
-function getProducingResourceName() public view virtual returns (string)
-```
-
-Calculates producing resource name for this building
-
-_Return value is value from #getConfig where 'isProduced'=true_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | string |  |
-
-
-### maxWorkers
-
-```solidity
-function maxWorkers() public view returns (uint256)
-```
-
-Calculates Maximum amount of workers this building can have
-
-_Max amount of workers changed by building level. This function takes into account current block.timestamp for its current level. Basically if building is upgraded returns proper amount of max workers available._
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getReserves
-
-```solidity
-function getReserves(uint256 _timestamp) public view virtual returns (uint256)
-```
-
-Calculates treasury amount at specified time
-
-_Useful for determination how much treasury will be at specific time_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _timestamp | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getMaxReservesByLevel
-
-```solidity
-function getMaxReservesByLevel(uint256 _level) public view virtual returns (uint256)
-```
-
-Calculates maximum amount of treasury by provided level
-
-_Can be used to determine maximum amount of treasury by any level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-
-
-### stealReserves
-
-```solidity
-function stealReserves(address to, uint256 amount) public returns (uint256)
-```
-
-Steals resources from treasury
-
-_Called by siege or building owner, in either case part of resources will be burned according to #registry.getRobberyFee_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| to | address | An address which will get resources |
-| amount | uint256 | Amount of resources to steal, 'to' will get only part of specified 'amount', some percent of specified 'amount' will be burned |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### burnReserves
-
-```solidity
-function burnReserves(uint256 burnAmount) public
-```
-
-Burns building treasury
-
-_Can be called by world asset or building owner_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| burnAmount | uint256 |  |
-
-
-
-### getConfig
-
-```solidity
-function getConfig() public view virtual returns (struct IBuilding.InitialResourceBlock[] initialResourceBlocks)
-```
-
-Returns production config for current building
-
-_Main config that determines which resources is produced/spend by production of this building
-InitialResourceBlock.perTick is value how much of resource is spend/produced by 1 worker in 1 second of production_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| initialResourceBlocks | struct IBuilding.InitialResourceBlock[] | Production config for current building |
-
-
-### buildingName
-
-```solidity
-function buildingName() public view virtual returns (string)
-```
-
-Returns building name
-
-_Same value as #assetName_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | string |  |
 
 

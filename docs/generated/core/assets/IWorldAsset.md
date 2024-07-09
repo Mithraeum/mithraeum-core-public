@@ -7,6 +7,42 @@
 
 
 
+### OnlyMightyCreator
+
+```solidity
+error OnlyMightyCreator()
+```
+
+Thrown when attempting to call action which can only be called by mighty creator
+
+
+
+
+
+### OnlyWorldAssetFromSameEra
+
+```solidity
+error OnlyWorldAssetFromSameEra()
+```
+
+Thrown when attempting to call action which can only be called by world asset from same era
+
+
+
+
+
+### OnlyActiveGame
+
+```solidity
+error OnlyActiveGame()
+```
+
+Thrown when attempting to call action which can only be called in active game (started and not finished)
+
+
+
+
+
 ### world
 
 ```solidity
@@ -33,63 +69,28 @@ _Value is dereferenced from world_
 
 
 
-### epoch
+### era
 
 ```solidity
-function epoch() external view returns (contract IEpoch)
+function era() external view returns (contract IEra)
 ```
 
-Epoch
+Era
 
 _Value is dereferenced from proxy storage and world_
 
 
 
 
-## IWorldAsset
-
-
-
-
-
-
-
-
-### world
+### worldAssetFactory
 
 ```solidity
-function world() external view returns (contract IWorld)
+function worldAssetFactory() external view returns (contract IWorldAssetFactory)
 ```
 
-World
+Returns world asset factory from registry
 
-_Value is dereferenced from proxy storage_
-
-
-
-
-### registry
-
-```solidity
-function registry() external view returns (contract IRegistry)
-```
-
-Registry
-
-_Value is dereferenced from world_
-
-
-
-
-### epoch
-
-```solidity
-function epoch() external view returns (contract IEpoch)
-```
-
-Epoch
-
-_Value is dereferenced from proxy storage and world_
+_Value is dereferenced from registry_
 
 
 

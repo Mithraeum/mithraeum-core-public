@@ -7,116 +7,28 @@ Functions to read state/modify state in order to buy settlement
 
 
 
-### SettlementBought
+### relatedRegion
 
 ```solidity
-event SettlementBought(address settlementAddress, uint256 settlementCost)
+function relatedRegion() external view returns (contract IRegion)
 ```
 
-Emitted when #buySettlement is called
+Region to which this market belongs
 
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
-| settlementCost | uint256 | Settlement cost |
+_Immutable, initialized on the market creation_
 
 
 
-### currentZone
+
+### marketCreationTime
 
 ```solidity
-function currentZone() external view returns (contract IZone)
+function marketCreationTime() external view returns (uint256)
 ```
 
-Zone to which this market belongs
+Time at which market was created
 
-_Immutable, initialized on the zone creation_
-
-
-
-
-### lastPurchaseTime
-
-```solidity
-function lastPurchaseTime() external view returns (uint256)
-```
-
-Time at which last purchase occurred
-
-_Updated when #buySettlement is called_
-
-
-
-
-### startingPrice
-
-```solidity
-function startingPrice() external view returns (uint256)
-```
-
-Starting settlement price
-
-_Updated when #buySettlement is called_
-
-
-
-
-### init
-
-```solidity
-function init(address zoneAddress) external
-```
-
-Proxy initializer
-
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| zoneAddress | address | Zone address |
-
-
-
-### buySettlement
-
-```solidity
-function buySettlement(uint32 position, uint256 ownerTokenId, uint256 maxTokensToUse) external payable
-```
-
-Buys settlement in zone
-
-_Tokens will be deducted from msg.sender_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| position | uint32 | Position |
-| ownerTokenId | uint256 | MithraeumBanners token id which will represent to which settlement will be attached to |
-| maxTokensToUse | uint256 | Maximum amount of tokens to be withdrawn for settlement |
-
-
-
-### getNewSettlementCost
-
-```solidity
-function getNewSettlementCost() external view returns (uint256 cost)
-```
-
-Returns amount of tokens new settlement will cost
-
-_Calculates cost of placing new settlement in tokens_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| cost | uint256 | Amount of tokens new settlement will cost |
-
-
-## ISettlementsMarket
-
-
-Functions to read state/modify state in order to buy settlement
-
+_Immutable, initialized on the market creation_
 
 
 
@@ -137,75 +49,122 @@ Emitted when #buySettlement is called
 
 
 
-### currentZone
+### SettlementCannotBeBoughtForFreeAfterGameBegan
 
 ```solidity
-function currentZone() external view returns (contract IZone)
+error SettlementCannotBeBoughtForFreeAfterGameBegan()
 ```
 
-Zone to which this market belongs
-
-_Immutable, initialized on the zone creation_
+Thrown when attempting to buy settlement for free by mighty creator after game began
 
 
 
 
-### lastPurchaseTime
+
+### SettlementCannotBeBoughtForNotOwnerBannerNft
 
 ```solidity
-function lastPurchaseTime() external view returns (uint256)
+error SettlementCannotBeBoughtForNotOwnerBannerNft()
 ```
 
-Time at which last purchase occurred
-
-_Updated when #buySettlement is called_
+Thrown when attempting to buy settlement for specified banner nft id and not owning it
 
 
 
 
-### startingPrice
+
+### SettlementCannotBeBoughtOnNonExistentPosition
 
 ```solidity
-function startingPrice() external view returns (uint256)
+error SettlementCannotBeBoughtOnNonExistentPosition()
 ```
 
-Starting settlement price
-
-_Updated when #buySettlement is called_
+Thrown when attempting to buy settlement on non existent position
 
 
 
 
-### init
+
+### SettlementCannotBeBoughtOnPositionWhichIsNotRelatedToThisSettlementMarket
 
 ```solidity
-function init(address zoneAddress) external
+error SettlementCannotBeBoughtOnPositionWhichIsNotRelatedToThisSettlementMarket()
 ```
 
-Proxy initializer
+Thrown when attempting to buy settlement on position which is not related to this settlement market
 
-_Called by factory contract which creates current instance_
+
+
+
+
+### SettlementCannotBeBoughtDueToCostIsHigherThanMaxTokensToUseSpecified
+
+```solidity
+error SettlementCannotBeBoughtDueToCostIsHigherThanMaxTokensToUseSpecified()
+```
+
+Thrown when attempting to buy settlement due to new settlement cost is higher than max tokens to use specified
+
+
+
+
+
+### SettlementCannotBeBoughtDueInsufficientValueSent
+
+```solidity
+error SettlementCannotBeBoughtDueInsufficientValueSent()
+```
+
+Thrown when attempting to buy settlement due to insufficient value sent (only if world.erc20ForSettlementPurchase == address(0), which is equivalent of native token)
+
+
+
+
+
+### updateState
+
+```solidity
+function updateState() external
+```
+
+Updates settlement market state to the current block
+
+_Called on every action which are based on settlement market state_
+
+
+
+
+### buySettlementForFreeByMightyCreator
+
+```solidity
+function buySettlementForFreeByMightyCreator(uint64 position, uint256 bannerId) external
+```
+
+Buys settlement in region
+
+_Even though function is opened, it can only be called by mighty creator and only before game begin time_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| zoneAddress | address | Zone address |
+| position | uint64 | Position |
+| bannerId | uint256 | MithraeumBanners token id which will represent to which settlement will be attached to |
 
 
 
 ### buySettlement
 
 ```solidity
-function buySettlement(uint32 position, uint256 ownerTokenId, uint256 maxTokensToUse) external payable
+function buySettlement(uint64 position, uint256 bannerId, uint256 maxTokensToUse) external payable
 ```
 
-Buys settlement in zone
+Buys settlement in region
 
 _Tokens will be deducted from msg.sender_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| position | uint32 | Position |
-| ownerTokenId | uint256 | MithraeumBanners token id which will represent to which settlement will be attached to |
+| position | uint64 | Position |
+| bannerId | uint256 | MithraeumBanners token id which will represent to which settlement will be attached to |
 | maxTokensToUse | uint256 | Maximum amount of tokens to be withdrawn for settlement |
 
 
@@ -213,13 +172,16 @@ _Tokens will be deducted from msg.sender_
 ### getNewSettlementCost
 
 ```solidity
-function getNewSettlementCost() external view returns (uint256 cost)
+function getNewSettlementCost(uint256 timestamp) external view returns (uint256 cost)
 ```
 
 Returns amount of tokens new settlement will cost
 
 _Calculates cost of placing new settlement in tokens_
 
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| timestamp | uint256 | Time at which calculate new settlement cost. If timestamp=0 -> calculates as block.timestamp |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |

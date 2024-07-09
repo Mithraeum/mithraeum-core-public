@@ -20,36 +20,20 @@ _Updated when #updateHealth is called_
 
 
 
-### updateHealth
+### getProducingResourceTypeId
 
 ```solidity
-function updateHealth(uint256 value) public
+function getProducingResourceTypeId() public view returns (bytes32)
 ```
 
-Updates fort health
+Calculates producing resource type id for this building
 
-_Even though function is opened, it can be called only by world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| value | uint256 | New fort health |
-
-
-
-### getProducingResourceName
-
-```solidity
-function getProducingResourceName() public view returns (string)
-```
-
-Calculates producing resource name for this building
-
-_Return value is value from #getConfig where 'isProduced'=true_
+_Return value is value from #getConfig where 'isProducing'=true_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | string |  |
+| [0] | bytes32 |  |
 
 
 ### resetDistribution
@@ -68,40 +52,36 @@ _Creates new distribution Nft and mints it to current settlement owner_
 ### init
 
 ```solidity
-function init(address settlementAddress) public
+function init(bytes initParams) public
 ```
 
-Proxy initializer
 
-_Called by factory contract which creates current instance_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
+
 
 
 
 ### getConfig
 
 ```solidity
-function getConfig() public view returns (struct IBuilding.InitialResourceBlock[] initialResourceBlocks)
+function getConfig() public pure returns (struct IBuilding.ProductionConfigItem[])
 ```
 
 Returns production config for current building
 
 _Main config that determines which resources is produced/spend by production of this building
-InitialResourceBlock.perTick is value how much of resource is spend/produced by 1 worker in 1 second of production_
+ProductionConfigItem.amountPerTick is value how much of resource is spend/produced by 1 worker in 1 tick of production_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| initialResourceBlocks | struct IBuilding.InitialResourceBlock[] | Production config for current building |
+| [0] | struct IBuilding.ProductionConfigItem[] |  |
 
 
 ### getMaxHealthOnLevel
 
 ```solidity
-function getMaxHealthOnLevel(uint256 _level) public view returns (uint256)
+function getMaxHealthOnLevel(uint256 level) public view returns (uint256)
 ```
 
 Calculates maximum amount of health for provided level
@@ -110,43 +90,17 @@ _Useful to determine maximum amount of health will be available at provided leve
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _level | uint256 |  |
+| level | uint256 | Level at which calculate maximum amount of health |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### recalculateProduction
+### getTreasuryAmount
 
 ```solidity
-function recalculateProduction() internal
-```
-
-
-
-_Recalculates production structure according to new resource balances_
-
-
-
-
-### updateReserves
-
-```solidity
-function updateReserves() internal
-```
-
-
-
-_Updates building treasury according to changed amount of resources in building_
-
-
-
-
-### getReserves
-
-```solidity
-function getReserves(uint256 _timestamp) public view returns (uint256)
+function getTreasuryAmount(uint256 timestamp) public view returns (uint256)
 ```
 
 Calculates treasury amount at specified time
@@ -155,36 +109,17 @@ _Useful for determination how much treasury will be at specific time_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _timestamp | uint256 |  |
+| timestamp | uint256 | Time at which calculate amount of treasury in building. If timestamp=0 -> calculates as block.timestamp |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### calcMaxWorkers
+### getMaxTreasuryByLevel
 
 ```solidity
-function calcMaxWorkers(uint256 _buildingLevel) public view returns (uint256)
-```
-
-Calculates maximum amount of workers for specified level
-
-_Useful to determinate maximum amount of workers on any level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _buildingLevel | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getMaxReservesByLevel
-
-```solidity
-function getMaxReservesByLevel(uint256 _level) public view returns (uint256)
+function getMaxTreasuryByLevel(uint256 level) public view returns (uint256)
 ```
 
 Calculates maximum amount of treasury by provided level
@@ -193,101 +128,81 @@ _Can be used to determine maximum amount of treasury by any level_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _level | uint256 |  |
+| level | uint256 | Building level |
 
 
 
-### applyState
-
-```solidity
-function applyState() public
-```
-
-Applies state of this building up to block.timestamp
-
-_Useful if 'harvesting' resources from building production to building token holders_
-
-
-
-
-### calcUpgradeTime
+### getUpgradePrice
 
 ```solidity
-function calcUpgradeTime(uint256 _level) public view virtual returns (uint256)
+function getUpgradePrice(uint256 level) public view virtual returns (uint256)
 ```
 
-Calculates upgrade time for provided level
-
-_If level=1 then returned value will be time which is taken for upgrading from 1 to 2 level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### calcUpgradePrice
-
-```solidity
-function calcUpgradePrice(uint256 _level, string resourceName) public view virtual returns (uint256)
-```
-
-Calculates upgrade price by resource and provided level
+Calculates upgrade price by provided level
 
 _Useful for determination how much upgrade will cost at any level_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| _level | uint256 |  |
-| resourceName | string | Name of resource |
+| level | uint256 | Level at which calculate price |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
 
 
-### calcWoodUpgradePrice
+### updateState
 
 ```solidity
-function calcWoodUpgradePrice(uint256 _level) public view returns (uint256)
+function updateState() public
 ```
 
-Calculates wood upgrade price for provided level
+Updates state of this building up to block.timestamp
 
-_Will be deprecated in favor of calcUpgradePrice(level, "WOOD")_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
+_Updates building production minting treasury and increasing #production.readyToBeDistributed_
 
 
-### calcOreUpgradePrice
+
+
+### getProductionResult
 
 ```solidity
-function calcOreUpgradePrice(uint256 _level) public view returns (uint256)
+function getProductionResult(uint256 timestamp) public view virtual returns (struct IBuilding.ProductionResultItem[])
 ```
 
-Calculates ore upgrade price for provided level
+Calculates production resources changes at provided time
 
-_Will be deprecated in favor of calcUpgradePrice(level, "ORE")_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
+_Useful for determination how much of all production will be burned/produced at the specific time_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | uint256 |  |
+| timestamp | uint256 | Time at which calculate amount of resources in building. If timestamp=0 -> calculates as block.timestamp |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | struct IBuilding.ProductionResultItem[] |  |
 
 
-### FortData
+### calculateDamageDone
+
+```solidity
+function calculateDamageDone(uint256 timestamp) public view returns (uint256 damage)
+```
+
+Calculates damage done at specified timestamp
+
+_Uses fort production and siege parameters to forecast health and damage will be dealt at specified time_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| timestamp | uint256 | Time at which calculate parameters |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| damage | uint256 | Amount of damage done from fort.productionInfo.lastUpdateState to specified timestamp |
+
+
+### FortProductionResultParams
 
 
 
@@ -297,380 +212,104 @@ _Will be deprecated in favor of calcUpgradePrice(level, "ORE")_
 
 
 ```solidity
-struct FortData {
+struct FortProductionResultParams {
+  uint256 healthProduced;
+  uint256 healthLost;
+  uint256 advancedTicksProduced;
+}
+```
+
+### _updateProsperity
+
+```solidity
+function _updateProsperity() internal
+```
+
+
+
+_Updates building prosperity according to changed amount of resources in building_
+
+
+
+
+### _calculateDegenIncome
+
+```solidity
+function _calculateDegenIncome() internal view returns (uint256)
+```
+
+
+
+_Calculates fort degen income based on current siege power_
+
+
+
+
+### _calculateFortProductionResultParams
+
+```solidity
+function _calculateFortProductionResultParams(uint256 timestamp, uint256 productionLastUpdateStateTime, uint256 healthPerTick) internal view returns (struct Fort.FortProductionResultParams)
+```
+
+
+
+_Calculates fort production result params_
+
+
+
+
+### _composeFortProductionResultParams
+
+```solidity
+function _composeFortProductionResultParams(uint256 elapsedSeconds, uint256 fullHealthProductionSeconds, uint256 partialHealthProductionSeconds, uint256 basicRegenIncome, uint256 advancedRegenIncome, uint256 degenIncome, uint256 healthPerTick) internal pure returns (struct Fort.FortProductionResultParams)
+```
+
+
+
+_Composes fort production result params by provided data_
+
+
+
+
+### FortAdvancedProductionParams
+
+
+
+
+
+
+
+
+```solidity
+struct FortAdvancedProductionParams {
   uint256 fullHealthProductionSeconds;
   uint256 partialHealthProductionSeconds;
 }
 ```
 
-### calculateFortData
+### _calculateFortAdvancedProductionParams
 
 ```solidity
-function calculateFortData() public view returns (struct Fort.FortData)
+function _calculateFortAdvancedProductionParams(uint256 currentHealth, uint256 maxHealth, uint256 basicRegenIncome, uint256 advancedRegenIncome, uint256 degenIncome, uint256 toBeProducedHealth) internal pure returns (struct Fort.FortAdvancedProductionParams)
 ```
 
 
 
-_Calculates fort health production_
+_Calculates fort advanced production params_
 
 
 
 
-### calculateCumulativeState
-
-```solidity
-function calculateCumulativeState(uint256 _timestamp) public view virtual returns (struct IBuilding.ProductionResult[] res)
-```
-
-Calculates production resources changes at provided time
-
-_Useful for determination how much of all production will be burned/produced at the specific time
-Probably will be renamed in near future for more representative formulation_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _timestamp | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| res | struct IBuilding.ProductionResult[] |  |
-
-
-## Fort
-
-
-
-
-
-
-
-
-### health
+### _updateHealth
 
 ```solidity
-uint256 health
-```
-
-Fort health
-
-_Updated when #updateHealth is called_
-
-
-
-
-### updateHealth
-
-```solidity
-function updateHealth(uint256 value) public
-```
-
-Updates fort health
-
-_Even though function is opened, it can be called only by world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| value | uint256 | New fort health |
-
-
-
-### getProducingResourceName
-
-```solidity
-function getProducingResourceName() public view returns (string)
-```
-
-Calculates producing resource name for this building
-
-_Return value is value from #getConfig where 'isProduced'=true_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | string |  |
-
-
-### resetDistribution
-
-```solidity
-function resetDistribution() public
-```
-
-Resets current building distribution
-
-_Creates new distribution Nft and mints it to current settlement owner_
-
-
-
-
-### init
-
-```solidity
-function init(address settlementAddress) public
-```
-
-Proxy initializer
-
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
-
-
-
-### getConfig
-
-```solidity
-function getConfig() public view returns (struct IBuilding.InitialResourceBlock[] initialResourceBlocks)
-```
-
-Returns production config for current building
-
-_Main config that determines which resources is produced/spend by production of this building
-InitialResourceBlock.perTick is value how much of resource is spend/produced by 1 worker in 1 second of production_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| initialResourceBlocks | struct IBuilding.InitialResourceBlock[] | Production config for current building |
-
-
-### getMaxHealthOnLevel
-
-```solidity
-function getMaxHealthOnLevel(uint256 _level) public view returns (uint256)
-```
-
-Calculates maximum amount of health for provided level
-
-_Useful to determine maximum amount of health will be available at provided level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### recalculateProduction
-
-```solidity
-function recalculateProduction() internal
+function _updateHealth(uint256 value) internal
 ```
 
 
 
-_Recalculates production structure according to new resource balances_
+_Updates fort health_
 
 
-
-
-### updateReserves
-
-```solidity
-function updateReserves() internal
-```
-
-
-
-_Updates building treasury according to changed amount of resources in building_
-
-
-
-
-### getReserves
-
-```solidity
-function getReserves(uint256 _timestamp) public view returns (uint256)
-```
-
-Calculates treasury amount at specified time
-
-_Useful for determination how much treasury will be at specific time_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _timestamp | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### calcMaxWorkers
-
-```solidity
-function calcMaxWorkers(uint256 _buildingLevel) public view returns (uint256)
-```
-
-Calculates maximum amount of workers for specified level
-
-_Useful to determinate maximum amount of workers on any level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _buildingLevel | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### getMaxReservesByLevel
-
-```solidity
-function getMaxReservesByLevel(uint256 _level) public view returns (uint256)
-```
-
-Calculates maximum amount of treasury by provided level
-
-_Can be used to determine maximum amount of treasury by any level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-
-
-### applyState
-
-```solidity
-function applyState() public
-```
-
-Applies state of this building up to block.timestamp
-
-_Useful if 'harvesting' resources from building production to building token holders_
-
-
-
-
-### calcUpgradeTime
-
-```solidity
-function calcUpgradeTime(uint256 _level) public view virtual returns (uint256)
-```
-
-Calculates upgrade time for provided level
-
-_If level=1 then returned value will be time which is taken for upgrading from 1 to 2 level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### calcUpgradePrice
-
-```solidity
-function calcUpgradePrice(uint256 _level, string resourceName) public view virtual returns (uint256)
-```
-
-Calculates upgrade price by resource and provided level
-
-_Useful for determination how much upgrade will cost at any level_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-| resourceName | string | Name of resource |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### calcWoodUpgradePrice
-
-```solidity
-function calcWoodUpgradePrice(uint256 _level) public view returns (uint256)
-```
-
-Calculates wood upgrade price for provided level
-
-_Will be deprecated in favor of calcUpgradePrice(level, "WOOD")_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### calcOreUpgradePrice
-
-```solidity
-function calcOreUpgradePrice(uint256 _level) public view returns (uint256)
-```
-
-Calculates ore upgrade price for provided level
-
-_Will be deprecated in favor of calcUpgradePrice(level, "ORE")_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _level | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 |  |
-
-
-### FortData
-
-
-
-
-
-
-
-
-```solidity
-struct FortData {
-  uint256 fullHealthProductionSeconds;
-  uint256 partialHealthProductionSeconds;
-}
-```
-
-### calculateFortData
-
-```solidity
-function calculateFortData() public view returns (struct Fort.FortData)
-```
-
-
-
-_Calculates fort health production_
-
-
-
-
-### calculateCumulativeState
-
-```solidity
-function calculateCumulativeState(uint256 _timestamp) public view virtual returns (struct IBuilding.ProductionResult[] res)
-```
-
-Calculates production resources changes at provided time
-
-_Useful for determination how much of all production will be burned/produced at the specific time
-Probably will be renamed in near future for more representative formulation_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _timestamp | uint256 |  |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| res | struct IBuilding.ProductionResult[] |  |
 
 

@@ -13,10 +13,10 @@ struct SimpleProxyStorage {
   address owner;
 }
 ```
-## freeFunction
+## getSimpleProxyStorage
 
 ```solidity
-freeFunction freeFunction() internal pure returns (struct SimpleProxyStorage ds)
+function getSimpleProxyStorage() internal pure returns (struct SimpleProxyStorage ds)
 ```
 
 
@@ -49,6 +49,30 @@ Emitted when #transferOwnership is called
 
 
 
+### OnlyOwner
+
+```solidity
+error OnlyOwner()
+```
+
+Thrown when attempting to call action which can only be called by owner
+
+
+
+
+
+### UnableToTransferOwnershipToZeroAddress
+
+```solidity
+error UnableToTransferOwnershipToZeroAddress()
+```
+
+Thrown when attempting to transfer ownership to zero address
+
+
+
+
+
 ### onlyOwner
 
 ```solidity
@@ -57,7 +81,8 @@ modifier onlyOwner()
 
 
 
-_Allows caller to be only owner_
+_Only owner modifier
+Modifier is calling internal function in order to reduce contract size_
 
 
 
@@ -141,6 +166,19 @@ function _transferOwnership(address newOwner) internal virtual
 
 
 _Transfers ownership to another address_
+
+
+
+
+### _onlyOwner
+
+```solidity
+function _onlyOwner() internal view
+```
+
+
+
+_Allows caller to be only owner_
 
 
 

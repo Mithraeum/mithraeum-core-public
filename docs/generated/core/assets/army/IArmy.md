@@ -7,7 +7,7 @@ Functions to read state/modify state in order to get current army parameters and
 
 
 
-### MovementTiming
+### ManeuverInfo
 
 
 
@@ -17,113 +17,35 @@ Functions to read state/modify state in order to get current army parameters and
 
 
 ```solidity
-struct MovementTiming {
-  uint64 startTime;
+struct ManeuverInfo {
+  uint64 beginTime;
+  uint64 endTime;
+  uint64 destinationPosition;
+  uint64 secretDestinationRegionId;
+  bytes32 secretDestinationPosition;
+}
+```
+
+### StunInfo
+
+
+
+
+
+
+
+
+```solidity
+struct StunInfo {
+  uint64 beginTime;
   uint64 endTime;
 }
 ```
 
-### UnitsChanged
+### relatedSettlement
 
 ```solidity
-event UnitsChanged(string unitName, uint256 value)
-```
-
-Emitted when #burnUnits is called (#demilitarize or #exitBattle)
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitName | string | Name of the unit type |
-| value | uint256 | New amount of unit type presented in army |
-
-
-
-### UpdatedPosition
-
-```solidity
-event UpdatedPosition(address settlementAddress, uint32 position)
-```
-
-Emitted when #updatePosition is called (even though event can be emitted only on the next action related to the current army, de-facto army will update position based on 'movementTiming.endTime'
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Address of the settlement where army currently staying on |
-| position | uint32 | Position |
-
-
-
-### NewBattle
-
-```solidity
-event NewBattle(address battleAddress, address targetArmyAddress)
-```
-
-Emitted when #newBattle is called. Army which attacks another army will emit this event.
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| battleAddress | address | Created battle address |
-| targetArmyAddress | address | Address of the attacked army |
-
-
-
-### JoinedBattle
-
-```solidity
-event JoinedBattle(address battleAddress, bool isSideA)
-```
-
-Emitted when army joins battle. At the battle creation both armies (attacker and attacked) will emit this event. Attacker army will be side A and at attacked army will be sideB
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| battleAddress | address | Address of the battle army joined in |
-| isSideA | bool | Side to which army joined |
-
-
-
-### ExitedFromBattle
-
-```solidity
-event ExitedFromBattle(address battleAddress)
-```
-
-Emitted when #_exitBattle is called (even though event can be emitted only on the next action related to the current army, de-facto army will exit battle when battle is finished)
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| battleAddress | address | Address of the battle army was in |
-
-
-
-### MovingTo
-
-```solidity
-event MovingTo(address destinationSettlement, uint256 movementStartTime, uint256 movementFinishTime, uint32[] path)
-```
-
-Emitted when #move is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationSettlement | address | Address of the settlement army is moving to |
-| movementStartTime | uint256 | Time at which movement began |
-| movementFinishTime | uint256 | Time at which movement will end |
-| path | uint32[] | The path army is taken from starting position to destination position |
-
-
-
-### currentSettlement
-
-```solidity
-function currentSettlement() external view returns (contract ISettlement)
+function relatedSettlement() external view returns (contract ISettlement)
 ```
 
 Settlement address to which this army belongs
@@ -136,27 +58,13 @@ _Immutable, initialized on the army creation_
 ### currentPosition
 
 ```solidity
-function currentPosition() external view returns (uint32)
+function currentPosition() external view returns (uint64)
 ```
 
 Position where army currently stands on
 
-_Updated when army updates position. It does not take into account if army is moving
+_Updated when army updates position. It does not take into account if army is maneuvering
 To proper query current position use #getCurrentPosition_
-
-
-
-
-### destinationPosition
-
-```solidity
-function destinationPosition() external view returns (uint32)
-```
-
-Position to which are is moving to
-
-_Updated when army starts moving. It does not take into account if army is finished move by time
-To proper calculate destination position you need to check if army finished movement by comparing current time and movementTiming.endTime_
 
 
 
@@ -169,94 +77,523 @@ function battle() external view returns (contract IBattle)
 
 Battle in which army is on
 
-_If army is not in battle returns address(0). It does not take into account if battle is finished but army is not left the battle_
+_If army is not in battle returns address(0). It does not take into account if battle is ended but army is not left the battle_
 
 
 
 
-### siege
-
-```solidity
-function siege() external view returns (contract ISiege)
-```
-
-Siege in which are army is on
-
-_If army is not in siege returns address(0)_
-
-
-
-
-### movementTiming
+### maneuverInfo
 
 ```solidity
-function movementTiming() external view returns (uint64 startTime, uint64 endTime)
+function maneuverInfo() external view returns (uint64 beginTime, uint64 endTime, uint64 destinationPosition, uint64 secretDestinationRegionId, bytes32 secretDestinationPosition)
 ```
 
-Movement timings
+Maneuver info
 
-_Updated when army starts moving. It does not take into account if army is finished move by time_
-
-
+_Updated when army begins maneuvering. It does not take into account if army is ended maneuver by time_
 
 
-### movementPath
+
+
+### stunInfo
 
 ```solidity
-function movementPath(uint256 index) external view returns (uint32)
+function stunInfo() external view returns (uint64 beginTime, uint64 endTime)
 ```
 
-Path army is taken during movement
+Stun info
 
-_Updated when army starts moving. It does not take into account if army is finished move by time
-To proper query entire movementPath use #getMovementPath_
-
+_Updated when army stun is applied_
 
 
 
-### lastDemilitarizationTime
+
+### additionalUnitsBattleMultipliers
 
 ```solidity
-function lastDemilitarizationTime() external view returns (uint256)
+function additionalUnitsBattleMultipliers(bytes32 unitTypeId) external view returns (uint256)
 ```
 
-Time at which last demilitarization occured
+Mapping containing additional unit battle multiplier
 
-_Updated when #demilitarize is called_
-
-
+_Updated when #increaseUnitBattleMultiplier or #decreaseUnitBattleMultiplier is called_
 
 
-### init
+
+
+### UpdatedPosition
 
 ```solidity
-function init(address settlementAddress) external
+event UpdatedPosition(address settlementAddress, uint64 position)
 ```
 
-Proxy initializer
-
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
-
-
-
-### getMovementPath
-
-```solidity
-function getMovementPath() external view returns (uint32[] path)
-```
-
-Path army is taken during movement
-
-_Useful to get entire movement path rather than querying each path item by index. It does not take into account if army is finished move by time_
+Emitted when #updatePosition is called (even though event can be emitted only on the next action related to the current army, de-facto army will update position based on 'maneuverInfo.endTime'
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| path | uint32[] | Entire path army is taken during movement |
+| settlementAddress | address | Address of the settlement where army currently staying on |
+| position | uint64 | Position |
+
+
+
+### BattleCreated
+
+```solidity
+event BattleCreated(address battleAddress, address targetArmyAddress)
+```
+
+Emitted when #createBattle is called. Army which attacks another army will emit this event
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| battleAddress | address | Created battle address |
+| targetArmyAddress | address | Address of the attacked army |
+
+
+
+### JoinedBattle
+
+```solidity
+event JoinedBattle(address battleAddress, uint256 side)
+```
+
+Emitted when army joins battle. At the battle creation both armies (attacker and attacked) will emit this event. Attacker army will be side A and at attacked army will be sideB
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| battleAddress | address | Address of the battle army joined in |
+| side | uint256 | Side to which army joined (sideA = 1, sideB = 2) |
+
+
+
+### ExitedFromBattle
+
+```solidity
+event ExitedFromBattle(address battleAddress)
+```
+
+Emitted when #updateState is called (even though event can be emitted only on the next action related to the current army, de-facto army will exit battle when battle is ended)
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| battleAddress | address | Address of the battle army was in |
+
+
+
+### ManeuveringBegan
+
+```solidity
+event ManeuveringBegan(uint64 position, uint64 secretDestinationRegionId, bytes32 secretDestinationPosition, uint256 beginTime, uint256 endTime, uint256 tokensToSpendOnAcceleration)
+```
+
+Emitted when #beginOpenManeuver or #beginSecretManeuver or #revealSecretManeuver is called
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| position | uint64 | Position army is maneuvering to (0 if secret maneuver) |
+| secretDestinationRegionId | uint64 | Secret destination regionId (not zero if secret maneuver) |
+| secretDestinationPosition | bytes32 | Secret destination position (not zero if secret maneuver) |
+| beginTime | uint256 | Time at which maneuver began |
+| endTime | uint256 | Time at which maneuver will end (0 if secret maneuver) |
+| tokensToSpendOnAcceleration | uint256 | Amount of tokens to spend on acceleration (Food for open maneuver, Wood for secret maneuver) |
+
+
+
+### SecretManeuverCancelled
+
+```solidity
+event SecretManeuverCancelled()
+```
+
+Emitted when #cancelSecretManeuver is called
+
+
+
+
+
+### StunApplied
+
+```solidity
+event StunApplied(uint64 stunBeginTime, uint64 stunEndTime)
+```
+
+Emitted when #_applyStun is called
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| stunBeginTime | uint64 | Stun begin time |
+| stunEndTime | uint64 | Stun end time |
+
+
+
+### UnitsDemilitarized
+
+```solidity
+event UnitsDemilitarized(bytes32[] unitTypeIds, uint256[] unitsAmounts)
+```
+
+Emitted when #demilitarize is called
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeIds | bytes32[] | Unit type ids demilitarized |
+| unitsAmounts | uint256[] | Amount of units demilitarized |
+
+
+
+### OnlyRulerOrWorldAssetFromSameEra
+
+```solidity
+error OnlyRulerOrWorldAssetFromSameEra()
+```
+
+Thrown when attempting to call action which only possible to be called by ruler, world or world asset
+
+
+
+
+
+### ArmyIsStunned
+
+```solidity
+error ArmyIsStunned()
+```
+
+Thrown when attempting to call action which is blocked when army is stunned
+
+
+
+
+
+### ArmyIsManeuvering
+
+```solidity
+error ArmyIsManeuvering()
+```
+
+Thrown when attempting to call action which is blocked when army is maneuvering
+
+
+
+
+
+### ArmyIsInBattle
+
+```solidity
+error ArmyIsInBattle()
+```
+
+Thrown when attempting to call action which is blocked when army is in battle
+
+
+
+
+
+### ArmyIsInSiege
+
+```solidity
+error ArmyIsInSiege()
+```
+
+Thrown when attempting to call action which is blocked when army is in siege
+
+
+
+
+
+### ArmyCannotManeuverToSamePosition
+
+```solidity
+error ArmyCannotManeuverToSamePosition()
+```
+
+Thrown when attempting to begin maneuver to same position
+
+
+
+
+
+### ArmyCannotManeuverToPositionWithoutSettlement
+
+```solidity
+error ArmyCannotManeuverToPositionWithoutSettlement()
+```
+
+Thrown when attempting to maneuver to position without settlement
+
+
+
+
+
+### ArmyWithoutUnitsCannotManeuverToNotHomeSettlement
+
+```solidity
+error ArmyWithoutUnitsCannotManeuverToNotHomeSettlement()
+```
+
+Thrown when attempting to maneuver without units to non-home position
+
+
+
+
+
+### ArmyWithoutUnitsCannotAccelerate
+
+```solidity
+error ArmyWithoutUnitsCannotAccelerate()
+```
+
+Thrown when attempting to maneuver without units but with acceleration
+
+
+
+
+
+### ArmyWithoutUnitsCannotBeginSecretManeuver
+
+```solidity
+error ArmyWithoutUnitsCannotBeginSecretManeuver()
+```
+
+Thrown when attempting to secretly maneuver without units
+
+
+
+
+
+### ArmyIsNotManeuveringSecretly
+
+```solidity
+error ArmyIsNotManeuveringSecretly()
+```
+
+Thrown when attempting to reveal or cancel secret maneuver
+
+
+
+
+
+### WrongSecretManeuverRevealInfo
+
+```solidity
+error WrongSecretManeuverRevealInfo()
+```
+
+Thrown when attempting to reveal secret maneuver with invalid reveal info
+
+
+
+
+
+### SecretManeuverRevealNotPossibleToNotSpecifiedRegion
+
+```solidity
+error SecretManeuverRevealNotPossibleToNotSpecifiedRegion()
+```
+
+Thrown when attempting to reveal secret maneuver with valid reveal info but wrong region
+
+
+
+
+
+### SecretManeuverRevealNotPossibleAtThisTime
+
+```solidity
+error SecretManeuverRevealNotPossibleAtThisTime()
+```
+
+Thrown when attempting to reveal secret maneuver at invalid time
+
+
+
+
+
+### WrongDemilitarizationInput
+
+```solidity
+error WrongDemilitarizationInput()
+```
+
+Thrown when attempting to demilitarize with invalid input
+
+
+
+
+
+### NotEnoughUnitsForDemilitarization
+
+```solidity
+error NotEnoughUnitsForDemilitarization()
+```
+
+Thrown when attempting to demilitarize more units than army currently have
+
+
+
+
+
+### ArmyCannotAttackAnotherArmyIfTheyAreNotOnSamePosition
+
+```solidity
+error ArmyCannotAttackAnotherArmyIfTheyAreNotOnSamePosition()
+```
+
+Thrown when attempting to start battle by attacking army not on same position as current army
+
+
+
+
+
+### ArmyCannotAttackNotCurrentEraArmy
+
+```solidity
+error ArmyCannotAttackNotCurrentEraArmy()
+```
+
+Thrown when attempting to start battle by providing army address to attack which is not part of current era
+
+
+
+
+
+### ArmyCannotAttackItself
+
+```solidity
+error ArmyCannotAttackItself()
+```
+
+Thrown when attempting to start battle by providing army address which is same as current army
+
+
+
+
+
+### ArmyCannotJoinToNotCurrentEraBattle
+
+```solidity
+error ArmyCannotJoinToNotCurrentEraBattle()
+```
+
+Thrown when attempting to join battle by providing invalid battle address
+
+
+
+
+
+### ArmyWithoutUnitsCannotJoinBattle
+
+```solidity
+error ArmyWithoutUnitsCannotJoinBattle()
+```
+
+Thrown when attempting to join battle with army which has zero units in it
+
+
+
+
+
+### WrongJoinSide
+
+```solidity
+error WrongJoinSide()
+```
+
+Thrown when attempting to join battle by providing invalid side
+
+
+
+
+
+### ArmyCannotJoinToBattleNotInLobbyPhase
+
+```solidity
+error ArmyCannotJoinToBattleNotInLobbyPhase()
+```
+
+Thrown when attempting to join battle while its not in lobby phase
+
+
+
+
+
+### ArmyCannotJoinToBattleNotAtSamePosition
+
+```solidity
+error ArmyCannotJoinToBattleNotAtSamePosition()
+```
+
+Thrown when attempting to join battle which is not at same position as current army
+
+
+
+
+
+### ArmyCannotBesiegeOwnSettlement
+
+```solidity
+error ArmyCannotBesiegeOwnSettlement()
+```
+
+Thrown when attempting to modify siege of own settlement
+
+
+
+
+
+### WrongRobberyMultiplierSpecified
+
+```solidity
+error WrongRobberyMultiplierSpecified()
+```
+
+Thrown when attempting to modify siege by providing invalid robbery multiplier
+
+
+
+
+
+### ArmyCannotModifySiegeUnitsToLiquidatableState
+
+```solidity
+error ArmyCannotModifySiegeUnitsToLiquidatableState()
+```
+
+Thrown when attempting to modify siege in result of which army will become liquidatable
+
+
+
+
+
+### ArmyCannotUseMoreResourcesForAccelerationThanBuildingTreasuryHas
+
+```solidity
+error ArmyCannotUseMoreResourcesForAccelerationThanBuildingTreasuryHas()
+```
+
+Thrown when attempting to use more resources for acceleration than related building treasury has
+
+
+
+
+
+### ArmyCannotAccelerateManeuverFromCultistsSettlementWithNonZeroCultistsArmy
+
+```solidity
+error ArmyCannotAccelerateManeuverFromCultistsSettlementWithNonZeroCultistsArmy()
+```
+
+Thrown when attempting to use accelerate maneuver from cultists settlement with non zero cultists
+
+
+
 
 
 ### updateState
@@ -272,27 +609,76 @@ _Called on every action which are based on army state and time_
 
 
 
-### move
+### beginOpenManeuver
 
 ```solidity
-function move(uint32[] path, uint256 foodToSpendOnFeeding) external
+function beginOpenManeuver(uint64 position, uint256 foodToSpendOnAcceleration) external
 ```
 
-Initiates army movement to the settlement
+Begins open maneuver to specified position
 
-_Even though path can be provided artificial only allowed movement to a settlement_
+_Even though position can be artificial, army can move only to settlement_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| path | uint32[] | Path army will take to the settlement |
-| foodToSpendOnFeeding | uint256 | Amount of food army will take from current position settlements FARM in order to decrease total time army will take to get to destination position |
+| position | uint64 | Position of settlement to move to |
+| foodToSpendOnAcceleration | uint256 | Amount of food army will take from current position settlements FARM in order to decrease total time army will take to get to destination position |
+
+
+
+### beginSecretManeuver
+
+```solidity
+function beginSecretManeuver(uint64 secretDestinationRegionId, bytes32 secretDestinationPosition) external
+```
+
+Begins secret maneuver to secret position
+
+_Caller must be aware of the rules applied to revealing destination position otherwise army may be punished_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| secretDestinationRegionId | uint64 | Secret destination region id |
+| secretDestinationPosition | bytes32 | Secret destination position |
+
+
+
+### revealSecretManeuver
+
+```solidity
+function revealSecretManeuver(uint64 destinationPosition, bytes32 revealKey, uint256 woodToSpendOnAcceleration) external
+```
+
+Reveals secret maneuver
+
+_In order to successfully reveal 'secretDestinationPosition' - 'destination position' and 'revealKey' must be valid
+Validity of verified by 'keccak256(abi.encodePacked(destinationPosition, revealKey)) == secretDestinationPosition'_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| destinationPosition | uint64 | Destination position |
+| revealKey | bytes32 | Reveal key |
+| woodToSpendOnAcceleration | uint256 | Wood to spend on acceleration |
+
+
+
+### cancelSecretManeuver
+
+```solidity
+function cancelSecretManeuver() external
+```
+
+Cancels secret maneuver
+
+_Can be cancelled by army owner_
+
 
 
 
 ### demilitarize
 
 ```solidity
-function demilitarize(string[] unitNames, uint256[] unitsCount) external
+function demilitarize(bytes32[] unitTypeIds, uint256[] unitsAmounts) external
 ```
 
 Demilitarizes part of the army. Demilitarization provides prosperity to the settlement army is currently staying on
@@ -301,64 +687,50 @@ _Even though demilitarization of 0 units may seem reasonable, it is disabled_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitNames | string[] | Names of the unit types for demilitarization |
-| unitsCount | uint256[] | Amount of units for demilitarization for every unit type |
+| unitTypeIds | bytes32[] | Unit type ids for demilitarization |
+| unitsAmounts | uint256[] | Amount of units to demilitarize |
 
 
 
-### setInBattle
-
-```solidity
-function setInBattle(address battleAddress) external
-```
-
-Sets army is battle
-
-_Can only be called by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| battleAddress | address | Address of the battle |
-
-
-
-### newBattle
+### beginBattle
 
 ```solidity
-function newBattle(address armyAddress) external
+function beginBattle(address armyAddress, bytes32[] maxUnitTypeIdsToAttack, uint256[] maxUnitsToAttack) external
 ```
 
-Initiates battle with another army is both are not in battle
+Begins battle with another army if both are not in battle
 
 _Creates IBattle and sets both armies in created battle_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | armyAddress | address | Address of the army this army will attack |
+| maxUnitTypeIdsToAttack | bytes32[] | Max unit type ids to attack |
+| maxUnitsToAttack | uint256[] | Max units to attack |
 
 
 
 ### joinBattle
 
 ```solidity
-function joinBattle(address battleAddress, bool isSideA) external
+function joinBattle(address battleAddress, uint256 side) external
 ```
 
 Joins current army in battle to the provided side
 
-_Moving army is able to join battle only if caller is another army (drags it into battle)_
+_Maneuvering army is able to join battle only if caller is another army (drags it into battle)_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | battleAddress | address | Battle address army will join |
-| isSideA | bool | Side of the battle army will join |
+| side | uint256 | Side of the battle army will join (sideA = 1, sideB = 2) |
 
 
 
 ### burnUnits
 
 ```solidity
-function burnUnits(string[] unitNames, uint256[] unitsCount) external
+function burnUnits(bytes32[] unitTypeIds, uint256[] unitsAmounts) external
 ```
 
 Burns units from the army
@@ -367,60 +739,77 @@ _Can only be called by world or world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitNames | string[] | Names of the unit types for burning |
-| unitsCount | uint256[] | Amount of units for burning for every unit type |
+| unitTypeIds | bytes32[] | Unit type ids for burning |
+| unitsAmounts | uint256[] | Amount of units for burning for every unit type |
+
+
+
+### liquidateUnits
+
+```solidity
+function liquidateUnits(bytes32[] unitTypeIds, uint256[] unitsAmounts) external
+```
+
+Liquidates units from the army
+
+_Can only be called by world or world asset_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeIds | bytes32[] | Unit type ids for liquidation |
+| unitsAmounts | uint256[] | Amount of units for liquidation |
 
 
 
 ### getCurrentPosition
 
 ```solidity
-function getCurrentPosition() external view returns (uint32 position)
+function getCurrentPosition() external view returns (uint64 position)
 ```
 
-Calculates current position taking to the account #movementTimings
+Calculates current position taking to the account #maneuverInfo
 
 _This method should be used to determine real army position_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| position | uint32 | Position |
+| position | uint64 | Position |
 
 
-### setUnitsInSiege
+### modifySiege
 
 ```solidity
-function setUnitsInSiege(string[] addUnitsNames, uint256[] addUnitsCount, string[] removeUnitsNames, uint256[] removeUnitsCount) external
+function modifySiege(bytes32[] unitTypeIds, bool[] toAddIndication, uint256[] unitsAmounts, uint256 newRobberyMultiplier) external
 ```
 
-Sets and withdraw units to/from siege
+Modifies army siege params
 
 _Provides ability to atomically setup/re-setup siege_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| addUnitsNames | string[] | Names of the unit types to put in siege |
-| addUnitsCount | uint256[] | Amount of units to put in siege for every unit type |
-| removeUnitsNames | string[] | Names of the unit types to withdraw from siege |
-| removeUnitsCount | uint256[] | Amount of units to withdraw from siege for every unit type |
+| unitTypeIds | bytes32[] | Unit type ids |
+| toAddIndication | bool[] | Indication array whether to add units or to withdraw (add = true, withdraw = false) |
+| unitsAmounts | uint256[] | Amounts of units to add/withdraw |
+| newRobberyMultiplier | uint256 | New robbery multiplier |
 
 
 
-### claimResources
+### swapRobberyPointsForResourceFromBuildingTreasury
 
 ```solidity
-function claimResources(address buildingAddress, uint256 points) external
+function swapRobberyPointsForResourceFromBuildingTreasury(address buildingAddress, uint256 pointsToSpend) external
 ```
 
-Swaps accumulated robbery tokens in siege for resource
+Swaps accumulated robbery points in siege for resource from building treasury
 
 _Amount of points will be taken may be lesser if building does not have resources in its treasury_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | buildingAddress | address | Address of the building treasury of which will be robbed |
-| points | uint256 | Amount of points to spend for resources |
+| pointsToSpend | uint256 | Amount of points to spend for resources |
 
 
 
@@ -440,22 +829,6 @@ _For every unit type placed in siege calculates sum of all of them_
 | totalSiegeSupport | uint256 | Total siege support of the army |
 
 
-### setSiegeAddress
-
-```solidity
-function setSiegeAddress(address siegeAddress) external
-```
-
-Sets army in siege
-
-_Can only be called by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| siegeAddress | address | Address of the siege |
-
-
-
 ### getOwner
 
 ```solidity
@@ -472,535 +845,85 @@ _Same as owner of the settlement to which this army belongs_
 | ownerAddress | address | Address of the owner of the army |
 
 
-### updatePosition
+### isAtHomePosition
 
 ```solidity
-function updatePosition() external
+function isAtHomePosition() external view returns (bool isAtHomePosition)
 ```
 
-Updates army position if movement is finished
+Calculates is army at home position
 
-_Called on every action which are based on army state and time_
-
-
-
-
-### isHomePosition
-
-```solidity
-function isHomePosition() external view returns (bool isHomePosition)
-```
-
-Calculates is army on its home position
-
-_Takes into account if army movement is finished_
+_Takes into account if army maneuver is ended (by time)_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| isHomePosition | bool | Is army on home position |
+| isAtHomePosition | bool | Is army at home position |
 
 
-## IArmy
-
-
-Functions to read state/modify state in order to get current army parameters and/or interact with it
-
-
-
-
-
-### MovementTiming
-
-
-
-
-
-
-
+### isManeuvering
 
 ```solidity
-struct MovementTiming {
-  uint64 startTime;
-  uint64 endTime;
-}
+function isManeuvering() external view returns (bool isManeuvering)
 ```
 
-### UnitsChanged
+Calculates is army maneuvering (openly or secretly)
 
-```solidity
-event UnitsChanged(string unitName, uint256 value)
-```
-
-Emitted when #burnUnits is called (#demilitarize or #exitBattle)
+_Takes into account if army maneuver is ended (by time)_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitName | string | Name of the unit type |
-| value | uint256 | New amount of unit type presented in army |
+| isManeuvering | bool | Is maneuvering |
 
 
-
-### UpdatedPosition
+### increaseUnitBattleMultiplier
 
 ```solidity
-event UpdatedPosition(address settlementAddress, uint32 position)
+function increaseUnitBattleMultiplier(bytes32 unitTypeId, uint256 unitBattleMultiplier) external
 ```
 
-Emitted when #updatePosition is called (even though event can be emitted only on the next action related to the current army, de-facto army will update position based on 'movementTiming.endTime'
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Address of the settlement where army currently staying on |
-| position | uint32 | Position |
-
-
-
-### NewBattle
-
-```solidity
-event NewBattle(address battleAddress, address targetArmyAddress)
-```
-
-Emitted when #newBattle is called. Army which attacks another army will emit this event.
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| battleAddress | address | Created battle address |
-| targetArmyAddress | address | Address of the attacked army |
-
-
-
-### JoinedBattle
-
-```solidity
-event JoinedBattle(address battleAddress, bool isSideA)
-```
-
-Emitted when army joins battle. At the battle creation both armies (attacker and attacked) will emit this event. Attacker army will be side A and at attacked army will be sideB
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| battleAddress | address | Address of the battle army joined in |
-| isSideA | bool | Side to which army joined |
-
-
-
-### ExitedFromBattle
-
-```solidity
-event ExitedFromBattle(address battleAddress)
-```
-
-Emitted when #_exitBattle is called (even though event can be emitted only on the next action related to the current army, de-facto army will exit battle when battle is finished)
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| battleAddress | address | Address of the battle army was in |
-
-
-
-### MovingTo
-
-```solidity
-event MovingTo(address destinationSettlement, uint256 movementStartTime, uint256 movementFinishTime, uint32[] path)
-```
-
-Emitted when #move is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| destinationSettlement | address | Address of the settlement army is moving to |
-| movementStartTime | uint256 | Time at which movement began |
-| movementFinishTime | uint256 | Time at which movement will end |
-| path | uint32[] | The path army is taken from starting position to destination position |
-
-
-
-### currentSettlement
-
-```solidity
-function currentSettlement() external view returns (contract ISettlement)
-```
-
-Settlement address to which this army belongs
-
-_Immutable, initialized on the army creation_
-
-
-
-
-### currentPosition
-
-```solidity
-function currentPosition() external view returns (uint32)
-```
-
-Position where army currently stands on
-
-_Updated when army updates position. It does not take into account if army is moving
-To proper query current position use #getCurrentPosition_
-
-
-
-
-### destinationPosition
-
-```solidity
-function destinationPosition() external view returns (uint32)
-```
-
-Position to which are is moving to
-
-_Updated when army starts moving. It does not take into account if army is finished move by time
-To proper calculate destination position you need to check if army finished movement by comparing current time and movementTiming.endTime_
-
-
-
-
-### battle
-
-```solidity
-function battle() external view returns (contract IBattle)
-```
-
-Battle in which army is on
-
-_If army is not in battle returns address(0). It does not take into account if battle is finished but army is not left the battle_
-
-
-
-
-### siege
-
-```solidity
-function siege() external view returns (contract ISiege)
-```
-
-Siege in which are army is on
-
-_If army is not in siege returns address(0)_
-
-
-
-
-### movementTiming
-
-```solidity
-function movementTiming() external view returns (uint64 startTime, uint64 endTime)
-```
-
-Movement timings
-
-_Updated when army starts moving. It does not take into account if army is finished move by time_
-
-
-
-
-### movementPath
-
-```solidity
-function movementPath(uint256 index) external view returns (uint32)
-```
-
-Path army is taken during movement
-
-_Updated when army starts moving. It does not take into account if army is finished move by time
-To proper query entire movementPath use #getMovementPath_
-
-
-
-
-### lastDemilitarizationTime
-
-```solidity
-function lastDemilitarizationTime() external view returns (uint256)
-```
-
-Time at which last demilitarization occured
-
-_Updated when #demilitarize is called_
-
-
-
-
-### init
-
-```solidity
-function init(address settlementAddress) external
-```
-
-Proxy initializer
-
-_Called by factory contract which creates current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| settlementAddress | address | Settlement address |
-
-
-
-### getMovementPath
-
-```solidity
-function getMovementPath() external view returns (uint32[] path)
-```
-
-Path army is taken during movement
-
-_Useful to get entire movement path rather than querying each path item by index. It does not take into account if army is finished move by time_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| path | uint32[] | Entire path army is taken during movement |
-
-
-### updateState
-
-```solidity
-function updateState() external
-```
-
-Updates army state to the current block
-
-_Called on every action which are based on army state and time_
-
-
-
-
-### move
-
-```solidity
-function move(uint32[] path, uint256 foodToSpendOnFeeding) external
-```
-
-Initiates army movement to the settlement
-
-_Even though path can be provided artificial only allowed movement to a settlement_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| path | uint32[] | Path army will take to the settlement |
-| foodToSpendOnFeeding | uint256 | Amount of food army will take from current position settlements FARM in order to decrease total time army will take to get to destination position |
-
-
-
-### demilitarize
-
-```solidity
-function demilitarize(string[] unitNames, uint256[] unitsCount) external
-```
-
-Demilitarizes part of the army. Demilitarization provides prosperity to the settlement army is currently staying on
-
-_Even though demilitarization of 0 units may seem reasonable, it is disabled_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| unitNames | string[] | Names of the unit types for demilitarization |
-| unitsCount | uint256[] | Amount of units for demilitarization for every unit type |
-
-
-
-### setInBattle
-
-```solidity
-function setInBattle(address battleAddress) external
-```
-
-Sets army is battle
+Increases unit battle multiplier
 
 _Can only be called by world or world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| battleAddress | address | Address of the battle |
+| unitTypeId | bytes32 | Unit type id |
+| unitBattleMultiplier | uint256 | Unit battle multiplier |
 
 
 
-### newBattle
-
-```solidity
-function newBattle(address armyAddress) external
-```
-
-Initiates battle with another army is both are not in battle
-
-_Creates IBattle and sets both armies in created battle_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Address of the army this army will attack |
-
-
-
-### joinBattle
+### decreaseUnitBattleMultiplier
 
 ```solidity
-function joinBattle(address battleAddress, bool isSideA) external
+function decreaseUnitBattleMultiplier(bytes32 unitTypeId, uint256 unitBattleMultiplier) external
 ```
 
-Joins current army in battle to the provided side
-
-_Moving army is able to join battle only if caller is another army (drags it into battle)_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| battleAddress | address | Battle address army will join |
-| isSideA | bool | Side of the battle army will join |
-
-
-
-### burnUnits
-
-```solidity
-function burnUnits(string[] unitNames, uint256[] unitsCount) external
-```
-
-Burns units from the army
+Decreases unit battle multiplier
 
 _Can only be called by world or world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitNames | string[] | Names of the unit types for burning |
-| unitsCount | uint256[] | Amount of units for burning for every unit type |
+| unitTypeId | bytes32 | Unit type id |
+| unitBattleMultiplier | uint256 | Unit battle multiplier |
 
 
 
-### getCurrentPosition
+### applySelfStun
 
 ```solidity
-function getCurrentPosition() external view returns (uint32 position)
+function applySelfStun(uint64 stunDuration) external
 ```
 
-Calculates current position taking to the account #movementTimings
+Applies army stun by settlement ruler
 
-_This method should be used to determine real army position_
-
+_Provides ability to self stun owned army_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| position | uint32 | Position |
+| stunDuration | uint64 | Stun duration |
 
-
-### setUnitsInSiege
-
-```solidity
-function setUnitsInSiege(string[] addUnitsNames, uint256[] addUnitsCount, string[] removeUnitsNames, uint256[] removeUnitsCount) external
-```
-
-Sets and withdraw units to/from siege
-
-_Provides ability to atomically setup/re-setup siege_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| addUnitsNames | string[] | Names of the unit types to put in siege |
-| addUnitsCount | uint256[] | Amount of units to put in siege for every unit type |
-| removeUnitsNames | string[] | Names of the unit types to withdraw from siege |
-| removeUnitsCount | uint256[] | Amount of units to withdraw from siege for every unit type |
-
-
-
-### claimResources
-
-```solidity
-function claimResources(address buildingAddress, uint256 points) external
-```
-
-Swaps accumulated robbery tokens in siege for resource
-
-_Amount of points will be taken may be lesser if building does not have resources in its treasury_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| buildingAddress | address | Address of the building treasury of which will be robbed |
-| points | uint256 | Amount of points to spend for resources |
-
-
-
-### getTotalSiegeSupport
-
-```solidity
-function getTotalSiegeSupport() external view returns (uint256 totalSiegeSupport)
-```
-
-Calculates total siege support of the army
-
-_For every unit type placed in siege calculates sum of all of them_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| totalSiegeSupport | uint256 | Total siege support of the army |
-
-
-### setSiegeAddress
-
-```solidity
-function setSiegeAddress(address siegeAddress) external
-```
-
-Sets army in siege
-
-_Can only be called by world or world asset_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| siegeAddress | address | Address of the siege |
-
-
-
-### getOwner
-
-```solidity
-function getOwner() external view returns (address ownerAddress)
-```
-
-Return owner of the army
-
-_Same as owner of the settlement to which this army belongs_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| ownerAddress | address | Address of the owner of the army |
-
-
-### updatePosition
-
-```solidity
-function updatePosition() external
-```
-
-Updates army position if movement is finished
-
-_Called on every action which are based on army state and time_
-
-
-
-
-### isHomePosition
-
-```solidity
-function isHomePosition() external view returns (bool isHomePosition)
-```
-
-Calculates is army on its home position
-
-_Takes into account if army movement is finished_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| isHomePosition | bool | Is army on home position |
 
 

@@ -7,46 +7,13 @@
 
 
 
-### _status
+### ReentrantCall
 
 ```solidity
-bool _status
+error ReentrantCall()
 ```
 
-
-
-
-
-
-
-### nonReentrant
-
-```solidity
-modifier nonReentrant()
-```
-
-
-
-
-
-
-
-## ProxyReentrancyGuard
-
-
-
-
-
-
-
-
-### _status
-
-```solidity
-bool _status
-```
-
-
+Thrown when attempting to call function via reentrancy
 
 
 

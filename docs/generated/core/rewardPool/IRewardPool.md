@@ -7,23 +7,23 @@
 
 
 
-### ratio
+### defaultTokenPrice
 
 ```solidity
-function ratio() external view returns (int256)
+function defaultTokenPrice() external view returns (int128)
 ```
 
-Represents how much of weapons must be given for one unit of token
+Represents how much of ingots must be given for one unit of token by default (in 64.64 format)
 
-_Updated when #handleEpochDestroyed is called_
-
-
+_Updated when #handleEraDestroyed is called_
 
 
-### invested
+
+
+### toBeRepaidTokenAmount
 
 ```solidity
-function invested() external view returns (uint256)
+function toBeRepaidTokenAmount() external view returns (uint256)
 ```
 
 Represents how much bless tokens must be repaid first to the mighty creator
@@ -33,15 +33,108 @@ _Updated when #investIntoPrizePool is called_
 
 
 
-### lastBalance
+### lastSyncedTokenBalance
 
 ```solidity
-function lastBalance() external view returns (uint256)
+function lastSyncedTokenBalance() external view returns (uint256)
 ```
 
-Represents last reward pool total balance after repayment and function(s) are done
+Represents last synced reward pool total balance after repayment and function(s) are done
 
-_Updated when #investIntoPrizePool or #handleEpochDestroyed or #swapWeaponsForTokens or #withdrawRepayment are called_
+_Updated when #investIntoPrizePool or #swapIngotsForTokens or #withdrawRepayment are called_
+
+
+
+
+### LastSyncedTokenBalanceUpdated
+
+```solidity
+event LastSyncedTokenBalanceUpdated(uint256 newLastSyncedTokenBalance)
+```
+
+Emitted when 'lastSyncedTokenBalance' updated
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newLastSyncedTokenBalance | uint256 | New last synced token balance |
+
+
+
+### ToBeRepaidTokenAmountUpdated
+
+```solidity
+event ToBeRepaidTokenAmountUpdated(uint256 newToBeRepaidTokenAmount)
+```
+
+Emitted when 'toBeRepaidTokenAmount' updated
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newToBeRepaidTokenAmount | uint256 | New to be repaid token amount |
+
+
+
+### EthBalanceUpdated
+
+```solidity
+event EthBalanceUpdated(uint256 newEthBalance)
+```
+
+Emitted when eth balance updated
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| newEthBalance | uint256 | New eth balance |
+
+
+
+### UnableToReceiveEther
+
+```solidity
+error UnableToReceiveEther()
+```
+
+Thrown when attempting to receive ether while having non native token reward
+
+
+
+
+
+### NoTokensWillBeReceived
+
+```solidity
+error NoTokensWillBeReceived()
+```
+
+Thrown when attempting to swap ingots for tokens but specified ingots amount are not enough even for one unit of token
+
+
+
+
+
+### TokensToBeReceivedLessThanMinimumRequired
+
+```solidity
+error TokensToBeReceivedLessThanMinimumRequired()
+```
+
+Thrown when attempting to swap ingots for tokens but amount of tokens to be received less than specified minimum amount
+
+
+
+
+
+### NotEnoughTokensLeft
+
+```solidity
+error NotEnoughTokensLeft()
+```
+
+Thrown when attempting to swap ingots for tokens but not enough tokens left for specified ingots amount
+
 
 
 
@@ -62,32 +155,22 @@ _Called by address which created current instance_
 
 
 
-### handleEpochDestroyed
+### swapIngotsForTokens
 
 ```solidity
-function handleEpochDestroyed() external
+function swapIngotsForTokens(address resourcesOwner, uint256 ingotsAmount, uint256 minTokensToReceive) external
 ```
 
-Handler of epoch destruction
+Swap provided amount of ingots
 
-_Must be called when epoch is destroyed_
-
-
-
-
-### swapWeaponsForTokens
-
-```solidity
-function swapWeaponsForTokens(uint256 weaponsAmount) external
-```
-
-Swap provided amount of weapons
-
-_Weapons will be deducted from msg.sender_
+_If resourcesOwner == address(0) -> resources will be taken from msg.sender
+If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= ingotsAmount -> resources will be taken from resourcesOwner_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| weaponsAmount | uint256 | Amount of weapons to swap |
+| resourcesOwner | address | Resources owner |
+| ingotsAmount | uint256 | Amount of ingots to swap |
+| minTokensToReceive | uint256 | Minimum amount of tokens to receive |
 
 
 
@@ -120,125 +203,56 @@ _Triggers withdraw of potential added balance_
 
 
 
-## IRewardPool
-
-
-
-
-
-
-
-
-### ratio
+### getTokensAmountOut
 
 ```solidity
-function ratio() external view returns (int256)
+function getTokensAmountOut(uint256 ingotsAmountIn) external view returns (uint256 tokensAmountOut)
 ```
 
-Represents how much of weapons must be given for one unit of token
+Calculates amount of tokens to be received by provided ingots amount
 
-_Updated when #handleEpochDestroyed is called_
-
-
-
-
-### invested
-
-```solidity
-function invested() external view returns (uint256)
-```
-
-Represents how much bless tokens must be repaid first to the mighty creator
-
-_Updated when #investIntoPrizePool is called_
-
-
-
-
-### lastBalance
-
-```solidity
-function lastBalance() external view returns (uint256)
-```
-
-Represents last reward pool total balance after repayment and function(s) are done
-
-_Updated when #investIntoPrizePool or #handleEpochDestroyed or #swapWeaponsForTokens or #withdrawRepayment are called_
-
-
-
-
-### init
-
-```solidity
-function init(address worldAddress) external
-```
-
-Proxy initializer
-
-_Called by address which created current instance_
+_Used to determine how much tokens will be received by provided ingots amount_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| worldAddress | address | World address |
-
-
-
-### handleEpochDestroyed
-
-```solidity
-function handleEpochDestroyed() external
-```
-
-Handler of epoch destruction
-
-_Must be called when epoch is destroyed_
-
-
-
-
-### swapWeaponsForTokens
-
-```solidity
-function swapWeaponsForTokens(uint256 weaponsAmount) external
-```
-
-Swap provided amount of weapons
-
-_Weapons will be deducted from msg.sender_
+| ingotsAmountIn | uint256 | Ingots amount in |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| weaponsAmount | uint256 | Amount of weapons to swap |
+| tokensAmountOut | uint256 | Tokens amount out |
 
 
-
-### investIntoPrizePool
+### getIngotsAmountIn
 
 ```solidity
-function investIntoPrizePool(uint256 amountToInvest) external payable
+function getIngotsAmountIn(uint256 tokensAmountOut) external view returns (uint256 ingotsAmountIn)
 ```
 
-Invests specified amount of tokens into prize pool
+Calculates minimum amount of ingots required for specified amount of tokens to receive
 
-_Bless tokens must be sent to this function (if its type=eth) or will be deducted from msg.sender (if its type=erc20)_
+_Used to determine how much tokens will be received by provided ingots amount_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| amountToInvest | uint256 | Amount of tokens to invest |
+| tokensAmountOut | uint256 | Tokens amount out |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| ingotsAmountIn | uint256 | Ingots amount in |
 
 
-
-### withdrawRepayment
+### getCurrentPrice
 
 ```solidity
-function withdrawRepayment() external
+function getCurrentPrice() external view returns (uint256 price)
 ```
 
-Withdraws potential bless token added balance to the mighty creator
-
-_Triggers withdraw of potential added balance_
+Calculates current price of token in ingots
 
 
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| price | uint256 | Price |
 
 

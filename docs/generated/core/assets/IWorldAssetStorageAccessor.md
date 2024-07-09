@@ -23,124 +23,51 @@ _Reads data from proxy's storage_
 | world | contract IWorld | World |
 
 
-### epochNumber
+### eraNumber
 
 ```solidity
-function epochNumber() external view returns (uint256 epochNumber)
+function eraNumber() external view returns (uint256 eraNumber)
 ```
 
-Returns epoch number
+Returns era number
 
 _Reads data from proxy's storage_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
+| eraNumber | uint256 | Era number |
 
 
-### assetGroup
+### assetGroupId
 
 ```solidity
-function assetGroup() external view returns (string assetGroup)
+function assetGroupId() external view returns (bytes32 assetGroupId)
 ```
 
-Returns world asset group
+Returns world asset group id
 
 _Reads data from proxy's storage_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| assetGroup | string | World asset group |
+| assetGroupId | bytes32 | World asset group id |
 
 
-### assetType
+### assetTypeId
 
 ```solidity
-function assetType() external view returns (string assetType)
+function assetTypeId() external view returns (bytes32 assetTypeId)
 ```
 
-Returns world asset type
+Returns world asset type id
 
 _Reads data from proxy's storage_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| assetType | string | World asset type |
-
-
-## IWorldAssetStorageAccessor
-
-
-Contains function to identify world asset group and type
-
-
-
-
-
-### world
-
-```solidity
-function world() external view returns (contract IWorld world)
-```
-
-Returns world
-
-_Reads data from proxy's storage_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| world | contract IWorld | World |
-
-
-### epochNumber
-
-```solidity
-function epochNumber() external view returns (uint256 epochNumber)
-```
-
-Returns epoch number
-
-_Reads data from proxy's storage_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-
-
-### assetGroup
-
-```solidity
-function assetGroup() external view returns (string assetGroup)
-```
-
-Returns world asset group
-
-_Reads data from proxy's storage_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| assetGroup | string | World asset group |
-
-
-### assetType
-
-```solidity
-function assetType() external view returns (string assetType)
-```
-
-Returns world asset type
-
-_Reads data from proxy's storage_
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| assetType | string | World asset type |
+| assetTypeId | bytes32 | World asset type id |
 
 

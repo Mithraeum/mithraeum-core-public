@@ -20,24 +20,14 @@ _Should be immutable and initialized only once_
 
 
 
-## IWorldInitializable
-
-
-Contains access to world storage variable
-
-
-
-
-
-### world
+### OnlyActiveGame
 
 ```solidity
-function world() external view returns (contract IWorld)
+error OnlyActiveGame()
 ```
 
-World
+Thrown when attempting to call action which can only be called in active game (started and not finished)
 
-_Should be immutable and initialized only once_
 
 
 

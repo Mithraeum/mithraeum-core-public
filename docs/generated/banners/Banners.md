@@ -79,10 +79,36 @@ _Updated when #mint is called_
 
 
 
-### NewBanner
+### maxAmountOfMintedBannersPerAddress
 
 ```solidity
-event NewBanner(uint256 tokenIndex, string name, struct Banners.Part[16] parts, bytes data)
+uint256 maxAmountOfMintedBannersPerAddress
+```
+
+Maximum amount of banners each address can mint
+
+_Immutable, initialized in constructor_
+
+
+
+
+### mintedBannersByAddress
+
+```solidity
+mapping(address => uint256) mintedBannersByAddress
+```
+
+Mapping containing amount of minted banners by address
+
+_Updated when #mint is called_
+
+
+
+
+### BannerCreated
+
+```solidity
+event BannerCreated(uint256 tokenId, string bannerName, struct Banners.Part[16] bannerParts, bytes data)
 ```
 
 Emitted when #mint is called
@@ -90,9 +116,9 @@ Emitted when #mint is called
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenIndex | uint256 | Newly created token id |
-| name | string | Banner name |
-| parts | struct Banners.Part[16] | Parts struct |
+| tokenId | uint256 | Newly created token id |
+| bannerName | string | Banner name |
+| bannerParts | struct Banners.Part[16] | Banner parts |
 | data | bytes | Banner custom parameters |
 
 
@@ -100,7 +126,7 @@ Emitted when #mint is called
 ### BannerUpdated
 
 ```solidity
-event BannerUpdated(uint256 tokenIndex, string name, struct Banners.Part[16] parts, bytes data)
+event BannerUpdated(uint256 tokenId, string newBannerName, struct Banners.Part[16] newBannerParts, bytes data)
 ```
 
 Emitted when #updateBanner is called
@@ -108,17 +134,41 @@ Emitted when #updateBanner is called
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| tokenIndex | uint256 | Token id which was updated |
-| name | string | New banner name |
-| parts | struct Banners.Part[16] | New parts struct |
-| data | bytes | New banner custom parameters |
+| tokenId | uint256 | Token id which was updated |
+| newBannerName | string | New banner name |
+| newBannerParts | struct Banners.Part[16] | New parts struct |
+| data | bytes | Banner custom parameters |
+
+
+
+### CannotMintMoreThanMaximumAllowedAmountToMintForThisMsgSender
+
+```solidity
+error CannotMintMoreThanMaximumAllowedAmountToMintForThisMsgSender()
+```
+
+Thrown when attempting to mint banner while reached maximum amount of banners able to be minted by address
+
+
+
+
+
+### UnableToUpdateBannerDueToTokenIdDoesNotBelongToCaller
+
+```solidity
+error UnableToUpdateBannerDueToTokenIdDoesNotBelongToCaller()
+```
+
+Thrown when attempting to update banner while not being the owner of it
+
+
 
 
 
 ### constructor
 
 ```solidity
-constructor(string name_, string symbol_, string uri_) public
+constructor(string name_, string symbol_, string uri_, uint256 maxAmountOfMintedBannersPerAddress_) public
 ```
 
 
@@ -230,15 +280,15 @@ _Default mapping read method does not return all data_
 | data | bytes | Banner data |
 
 
-### getBannerDataByUserBatch
+### getTokenIdsByAddress
 
 ```solidity
-function getBannerDataByUserBatch(address holderAddress) public view returns (uint256[] tokenIds, struct Banners.BannerData[] bannersData)
+function getTokenIdsByAddress(address holderAddress) public view returns (uint256[] tokenIds)
 ```
 
-Returns all nfts with their banner data for specified holder address
+Returns all token ids for specified holder address
 
-_Used to query all nfts with their data without asking them one by one (may not work for holder with very large amount of nfts)_
+_Used to query all token ids without asking them one by one (may not work for holder with very large amount of nfts)_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -247,6 +297,24 @@ _Used to query all nfts with their data without asking them one by one (may not 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokenIds | uint256[] | Token ids holder owns |
+
+
+### getBannersDataByTokenIds
+
+```solidity
+function getBannersDataByTokenIds(uint256[] tokenIds) public view returns (struct Banners.BannerData[] bannersData)
+```
+
+Returns all banners data for specified token ids
+
+_Used to query all banner data without asking them one by one (may not work for holder with very large amount of token ids)_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tokenIds | uint256[] | Token ids |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | bannersData | struct Banners.BannerData[] | Banner data for every token id |
 
 
@@ -281,19 +349,6 @@ _Specified banner parts will be taken from msg.sender_
 
 
 
-### addParts
-
-```solidity
-function addParts(uint256 tokenId, struct Banners.Part[16] parts) internal
-```
-
-
-
-_Transfers specified banner parts from msg.sender to this contract_
-
-
-
-
 ### updateBanner
 
 ```solidity
@@ -309,6 +364,19 @@ Updates banner with specified parameters
 | name | string | New banner name |
 | parts | struct Banners.Part[16] | New banner parts |
 | data | bytes | Banner custom parameters |
+
+
+
+### _addParts
+
+```solidity
+function _addParts(uint256 tokenId, struct Banners.Part[16] parts) internal
+```
+
+
+
+_Transfers specified banner parts from msg.sender to this contract_
+
 
 
 

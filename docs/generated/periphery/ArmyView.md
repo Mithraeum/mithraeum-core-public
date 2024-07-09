@@ -21,18 +21,20 @@ struct ArmyCombinedData {
   address id;
   address owner;
   address ownerSettlementId;
-  uint32 currentPosition;
+  uint64 currentPosition;
   address currentPositionSettlementId;
+  uint64 destinationPosition;
+  address destinationPositionSettlementId;
+  uint64 secretDestinationRegionId;
+  bytes32 secretDestinationPosition;
+  uint64 maneuverBeginTime;
+  uint64 maneuverEndTime;
   address battleId;
   uint256[] units;
   uint256[] besiegingUnits;
-  uint256[] onLiquidateArmyUnits;
-  uint256 robberyTokensCount;
-  uint32[] currentPath;
-  uint64 pathStartTime;
-  uint64 pathFinishTime;
-  address destinationPositionSettlementId;
-  uint256 lastDemilitarizationTime;
+  uint256 robberyPoints;
+  uint64 stunBeginTime;
+  uint64 stunEndTime;
 }
 ```
 
@@ -44,73 +46,54 @@ function getArmyCombinedData(address armyAddress, uint256 timestamp) public view
 
 Calculates combined army data
 
-_Provided timestamp takes into account only robberyTokensCount_
+_Provided timestamp takes into account robberyPoints, maneuver, battle, stun_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | armyAddress | address | Army address |
-| timestamp | uint256 | Timestamp at which robberyTokensCount will be calculated |
+| timestamp | uint256 | Timestamp at which army data will be calculated |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | armyCombinedData | struct ArmyView.ArmyCombinedData | Army combined data |
 
 
-## ArmyView
-
-
-Contains helper functions to query army in simple read requests
-
-
-
-
-
-### ArmyCombinedData
-
-
-
-
-
-
-
+### _getArmyOwner
 
 ```solidity
-struct ArmyCombinedData {
-  address id;
-  address owner;
-  address ownerSettlementId;
-  uint32 currentPosition;
-  address currentPositionSettlementId;
-  address battleId;
-  uint256[] units;
-  uint256[] besiegingUnits;
-  uint256[] onLiquidateArmyUnits;
-  uint256 robberyTokensCount;
-  uint32[] currentPath;
-  uint64 pathStartTime;
-  uint64 pathFinishTime;
-  address destinationPositionSettlementId;
-  uint256 lastDemilitarizationTime;
-}
+function _getArmyOwner(contract IArmy army) internal view returns (address)
 ```
 
-### getArmyCombinedData
+
+
+_Calculates army owner_
+
+
+
+
+### _isCultistsArmy
 
 ```solidity
-function getArmyCombinedData(address armyAddress, uint256 timestamp) public view returns (struct ArmyView.ArmyCombinedData armyCombinedData)
+function _isCultistsArmy(contract IArmy army) internal view returns (bool)
 ```
 
-Calculates combined army data
 
-_Provided timestamp takes into account only robberyTokensCount_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyAddress | address | Army address |
-| timestamp | uint256 | Timestamp at which robberyTokensCount will be calculated |
+_Calculates if army owner is cultists settlement or not_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| armyCombinedData | struct ArmyView.ArmyCombinedData | Army combined data |
+
+
+
+### _canEndBattleAtProvidedTimestamp
+
+```solidity
+function _canEndBattleAtProvidedTimestamp(contract IBattle battle, uint256 timestamp) internal view returns (bool)
+```
+
+
+
+_Calculates if battle can be ended at provided timestamp_
+
+
 
 

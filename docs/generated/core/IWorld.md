@@ -7,87 +7,6 @@ Functions to read state/modify state of game world
 
 
 
-### WorldInitialized
-
-```solidity
-event WorldInitialized(address registryContractAddress, address geographyAddress, address bannersAddress, address blessTokenAddress, address distributionsAddress, address rewardPoolAddress)
-```
-
-Emitted when world initialized
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| registryContractAddress | address | Registry contract address |
-| geographyAddress | address | Geography contract address |
-| bannersAddress | address | Mithraeum banners contract address |
-| blessTokenAddress | address | Bless token address |
-| distributionsAddress | address | Distributions token address |
-| rewardPoolAddress | address | Reward pool address |
-
-
-
-### GameStartTimeUpdated
-
-```solidity
-event GameStartTimeUpdated(uint256 timestamp)
-```
-
-Emitted when #setGameStartTime is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| timestamp | uint256 | New game start time |
-
-
-
-### GameFinishTimeUpdated
-
-```solidity
-event GameFinishTimeUpdated(uint256 timestamp)
-```
-
-Emitted when #setGameFinishTime is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| timestamp | uint256 | New game finish time |
-
-
-
-### NewWorldEpoch
-
-```solidity
-event NewWorldEpoch(address epochAddress, uint256 epochNumber)
-```
-
-Emitted when world initialized or #destroyCurrentEpoch is called
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochAddress | address | New epoch address |
-| epochNumber | uint256 | New epoch number |
-
-
-
-### CurrentEpochNumberUpdated
-
-```solidity
-event CurrentEpochNumberUpdated(uint256 epochNumber)
-```
-
-Emitted after new epoch initialization
-
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochNumber | uint256 | New epoch number |
-
-
-
 ### registry
 
 ```solidity
@@ -114,13 +33,39 @@ _Immutable, initialized on creation_
 
 
 
-### blessToken
+### erc20ForSettlementPurchase
 
 ```solidity
-function blessToken() external view returns (contract IERC20)
+function erc20ForSettlementPurchase() external view returns (contract IERC20)
 ```
 
-Bless token
+ERC20 token for settlement purchase
+
+_Immutable, initialized on creation_
+
+
+
+
+### erc20ForRegionInclusion
+
+```solidity
+function erc20ForRegionInclusion() external view returns (contract IERC20)
+```
+
+ERC20 token for region inclusion
+
+_Immutable, initialized on creation_
+
+
+
+
+### regionOwnershipToken
+
+```solidity
+function regionOwnershipToken() external view returns (contract IRegionOwnershipToken)
+```
+
+Region ownership token
 
 _Immutable, initialized on creation_
 
@@ -140,13 +85,13 @@ _Immutable, initialized on creation_
 
 
 
-### crossEpochsMemory
+### crossErasMemory
 
 ```solidity
-function crossEpochsMemory() external view returns (contract ICrossEpochsMemory)
+function crossErasMemory() external view returns (contract ICrossErasMemory)
 ```
 
-Cross epochs memory
+Cross eras memory
 
 _Immutable, initialized on creation_
 
@@ -166,28 +111,28 @@ _Immutable, initialized on creation_
 
 
 
-### gameStartTime
+### gameBeginTime
 
 ```solidity
-function gameStartTime() external view returns (uint256)
+function gameBeginTime() external view returns (uint256)
 ```
 
-Game start time
+Game begin time
 
-_Updated when #setGameStartTime is called_
-
-
+_Updated when #setGameBeginTime is called_
 
 
-### gameFinishTime
+
+
+### gameEndTime
 
 ```solidity
-function gameFinishTime() external view returns (uint256)
+function gameEndTime() external view returns (uint256)
 ```
 
-Game finish time
+Game end time
 
-_Updated when #setGameFinishTime is called_
+_Updated when #setGameEndTime is called_
 
 
 
@@ -205,28 +150,42 @@ _Immutable, initialized on creation_
 
 
 
-### currentEpochNumber
+### currentEraNumber
 
 ```solidity
-function currentEpochNumber() external view returns (uint256)
+function currentEraNumber() external view returns (uint256)
 ```
 
-Current world epoch
+Current world era
 
 _Updated when #destroy is called_
 
 
 
 
-### epochs
+### eras
 
 ```solidity
-function epochs(uint256 epochNumber) external view returns (contract IEpoch)
+function eras(uint256 eraNumber) external view returns (contract IEra)
 ```
 
-World epochs
+World eras
 
 _Updated when world initialized or #destroy is called_
+
+
+
+
+### implementations
+
+```solidity
+function implementations(bytes28 assetId) external view returns (address)
+```
+
+Mapping containing assets implementations addresses by provided asset id
+
+_Updated when #setImplementations is called
+Every worlds assets implementation (code, not data) will be defined by value from this mapping_
 
 
 
@@ -234,181 +193,12 @@ _Updated when world initialized or #destroy is called_
 ### worldAssets
 
 ```solidity
-function worldAssets(uint256 epochNumber, address worldAsset) external view returns (bytes32)
+function worldAssets(uint256 eraNumber, address worldAsset) external view returns (bytes32)
 ```
 
-Mapping containing world asset type by provided epoch number and address
+Mapping containing world asset type by provided era number and address
 
 _Updated when #addWorldAsset is called_
-
-
-
-
-### init
-
-```solidity
-function init(address registryContractAddress, address crossEpochsMemoryAddress, address geographyAddress, address bannersAddress, address blessTokenAddress, address distributionsAddress, address rewardPoolAddress) external
-```
-
-Proxy initializer
-
-_Called by address which created current instance_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| registryContractAddress | address | Registry contract address |
-| crossEpochsMemoryAddress | address | Cross epochs memory address |
-| geographyAddress | address | Geography contract address |
-| bannersAddress | address | Banners token address |
-| blessTokenAddress | address | Bless token address |
-| distributionsAddress | address | Distributions token address |
-| rewardPoolAddress | address | Reward pool address |
-
-
-
-### addWorldAsset
-
-```solidity
-function addWorldAsset(uint256 epochNumber, address worldAssetAddress, bytes32 assetType) external
-```
-
-Adds an address as world asset
-
-_Even though function is opened, it can only be called by factory contract_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-| worldAssetAddress | address | World asset address |
-| assetType | bytes32 | Asset type |
-
-
-
-### mintWorkers
-
-```solidity
-function mintWorkers(uint256 epochNumber, address to, uint256 value) external
-```
-
-Mints workers to provided address
-
-_Even though function is opened, it can only be called by mighty creator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-| to | address | Address which will receive workers |
-| value | uint256 | Amount of workers to mint |
-
-
-
-### mintUnits
-
-```solidity
-function mintUnits(uint256 epochNumber, string unitName, address to, uint256 value) external
-```
-
-Mints units to provided address
-
-_Even though function is opened, it can only be called by mighty creator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-| unitName | string | Type of unit to mint |
-| to | address | Address which will receive units |
-| value | uint256 | Amount of units to mint |
-
-
-
-### mintResources
-
-```solidity
-function mintResources(uint256 epochNumber, string resourceName, address to, uint256 value) external
-```
-
-Mints resource to provided address
-
-_Even though function is opened, it can only be called by mighty creator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-| resourceName | string | Resource name |
-| to | address | Address which will receive resources |
-| value | uint256 | Amount of resources to mint |
-
-
-
-### batchTransferResources
-
-```solidity
-function batchTransferResources(uint256 epochNumber, address to, string[] resourcesNames, uint256[] amounts) external
-```
-
-Transfers multiple resources to provided address
-
-_Uses msg.sender as resources sender_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-| to | address | An address which will receive resources |
-| resourcesNames | string[] | Resources names |
-| amounts | uint256[] | Amount of each resources to transfer |
-
-
-
-### setGameFinishTime
-
-```solidity
-function setGameFinishTime(uint256 gameFinishTime) external
-```
-
-Sets game finish time
-
-_Even though function is opened, it can only be called by mighty creator or reward pool_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| gameFinishTime | uint256 | Game finish time |
-
-
-
-### setGameStartTime
-
-```solidity
-function setGameStartTime(uint256 gameStartTime) external
-```
-
-Sets game start time
-
-_Even though function is opened, it can only be called by mighty creator_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| gameStartTime | uint256 | Game start time |
-
-
-
-### destroyCurrentEpoch
-
-```solidity
-function destroyCurrentEpoch() external
-```
-
-Destroys current epoch if conditions are met
-
-_Anyone can call this function_
-
-
-
-
-## IWorld
-
-
-Functions to read state/modify state of game world
-
 
 
 
@@ -416,7 +206,7 @@ Functions to read state/modify state of game world
 ### WorldInitialized
 
 ```solidity
-event WorldInitialized(address registryContractAddress, address geographyAddress, address bannersAddress, address blessTokenAddress, address distributionsAddress, address rewardPoolAddress)
+event WorldInitialized(address registryAddress, address crossErasMemoryAddress, address geographyAddress, address bannersAddress, address erc20ForBuyingSettlementAddress, address erc20ForRegionInclusionAddress, address regionOwnershipTokenAddress, address distributionsAddress, address rewardPoolAddress)
 ```
 
 Emitted when world initialized
@@ -424,228 +214,147 @@ Emitted when world initialized
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| registryContractAddress | address | Registry contract address |
+| registryAddress | address | Registry contract address |
+| crossErasMemoryAddress | address | Cross eras memory address |
 | geographyAddress | address | Geography contract address |
-| bannersAddress | address | Mithraeum banners contract address |
-| blessTokenAddress | address | Bless token address |
+| bannersAddress | address | Banners contract address |
+| erc20ForBuyingSettlementAddress | address | ERC20 token for settlement purchase address |
+| erc20ForRegionInclusionAddress | address | ERC20 token for region inclusion address |
+| regionOwnershipTokenAddress | address | Region ownership token address |
 | distributionsAddress | address | Distributions token address |
-| rewardPoolAddress | address | Reward pool address |
+| rewardPoolAddress | address | Reward pool contract address |
 
 
 
-### GameStartTimeUpdated
+### GameBeginTimeUpdated
 
 ```solidity
-event GameStartTimeUpdated(uint256 timestamp)
+event GameBeginTimeUpdated(uint256 newBeginTime)
 ```
 
-Emitted when #setGameStartTime is called
+Emitted when #setGameBeginTime is called
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| timestamp | uint256 | New game start time |
+| newBeginTime | uint256 | New game begin time |
 
 
 
-### GameFinishTimeUpdated
+### GameEndTimeUpdated
 
 ```solidity
-event GameFinishTimeUpdated(uint256 timestamp)
+event GameEndTimeUpdated(uint256 newEndTime)
 ```
 
-Emitted when #setGameFinishTime is called
+Emitted when #setGameEndTime is called
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| timestamp | uint256 | New game finish time |
+| newEndTime | uint256 | New game end time |
 
 
 
-### NewWorldEpoch
+### EraCreated
 
 ```solidity
-event NewWorldEpoch(address epochAddress, uint256 epochNumber)
+event EraCreated(address newEraAddress, uint256 newEraNumber)
 ```
 
-Emitted when world initialized or #destroyCurrentEpoch is called
+Emitted when world initialized or #destroyCurrentEra is called
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| epochAddress | address | New epoch address |
-| epochNumber | uint256 | New epoch number |
+| newEraAddress | address | New era address |
+| newEraNumber | uint256 | New era number |
 
 
 
-### CurrentEpochNumberUpdated
+### CurrentEraNumberUpdated
 
 ```solidity
-event CurrentEpochNumberUpdated(uint256 epochNumber)
+event CurrentEraNumberUpdated(uint256 newEraNumber)
 ```
 
-Emitted after new epoch initialization
+Emitted after new era initialization
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| epochNumber | uint256 | New epoch number |
+| newEraNumber | uint256 | New era number |
 
 
 
-### registry
-
-```solidity
-function registry() external view returns (contract IRegistry)
-```
-
-Registry
-
-_Immutable, initialized on creation_
-
-
-
-
-### bannerContract
+### OnlyActiveGame
 
 ```solidity
-function bannerContract() external view returns (contract IERC721)
+error OnlyActiveGame()
 ```
 
-Banners token
-
-_Immutable, initialized on creation_
+Thrown when attempting to call action which can only be called in active game (started and not finished)
 
 
 
 
-### blessToken
+
+### OnlyMightyCreator
 
 ```solidity
-function blessToken() external view returns (contract IERC20)
+error OnlyMightyCreator()
 ```
 
-Bless token
-
-_Immutable, initialized on creation_
+Thrown when attempting to call action which can only be called by mighty creator
 
 
 
 
-### distributions
+
+### OnlyMightyCreatorOrRewardPool
 
 ```solidity
-function distributions() external view returns (contract IDistributions)
+error OnlyMightyCreatorOrRewardPool()
 ```
 
-Distributions token
-
-_Immutable, initialized on creation_
+Thrown when attempting to call action which can only be called by mighty creator or reward pool
 
 
 
 
-### crossEpochsMemory
+
+### OnlyFactory
 
 ```solidity
-function crossEpochsMemory() external view returns (contract ICrossEpochsMemory)
+error OnlyFactory()
 ```
 
-Cross epochs memory
-
-_Immutable, initialized on creation_
+Thrown when attempting to call action which can only be called by world asset factory
 
 
 
 
-### rewardPool
+
+### CurrentEraCannotBeDestroyedDueToCultistsNoDestructionDelayNotPassed
 
 ```solidity
-function rewardPool() external view returns (contract IRewardPool)
+error CurrentEraCannotBeDestroyedDueToCultistsNoDestructionDelayNotPassed()
 ```
 
-Reward pool
-
-_Immutable, initialized on creation_
+Thrown when attempting to destroy current era while cultists destruction delay not passed since last cultists summon
 
 
 
 
-### gameStartTime
+
+### CurrentEraCannotBeDestroyedDueCultistsLimitNotReached
 
 ```solidity
-function gameStartTime() external view returns (uint256)
+error CurrentEraCannotBeDestroyedDueCultistsLimitNotReached()
 ```
 
-Game start time
+Thrown when attempting to destroy current era while cultists limit not reached
 
-_Updated when #setGameStartTime is called_
-
-
-
-
-### gameFinishTime
-
-```solidity
-function gameFinishTime() external view returns (uint256)
-```
-
-Game finish time
-
-_Updated when #setGameFinishTime is called_
-
-
-
-
-### geography
-
-```solidity
-function geography() external view returns (contract IGeography)
-```
-
-Continent
-
-_Updated when #addContinent is called_
-
-
-
-
-### currentEpochNumber
-
-```solidity
-function currentEpochNumber() external view returns (uint256)
-```
-
-Current world epoch
-
-_Updated when #destroy is called_
-
-
-
-
-### epochs
-
-```solidity
-function epochs(uint256 epochNumber) external view returns (contract IEpoch)
-```
-
-World epochs
-
-_Updated when world initialized or #destroy is called_
-
-
-
-
-### worldAssets
-
-```solidity
-function worldAssets(uint256 epochNumber, address worldAsset) external view returns (bytes32)
-```
-
-Mapping containing world asset type by provided epoch number and address
-
-_Updated when #addWorldAsset is called_
 
 
 
@@ -653,7 +362,7 @@ _Updated when #addWorldAsset is called_
 ### init
 
 ```solidity
-function init(address registryContractAddress, address crossEpochsMemoryAddress, address geographyAddress, address bannersAddress, address blessTokenAddress, address distributionsAddress, address rewardPoolAddress) external
+function init(bytes packedAddresses, bytes28[] assetIds, address[] implementationAddresses) external
 ```
 
 Proxy initializer
@@ -662,20 +371,16 @@ _Called by address which created current instance_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| registryContractAddress | address | Registry contract address |
-| crossEpochsMemoryAddress | address | Cross epochs memory address |
-| geographyAddress | address | Geography contract address |
-| bannersAddress | address | Banners token address |
-| blessTokenAddress | address | Bless token address |
-| distributionsAddress | address | Distributions token address |
-| rewardPoolAddress | address | Reward pool address |
+| packedAddresses | bytes | Packed addresses (registry, crossErasMemory, geography, banners, erc20ForSettlementPurchase, erc20ForRegionInclusion, regionOwnershipToken, distributions, rewardPool) |
+| assetIds | bytes28[] | Asset ids |
+| implementationAddresses | address[] | Implementation addresses |
 
 
 
 ### addWorldAsset
 
 ```solidity
-function addWorldAsset(uint256 epochNumber, address worldAssetAddress, bytes32 assetType) external
+function addWorldAsset(uint256 eraNumber, address worldAssetAddress, bytes32 assetType) external
 ```
 
 Adds an address as world asset
@@ -684,16 +389,33 @@ _Even though function is opened, it can only be called by factory contract_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
+| eraNumber | uint256 | Era number |
 | worldAssetAddress | address | World asset address |
 | assetType | bytes32 | Asset type |
+
+
+
+### setImplementations
+
+```solidity
+function setImplementations(bytes28[] assetIds, address[] implementationAddresses) external
+```
+
+Sets provided address as implementation for provided asset ids
+
+_Even though function is opened, it can be called only by mightyCreator_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| assetIds | bytes28[] | Asset ids |
+| implementationAddresses | address[] | Implementation addresses |
 
 
 
 ### mintWorkers
 
 ```solidity
-function mintWorkers(uint256 epochNumber, address to, uint256 value) external
+function mintWorkers(uint256 eraNumber, address to, uint256 value) external
 ```
 
 Mints workers to provided address
@@ -702,7 +424,7 @@ _Even though function is opened, it can only be called by mighty creator_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
+| eraNumber | uint256 | Era number |
 | to | address | Address which will receive workers |
 | value | uint256 | Amount of workers to mint |
 
@@ -711,7 +433,7 @@ _Even though function is opened, it can only be called by mighty creator_
 ### mintUnits
 
 ```solidity
-function mintUnits(uint256 epochNumber, string unitName, address to, uint256 value) external
+function mintUnits(uint256 eraNumber, bytes32 unitTypeId, address to, uint256 value) external
 ```
 
 Mints units to provided address
@@ -720,8 +442,8 @@ _Even though function is opened, it can only be called by mighty creator_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-| unitName | string | Type of unit to mint |
+| eraNumber | uint256 | Era number |
+| unitTypeId | bytes32 | Type id of unit to mint |
 | to | address | Address which will receive units |
 | value | uint256 | Amount of units to mint |
 
@@ -730,7 +452,7 @@ _Even though function is opened, it can only be called by mighty creator_
 ### mintResources
 
 ```solidity
-function mintResources(uint256 epochNumber, string resourceName, address to, uint256 value) external
+function mintResources(uint256 eraNumber, bytes32 resourceTypeId, address to, uint256 value) external
 ```
 
 Mints resource to provided address
@@ -739,74 +461,119 @@ _Even though function is opened, it can only be called by mighty creator_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-| resourceName | string | Resource name |
+| eraNumber | uint256 | Era number |
+| resourceTypeId | bytes32 | Resource type id |
 | to | address | Address which will receive resources |
 | value | uint256 | Amount of resources to mint |
 
 
 
-### batchTransferResources
+### setGameEndTime
 
 ```solidity
-function batchTransferResources(uint256 epochNumber, address to, string[] resourcesNames, uint256[] amounts) external
+function setGameEndTime(uint256 gameEndTime) external
 ```
 
-Transfers multiple resources to provided address
-
-_Uses msg.sender as resources sender_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| epochNumber | uint256 | Epoch number |
-| to | address | An address which will receive resources |
-| resourcesNames | string[] | Resources names |
-| amounts | uint256[] | Amount of each resources to transfer |
-
-
-
-### setGameFinishTime
-
-```solidity
-function setGameFinishTime(uint256 gameFinishTime) external
-```
-
-Sets game finish time
+Sets game end time
 
 _Even though function is opened, it can only be called by mighty creator or reward pool_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| gameFinishTime | uint256 | Game finish time |
+| gameEndTime | uint256 | Game end time |
 
 
 
-### setGameStartTime
+### setGameBeginTime
 
 ```solidity
-function setGameStartTime(uint256 gameStartTime) external
+function setGameBeginTime(uint256 gameBeginTime) external
 ```
 
-Sets game start time
+Sets game begin time
 
 _Even though function is opened, it can only be called by mighty creator_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| gameStartTime | uint256 | Game start time |
+| gameBeginTime | uint256 | Game begin time |
 
 
 
-### destroyCurrentEpoch
+### destroyCurrentEra
 
 ```solidity
-function destroyCurrentEpoch() external
+function destroyCurrentEra() external
 ```
 
-Destroys current epoch if conditions are met
+Destroys current era if conditions are met
 
 _Anyone can call this function_
 
 
+
+
+### getRegionRadius
+
+```solidity
+function getRegionRadius() external pure returns (uint64 regionRadius)
+```
+
+Returns region radius which is used to determine average region size
+
+_Immutable_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionRadius | uint64 | Region radius |
+
+
+### getRegionSeed
+
+```solidity
+function getRegionSeed() external pure returns (bytes32 regionSeed)
+```
+
+Returns region seed which is used to determine region ids for positions
+
+_Immutable_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionSeed | bytes32 | Region seed |
+
+
+### getTileBonusesSeed
+
+```solidity
+function getTileBonusesSeed() external pure returns (bytes32 tileBonusesSeed)
+```
+
+Returns tile bonuses seed
+
+_Immutable_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| tileBonusesSeed | bytes32 | Tile bonuses seed |
+
+
+### getRegionTierSeed
+
+```solidity
+function getRegionTierSeed() external view returns (bytes32 regionTierSeed)
+```
+
+Returns region tier seed
+
+_Updated when era is changed_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| regionTierSeed | bytes32 | Region tier seed |
 
 

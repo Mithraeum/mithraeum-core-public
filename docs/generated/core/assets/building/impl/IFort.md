@@ -20,19 +20,30 @@ _Updated when #updateHealth is called_
 
 
 
-### updateHealth
+### HealthUpdated
 
 ```solidity
-function updateHealth(uint256 value) external
+event HealthUpdated(uint256 newHealth)
 ```
 
-Updates fort health
+Emitted when #updateState is called (if health is changed in the process)
 
-_Even though function is opened, it can be called only by world asset_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| value | uint256 | New fort health |
+| newHealth | uint256 | New health |
+
+
+
+### Disabled
+
+```solidity
+error Disabled()
+```
+
+Thrown when attempting to call action which is disabled
+
+
 
 
 
@@ -55,60 +66,22 @@ _Useful to determine maximum amount of health will be available at provided leve
 | maxHealth | uint256 | Maximum amount of health for provided level |
 
 
-## IFort
-
-
-Functions to read state/modify state in order to get current fort parameters and/or interact with it
-
-
-
-
-
-### health
+### calculateDamageDone
 
 ```solidity
-function health() external view returns (uint256)
+function calculateDamageDone(uint256 timestamp) external view returns (uint256 damage)
 ```
 
-Fort health
+Calculates damage done at specified timestamp
 
-_Updated when #updateHealth is called_
-
-
-
-
-### updateHealth
-
-```solidity
-function updateHealth(uint256 value) external
-```
-
-Updates fort health
-
-_Even though function is opened, it can be called only by world asset_
+_Uses fort production and siege parameters to forecast health and damage will be dealt at specified time_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| value | uint256 | New fort health |
-
-
-
-### getMaxHealthOnLevel
-
-```solidity
-function getMaxHealthOnLevel(uint256 level) external view returns (uint256 maxHealth)
-```
-
-Calculates maximum amount of health for provided level
-
-_Useful to determine maximum amount of health will be available at provided level_
+| timestamp | uint256 | Time at which calculate parameters |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| level | uint256 | Level at which calculate maximum amount of health |
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| maxHealth | uint256 | Maximum amount of health for provided level |
+| damage | uint256 | Amount of damage done from fort.productionInfo.lastUpdateState to specified timestamp |
 
 
