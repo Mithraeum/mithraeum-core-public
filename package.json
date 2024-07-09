@@ -1,0 +1,98 @@
+{
+  "name": "@mithraeum/mithraeum-core-contracts",
+  "version": "1.0.21",
+  "author": "Norb3g <norb3g@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "clean-remix-artifacts": "rimraf \"./contracts/**/artifacts\" && rimraf \"./contracts/.deps\"",
+    "compile": "hardhat clean && hardhat compile",
+    "deploy-xdaiRelease": "set LOG_GRAPH_VARS=1&& set GAME_START_TIME=1690812000&& hardhat deploy --network xdaiRelease --tags ImmediatelyStartedGame",
+    "localhost": "hardhat node --config hardhat-localhost.config.ts --tags 40Settlements",
+    "test": "hardhat test",
+    "docgen": "hardhat docgen",
+    "debug-remix": "remixd -s contracts --remix-ide https://remix.ethereum.org",
+
+    "deploy-xdaiPredev": "hardhat deploy --network xdaiPredev --tags ImmediatelyStartedGame",
+    "print-important-addresses-xdaiPredev": "ts-node scripts/printImportantAddresses.ts xdaiPredev",
+
+    "deploy-xdaiDev": "hardhat deploy --network xdaiDev --tags ImmediatelyStartedGame",
+    "print-important-addresses-xdaiDev": "ts-node scripts/printImportantAddresses.ts xdaiDev",
+
+    "deploy-xdaiStage": "hardhat deploy --network xdaiStage --tags ImmediatelyStartedGame",
+    "print-important-addresses-xdaiStage": "ts-node scripts/printImportantAddresses.ts xdaiStage",
+
+    "deploy-nova": "set GAME_START_TIME=1716199200&& hardhat deploy --network nova --tags ImmediatelyStartedGame",
+    "print-important-addresses-nova": "ts-node scripts/printImportantAddresses.ts nova",
+
+    "deploy-zkSyncSepolia": "hardhat deploy --network zkSyncSepolia --tags ImmediatelyStartedGame"
+  },
+  "devDependencies": {
+    "@ethersproject/experimental": "^5.7.0",
+    "@matterlabs/hardhat-zksync-solc": "^1.1.4",
+    "@nomicfoundation/hardhat-ethers": "^3.0.4",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/chai": "^4.3.3",
+    "@types/lodash": "^4.14.185",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "^18.7.17",
+    "@types/seedrandom": "^3.0.5",
+    "bignumber.js": "^9.1.0",
+    "chai": "^4.3.6",
+    "chai-ethers": "^0.0.1",
+    "dotenv": "^16.0.2",
+    "ethereum-waffle": "^3.4.4",
+    "ethers": "^6.12.0",
+    "hardhat": "^2.11.1",
+    "hardhat-deploy": "^0.12.00",
+    "hardhat-deploy-ethers": "^0.4.1",
+    "lodash": "^4.17.21",
+    "mocha": "^10.0.0",
+    "prettier": "^2.7.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.24",
+    "rimraf": "^3.0.2",
+    "seedrandom": "^3.0.5",
+    "solidity-docgen": "^0.6.0-beta.25",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.3.1",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.7.3"
+  },
+  "prettier": {
+    "overrides": [
+      {
+        "files": "*.sol",
+        "options": {
+          "printWidth": 120,
+          "tabWidth": 4,
+          "useTabs": false,
+          "singleQuote": false,
+          "bracketSpacing": false,
+          "explicitTypes": "always"
+        }
+      },
+      {
+        "files": "*.ts",
+        "options": {
+          "printWidth": 120,
+          "tabWidth": 4,
+          "useTabs": false,
+          "singleQuote": false,
+          "bracketSpacing": false,
+          "explicitTypes": "always"
+        }
+      }
+    ]
+  },
+  "files": [
+    "contracts",
+    "artifacts",
+    "scripts",
+    "typechain-types/**/*",
+    "shared/**/*",
+    "hardhat.config.ts"
+  ]
+}

@@ -1,0 +1,1472 @@
+{
+	"after wipe testUser1 can restore own settlement and activate region where settlement was placed before wipe. /totalSummonedCultists, eraNumber, settlementEraNumber/": {
+		"firstBlock": 82,
+		"lastBlock": 93,
+		"gasUsed": "15186552"
+	},
+	"battle between testUser1 and testUser2 can be ended in a draw. /winningSide, armyUnits, stunDuration/": {
+		"firstBlock": 96,
+		"lastBlock": 101,
+		"gasUsed": "1971325"
+	},
+	"battle duration between two armies is correct. /battleDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "3002660"
+	},
+	"battle duration versus cultists does not depend on the amount of army and battle duration is correct. /battleDuration/": {
+		"firstBlock": 115,
+		"lastBlock": 140,
+		"gasUsed": "12919109"
+	},
+	"casualties in battle between two armies are correct. /casualties, armyUnits, stunDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 95,
+		"gasUsed": "3464530"
+	},
+	"cultists amount after battle is restored by wipe. /cultistsAmount/": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "8011214"
+	},
+	"cultists can be summoned again only in next interval if in current interval toxicity increase was repeated. /cultistAmount/": {
+		"firstBlock": 82,
+		"lastBlock": 95,
+		"gasUsed": "6929779"
+	},
+	"cultists can not be summoned during summon delay": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "3326216"
+	},
+	"min battle duration between two armies is correct. /battleDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 138,
+		"gasUsed": "18267207"
+	},
+	"not included region tiers are changed after wipe but activated are not. /regionActivationTierArray, regionObservationTierArray/": {
+		"firstBlock": 115,
+		"lastBlock": 128,
+		"gasUsed": "9593127"
+	},
+	"production penalty after battle versus cultists is correct. /productionSlowdownPercentage/": {
+		"firstBlock": 82,
+		"lastBlock": 105,
+		"gasUsed": "12528720"
+	},
+	"settlement cost after wipe does not change. /eraNumber, settlementCost/": {
+		"firstBlock": 200,
+		"lastBlock": 214,
+		"gasUsed": "8561821"
+	},
+	"settlements cost does not change before game started. /settlementCost/": {
+		"firstBlock": 144,
+		"lastBlock": 146,
+		"gasUsed": "0"
+	},
+	"summoned cultists amount after summon delay is proportional to region corruptionIndex. /summonedCultists/": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "3572264"
+	},
+	"testUser1 army can maneuver to another settlement and maneuver time is correct. /maneuverTime, armyPosition, stunDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1071527"
+	},
+	"testUser1 army can not maneuver to another settlement during stun": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1103851"
+	},
+	"testUser1 army maneuver can be speeded up as much as there are enough resources. /maneuverTimeWithSpeedUp, armyPosition/": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "2186853"
+	},
+	"testUser1 army maneuver can be speeded up by resources and maneuver time reduces correctly. /maneuverTimeWithSpeedUp, armyPosition, stunDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "2717996"
+	},
+	"testUser1 army maneuver can be speeded up from cultists settlement without resource usage if there are no cultists. /maneuverTimeWithSpeedUp, userBuildingTreasury, armyPosition/": {
+		"firstBlock": 82,
+		"lastBlock": 90,
+		"gasUsed": "1985718"
+	},
+	"testUser1 army maneuver can not be speeded up from cultists settlement if there are cultists": {
+		"firstBlock": 82,
+		"lastBlock": 95,
+		"gasUsed": "5485905"
+	},
+	"testUser1 army maneuver can not be speeded up more than max limit": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "2273950"
+	},
+	"testUser1 army maneuver can not be speeded up without enough resource amount": {
+		"firstBlock": 82,
+		"lastBlock": 98,
+		"gasUsed": "5622205"
+	},
+	"testUser1 army maneuver to home can not be speeded up by resources if army is empty": {
+		"firstBlock": 82,
+		"lastBlock": 97,
+		"gasUsed": "4980551"
+	},
+	"testUser1 can activate new region. /tokenBalance/": {
+		"firstBlock": 101,
+		"lastBlock": 105,
+		"gasUsed": "2708321"
+	},
+	"testUser1 can advanced upgrade Farm by another user resources. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "783366"
+	},
+	"testUser1 can advanced upgrade Farm. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 99,
+		"gasUsed": "8956109"
+	},
+	"testUser1 can advanced upgrade Fort by another user resources. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, maxHealth/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "479423"
+	},
+	"testUser1 can advanced upgrade Fort. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, maxHealth/": {
+		"firstBlock": 82,
+		"lastBlock": 99,
+		"gasUsed": "5312222"
+	},
+	"testUser1 can advanced upgrade Lumbermill by another user resources. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "786397"
+	},
+	"testUser1 can advanced upgrade Lumbermill. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 99,
+		"gasUsed": "9320012"
+	},
+	"testUser1 can advanced upgrade Mine by another user resources. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "786204"
+	},
+	"testUser1 can advanced upgrade Mine. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 99,
+		"gasUsed": "9384875"
+	},
+	"testUser1 can advanced upgrade Smithy by another user resources. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "804596"
+	},
+	"testUser1 can advanced upgrade Smithy. /oreQuantity, advancedProductionLevel, buildingLevel, workersCap, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 99,
+		"gasUsed": "9616883"
+	},
+	"testUser1 can assign resources from another user into Lumbermill. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "830322"
+	},
+	"testUser1 can assign resources from another user into Mine. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "1120857"
+	},
+	"testUser1 can assign resources from another user into Smithy. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "1428974"
+	},
+	"testUser1 can assign resources into Farm treasury. /userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "592917"
+	},
+	"testUser1 can assign resources into Fort after battle versus cultists. /cultistAmount, productionRateWithPenaltyMultiplier, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 98,
+		"gasUsed": "7948325"
+	},
+	"testUser1 can assign resources into Fort. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 90,
+		"gasUsed": "4487344"
+	},
+	"testUser1 can assign resources into Lumbermill after battle versus cultists. /cultistAmount, productionRateWithPenaltyMultiplier, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 98,
+		"gasUsed": "7990414"
+	},
+	"testUser1 can assign resources into Lumbermill treasury. /userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "606934"
+	},
+	"testUser1 can assign resources into Lumbermill. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 90,
+		"gasUsed": "4761975"
+	},
+	"testUser1 can assign resources into Mine after battle versus cultists. /cultistAmount, productionRateWithPenaltyMultiplier, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 98,
+		"gasUsed": "8431037"
+	},
+	"testUser1 can assign resources into Mine treasury. /userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "619650"
+	},
+	"testUser1 can assign resources into Mine. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 90,
+		"gasUsed": "4996806"
+	},
+	"testUser1 can assign resources into Smithy after battle versus cultists. /cultistAmount, productionRateWithPenaltyMultiplier, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 98,
+		"gasUsed": "8746560"
+	},
+	"testUser1 can assign resources into Smithy treasury. /userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "632325"
+	},
+	"testUser1 can assign resources into Smithy. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 90,
+		"gasUsed": "5079414"
+	},
+	"testUser1 can assign resources into building by share with penalty. /summonedCultists, userSharesBalance, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "5932927"
+	},
+	"testUser1 can assign resources into building by share. /userSharesBalance, userResources, userBuildingResources/, ": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "2265237"
+	},
+	"testUser1 can assign workers into Farm. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "605816"
+	},
+	"testUser1 can assign workers into Fort. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "325803"
+	},
+	"testUser1 can assign workers into Lumbermill. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "607603"
+	},
+	"testUser1 can assign workers into Mine. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "615448"
+	},
+	"testUser1 can assign workers into Smithy. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "623266"
+	},
+	"testUser1 can basic upgrade Farm by another user resources. /woodQuantity, basicProductionLevel, buildingLevel, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "786510"
+	},
+	"testUser1 can basic upgrade Farm. /woodQuantity, basicProductionLevel, buildingLevel, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 107,
+		"gasUsed": "9488174"
+	},
+	"testUser1 can basic upgrade Fort by another user resources. /woodQuantity, basicProductionLevel, buildingLevel, maxHealth/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "482563"
+	},
+	"testUser1 can basic upgrade Fort. /woodQuantity, basicProductionLevel, buildingLevel, maxHealth/": {
+		"firstBlock": 82,
+		"lastBlock": 107,
+		"gasUsed": "5513148"
+	},
+	"testUser1 can basic upgrade Lumbermill by another user resources. /woodQuantity, basicProductionLevel, buildingLevel, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "780242"
+	},
+	"testUser1 can basic upgrade Lumbermill. /woodQuantity, basicProductionLevel, buildingLevel, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 107,
+		"gasUsed": "9662626"
+	},
+	"testUser1 can basic upgrade Mine by another user resources. /woodQuantity, basicProductionLevel, buildingLevel, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "798649"
+	},
+	"testUser1 can basic upgrade Mine. /woodQuantity, basicProductionLevel, buildingLevel, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 107,
+		"gasUsed": "9823249"
+	},
+	"testUser1 can basic upgrade Smithy by another user resources. /woodQuantity, basicProductionLevel, buildingLevel, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "807742"
+	},
+	"testUser1 can basic upgrade Smithy. /woodQuantity, basicProductionLevel, buildingLevel, treasuryCap/": {
+		"firstBlock": 82,
+		"lastBlock": 107,
+		"gasUsed": "9770401"
+	},
+	"testUser1 can cancel his own settlement order. /orderStatus/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "217951"
+	},
+	"testUser1 can cancel tile capture with bonus. /prosperityBalance, tileOwner/": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "8488754"
+	},
+	"testUser1 can capture own tile with bonus. /advancedProductionTileBonusType, tileOwner/": {
+		"firstBlock": 82,
+		"lastBlock": 97,
+		"gasUsed": "17355481"
+	},
+	"testUser1 can capture tile with Archer bonus and battle bonus is correct. /advancedProductionTileBonusType, prosperityBalance, investedWorkers, productionPerSecond/": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "10790914"
+	},
+	"testUser1 can capture tile with Farm bonus in region number 2 and bonus workers amount is correct. /advancedProductionTileBonusType, prosperityBalance, investedWorkers, productionPerSecond/": {
+		"firstBlock": 115,
+		"lastBlock": 130,
+		"gasUsed": "9862418"
+	},
+	"testUser1 can capture tile with Horseman bonus and battle bonus is correct. /advancedProductionTileBonusType, prosperityBalance, investedWorkers, productionPerSecond/": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "10754919"
+	},
+	"testUser1 can capture tile with Lumbermill bonus in region number 1 and bonus workers amount is correct. /advancedProductionTileBonusType, prosperityBalance, investedWorkers, productionPerSecond/": {
+		"firstBlock": 115,
+		"lastBlock": 130,
+		"gasUsed": "10570099"
+	},
+	"testUser1 can capture tile with Mine bonus in region number 1 and bonus workers amount is correct. /advancedProductionTileBonusType, prosperityBalance, investedWorkers, productionPerSecond/": {
+		"firstBlock": 115,
+		"lastBlock": 130,
+		"gasUsed": "11443291"
+	},
+	"testUser1 can capture tile with Smithy bonus in region number 2 and bonus workers amount is correct. /advancedProductionTileBonusType, prosperityBalance, investedWorkers, productionPerSecond/": {
+		"firstBlock": 115,
+		"lastBlock": 130,
+		"gasUsed": "12512965"
+	},
+	"testUser1 can capture tile with Warrior bonus and battle bonus is correct. /advancedProductionTileBonusType, prosperityBalance, investedWorkers, productionPerSecond/": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "10553854"
+	},
+	"testUser1 can change robbery multiplier by siege unit quantity. /fortHealth, robberyPointsRegenerationTime, stunDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 93,
+		"gasUsed": "2399322"
+	},
+	"testUser1 can demilitarize archers on another settlement. /unitQuantity, prosperityBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "1447385"
+	},
+	"testUser1 can demilitarize archers on own settlement. /unitQuantity, prosperityBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "1106575"
+	},
+	"testUser1 can demilitarize horsemen on another settlement. /unitQuantity, prosperityBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "1447751"
+	},
+	"testUser1 can demilitarize horsemen on own settlement. /unitQuantity, prosperityBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "1106941"
+	},
+	"testUser1 can demilitarize warriors on another settlement. /unitQuantity, prosperityBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "1304716"
+	},
+	"testUser1 can demilitarize warriors on own settlement. /unitQuantity, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "963920"
+	},
+	"testUser1 can destroy current era if summoned cultists amount reached max cap and exchange ratio is changed correctly. /regionTier, totalSummonedCultists, userResources, eraNumber, exchangeRatio/": {
+		"firstBlock": 82,
+		"lastBlock": 97,
+		"gasUsed": "6805221"
+	},
+	"testUser1 can destruct testUser2's Fort during testUser2's repairment. /fortHealth, buildingResources, pointsRegenPerSecond/": {
+		"firstBlock": 82,
+		"lastBlock": 111,
+		"gasUsed": "9706051"
+	},
+	"testUser1 can destruct testUser2's Fort. /fortHealth, robberyPoints after siege/": {
+		"firstBlock": 82,
+		"lastBlock": 93,
+		"gasUsed": "2849892"
+	},
+	"testUser1 can exchange ingots to tokens by another user resources. /userTokenBalance, rewardPoolBalance, userResourceBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "4242415"
+	},
+	"testUser1 can exchange ingots to tokens. /userTokenBalance, rewardPoolBalance, userResourceBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "4173143"
+	},
+	"testUser1 can exchange lower ingots amount to tokens if reward pool balance decreased. /userTokenBalance, rewardPoolBalance, userResourceBalance, minTokensToReceive/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "362324"
+	},
+	"testUser1 can give up tile with bonus. /advancedProductionTileBonusType, prosperityBalance, tileOwner, investedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 90,
+		"gasUsed": "8053896"
+	},
+	"testUser1 can harvest resources produced by Farm. /prosperityBalance, treasuryBalance, userResources/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "1064302"
+	},
+	"testUser1 can harvest resources produced by Lumbermill. /prosperityBalance, treasuryBalance, userResources/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "1418907"
+	},
+	"testUser1 can harvest resources produced by Mine. /prosperityBalance, treasuryBalance, userResources/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "1760211"
+	},
+	"testUser1 can harvest resources produced by Smithy. /prosperityBalance, treasuryBalance, userResources/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "2138624"
+	},
+	"testUser1 can harvest resources produced by new settlement placed a day after region activation. /treasuryBalance/": {
+		"firstBlock": 61,
+		"lastBlock": 65,
+		"gasUsed": "4712400"
+	},
+	"testUser1 can hire archers and price drop is correct. /unitPrice, userResources, unitQuantity/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "825031"
+	},
+	"testUser1 can hire archers by another user resources. /unitPrice, userResources, unitQuantity/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "897309"
+	},
+	"testUser1 can hire horsemen and price drop is correct. /unitPrice, userResources, unitQuantity/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "825153"
+	},
+	"testUser1 can hire horsemen by another user resources. /unitPrice, userResources, unitQuantity/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "897431"
+	},
+	"testUser1 can hire warriors. /unitPrice, unassignedWorkers, unitQuantity/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "733165"
+	},
+	"testUser1 can hire workers and price drop is correct": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "6569112"
+	},
+	"testUser1 can modify his own settlement order. /orderStatus, orderPrice/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "220962"
+	},
+	"testUser1 can not activate new region if current region has not enough settlements": {
+		"firstBlock": 61,
+		"lastBlock": 64,
+		"gasUsed": "487955"
+	},
+	"testUser1 can not activate new region if neighbor region is not included": {
+		"firstBlock": 101,
+		"lastBlock": 104,
+		"gasUsed": "454317"
+	},
+	"testUser1 can not activate new region without enough token amount": {
+		"firstBlock": 101,
+		"lastBlock": 104,
+		"gasUsed": "533425"
+	},
+	"testUser1 can not advanced upgrade Farm by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "556246"
+	},
+	"testUser1 can not advanced upgrade Farm without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "577226"
+	},
+	"testUser1 can not advanced upgrade Fort by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "279981"
+	},
+	"testUser1 can not advanced upgrade Fort without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "283861"
+	},
+	"testUser1 can not advanced upgrade Lumbermill by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "557857"
+	},
+	"testUser1 can not advanced upgrade Lumbermill without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "578837"
+	},
+	"testUser1 can not advanced upgrade Mine by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "561026"
+	},
+	"testUser1 can not advanced upgrade Mine without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "582006"
+	},
+	"testUser1 can not advanced upgrade Smithy by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "573181"
+	},
+	"testUser1 can not advanced upgrade Smithy without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "594161"
+	},
+	"testUser1 can not assign more resources than available into Fort": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "336033"
+	},
+	"testUser1 can not assign more resources than available into Lumbermill": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "596046"
+	},
+	"testUser1 can not assign more resources than available into Mine": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "606302"
+	},
+	"testUser1 can not assign more resources than available into Smithy": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "616538"
+	},
+	"testUser1 can not assign more workers than max cap of Farm": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "118947"
+	},
+	"testUser1 can not assign more workers than max cap of Fort": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "119615"
+	},
+	"testUser1 can not assign more workers than max cap of Lumbermill": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "119125"
+	},
+	"testUser1 can not assign more workers than max cap of Mine": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "119303"
+	},
+	"testUser1 can not assign more workers than max cap of Smithy": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "119469"
+	},
+	"testUser1 can not assign not acceptable resources into Fort": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "99501"
+	},
+	"testUser1 can not assign not acceptable resources into Lumbermill": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "99009"
+	},
+	"testUser1 can not assign not acceptable resources into Mine": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "99657"
+	},
+	"testUser1 can not assign resources from another user into Lumbermill without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "89433"
+	},
+	"testUser1 can not assign resources from another user into Mine without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "90315"
+	},
+	"testUser1 can not assign resources from another user into Smithy without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "91198"
+	},
+	"testUser1 can not assign resources into same building type by share": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "59995"
+	},
+	"testUser1 can not basic upgrade Farm by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "556336"
+	},
+	"testUser1 can not basic upgrade Farm without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "577316"
+	},
+	"testUser1 can not basic upgrade Fort by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "280071"
+	},
+	"testUser1 can not basic upgrade Fort without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "283951"
+	},
+	"testUser1 can not basic upgrade Lumbermill by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "553447"
+	},
+	"testUser1 can not basic upgrade Lumbermill without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "574427"
+	},
+	"testUser1 can not basic upgrade Mine by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "565616"
+	},
+	"testUser1 can not basic upgrade Mine without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "586596"
+	},
+	"testUser1 can not basic upgrade Smithy by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "573271"
+	},
+	"testUser1 can not basic upgrade Smithy without resources": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "594251"
+	},
+	"testUser1 can not begin battle during enemy army maneuver if duration left 10 sec or less": {
+		"firstBlock": 96,
+		"lastBlock": 99,
+		"gasUsed": "612242"
+	},
+	"testUser1 can not capture more than one tile at the same time": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "7001807"
+	},
+	"testUser1 can not capture more tiles than advanced tile max limit": {
+		"firstBlock": 115,
+		"lastBlock": 126,
+		"gasUsed": "12168361"
+	},
+	"testUser1 can not capture more tiles than military tile max limit": {
+		"firstBlock": 115,
+		"lastBlock": 123,
+		"gasUsed": "8885377"
+	},
+	"testUser1 can not capture own tile if prosperity threshold not reached": {
+		"firstBlock": 82,
+		"lastBlock": 95,
+		"gasUsed": "14367682"
+	},
+	"testUser1 can not capture tile by stake which is lower than initial prosperity stake": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "4019336"
+	},
+	"testUser1 can not capture tile without prosperity": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "2035065"
+	},
+	"testUser1 can not change siege unit quantity during stun by siege start": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "1687025"
+	},
+	"testUser1 can not claim tile during capture": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "6980942"
+	},
+	"testUser1 can not claim tile without prosperity": {
+		"firstBlock": 82,
+		"lastBlock": 90,
+		"gasUsed": "8423646"
+	},
+	"testUser1 can not demilitarize units during battle": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "2930060"
+	},
+	"testUser1 can not demilitarize units during stun": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1105593"
+	},
+	"testUser1 can not demilitarize units more than available": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "838445"
+	},
+	"testUser1 can not destroy current era during destruction delay": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "3721497"
+	},
+	"testUser1 can not destroy current era if summoned cultists amount not reached max cap": {
+		"firstBlock": 82,
+		"lastBlock": 90,
+		"gasUsed": "3581475"
+	},
+	"testUser1 can not exchange ingots if min tokens to receive amount is too high": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "93955"
+	},
+	"testUser1 can not exchange ingots to tokens by another user resources without approve": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "4104500"
+	},
+	"testUser1 can not exchange ingots, upgrade building or hire units if game is closed due to empty reward pool": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "627791"
+	},
+	"testUser1 can not exchange tokens to resources during stun by siege start": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "1685036"
+	},
+	"testUser1 can not get building tile buff greater than max buff limit. /advancedProductionTileBonusType, advancedProductionTileBonusPercent, prosperityBalance, investedWorkers/": {
+		"firstBlock": 115,
+		"lastBlock": 126,
+		"gasUsed": "11505380"
+	},
+	"testUser1 can not hire units by another user without approve": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "649672"
+	},
+	"testUser1 can not hire units during stun": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "1963562"
+	},
+	"testUser1 can not hire units from another region": {
+		"firstBlock": 115,
+		"lastBlock": 117,
+		"gasUsed": "544207"
+	},
+	"testUser1 can not hire units if ingots to sell is more than specified limit": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "623206"
+	},
+	"testUser1 can not hire units more than max limit": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "605750"
+	},
+	"testUser1 can not hire units more than transaction limit": {
+		"firstBlock": 82,
+		"lastBlock": 117,
+		"gasUsed": "11243176"
+	},
+	"testUser1 can not hire units on another settlement": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "1989085"
+	},
+	"testUser1 can not hire units without resources": {
+		"firstBlock": 67,
+		"lastBlock": 69,
+		"gasUsed": "653652"
+	},
+	"testUser1 can not hire workers more than transaction limit": {
+		"firstBlock": 67,
+		"lastBlock": 77,
+		"gasUsed": "5713168"
+	},
+	"testUser1 can not hire workers without prosperity": {
+		"firstBlock": 67,
+		"lastBlock": 68,
+		"gasUsed": "1844417"
+	},
+	"testUser1 can not maneuver to another settlement if army is empty": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "188382"
+	},
+	"testUser1 can not pay tokens to decrease corruptionIndex in settlement": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "6055046"
+	},
+	"testUser1 can not purchase new settlement after wipe if era is not active": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "6327819"
+	},
+	"testUser1 can not purchase new settlement if max token to use lower than settlement cost": {
+		"firstBlock": 61,
+		"lastBlock": 63,
+		"gasUsed": "603278"
+	},
+	"testUser1 can not purchase new settlement if region is full": {
+		"firstBlock": 200,
+		"lastBlock": 202,
+		"gasUsed": "737010"
+	},
+	"testUser1 can not purchase new settlement not in acceptable radius": {
+		"firstBlock": 61,
+		"lastBlock": 63,
+		"gasUsed": "897121"
+	},
+	"testUser1 can not purchase new settlement on position where rotten settlement is not destroyed": {
+		"firstBlock": 82,
+		"lastBlock": 93,
+		"gasUsed": "8605325"
+	},
+	"testUser1 can not purchase new settlement without money": {
+		"firstBlock": 61,
+		"lastBlock": 62,
+		"gasUsed": "239878"
+	},
+	"testUser1 can not return his own Farm shares if treasury amount more than acceptable": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "2465252"
+	},
+	"testUser1 can not return his own Lumbermill shares if treasury amount more than acceptable": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "2987516"
+	},
+	"testUser1 can not return his own Mine shares if treasury amount more than acceptable": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "3531643"
+	},
+	"testUser1 can not return his own Smithy shares if treasury amount more than acceptable": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "4110718"
+	},
+	"testUser1 can not rob testUser2's building without robbery points": {
+		"firstBlock": 82,
+		"lastBlock": 94,
+		"gasUsed": "4431280"
+	},
+	"testUser1 can not send Farm shares more than max cap to another user": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "578135"
+	},
+	"testUser1 can not send Lumbermill shares more than max cap to another user": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "579744"
+	},
+	"testUser1 can not send Mine shares more than max cap to another user": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "587412"
+	},
+	"testUser1 can not send Smithy shares more than max cap to another user": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "595064"
+	},
+	"testUser1 can not siege testUser2's settlement by wrong robbery multiplier": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "1205612"
+	},
+	"testUser1 can not siege testUser2's settlement during stun": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1105853"
+	},
+	"testUser1 can not start battle during stun": {
+		"firstBlock": 82,
+		"lastBlock": 89,
+		"gasUsed": "3007274"
+	},
+	"testUser1 can not start battle if max units to attack amount is not correct": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "2292511"
+	},
+	"testUser1 can not upgrade Farm during cooldown": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1161509"
+	},
+	"testUser1 can not upgrade Fort during cooldown": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "663088"
+	},
+	"testUser1 can not upgrade Lumbermill during cooldown": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1176761"
+	},
+	"testUser1 can not upgrade Mine during cooldown": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1202835"
+	},
+	"testUser1 can not upgrade Smithy during cooldown": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1219581"
+	},
+	"testUser1 can not withdraw resources more than assigned into Fort": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1257416"
+	},
+	"testUser1 can not withdraw resources more than assigned into Lumbermill": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1387471"
+	},
+	"testUser1 can not withdraw resources more than assigned into Mine": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1824101"
+	},
+	"testUser1 can not withdraw resources more than assigned into Smithy": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "2290327"
+	},
+	"testUser1 can not withdraw workers more than assigned into Farm": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1076914"
+	},
+	"testUser1 can not withdraw workers more than assigned into Fort": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "605205"
+	},
+	"testUser1 can not withdraw workers more than assigned into Lumbermill": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1100220"
+	},
+	"testUser1 can not withdraw workers more than assigned into Mine": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1115732"
+	},
+	"testUser1 can not withdraw workers more than assigned into Smithy": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1131202"
+	},
+	"testUser1 can pay tokens to decrease corruptionIndex in settlement. /userTokenBalance, rewardPoolBalance, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "3432650"
+	},
+	"testUser1 can produce resources by Farm. /basicProducedRes, totalProducedRes/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1522788"
+	},
+	"testUser1 can produce resources by Lumbermill. /basicProducedRes, advancedProducedRes, totalProducedRes/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1899561"
+	},
+	"testUser1 can produce resources by Mine. /basicProducedRes, advancedProducedRes, totalProducedRes/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "2249190"
+	},
+	"testUser1 can produce resources by Smithy. /basicProducedRes, advancedProducedRes, totalProducedRes/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "2635913"
+	},
+	"testUser1 can purchase new settlement and price drop is correct. /settlementCost, userTokenBalance/": {
+		"firstBlock": 61,
+		"lastBlock": 65,
+		"gasUsed": "4145738"
+	},
+	"testUser1 can purchase new settlement in different region from current settlement region. /settlementCost, userTokenBalance/": {
+		"firstBlock": 109,
+		"lastBlock": 111,
+		"gasUsed": "4047768"
+	},
+	"testUser1 can purchase new settlement on position where rotten settlement is destroyed": {
+		"firstBlock": 248,
+		"lastBlock": 267,
+		"gasUsed": "12755385"
+	},
+	"testUser1 can purchase settlement on tile with bonus. /advancedProductionTileBonusType, investedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 85,
+		"gasUsed": "4618603"
+	},
+	"testUser1 can repair own Fort. /fortHealth, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "1398261"
+	},
+	"testUser1 can return his own Farm shares. /userSharesBalance, buildingDistributionId/": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "2839005"
+	},
+	"testUser1 can return his own Lumbermill shares. /userSharesBalance, buildingDistributionId/": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "3447236"
+	},
+	"testUser1 can return his own Mine shares. /userSharesBalance, buildingDistributionId/": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "4003834"
+	},
+	"testUser1 can return his own Smithy shares. /userSharesBalance, buildingDistributionId/": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "4609494"
+	},
+	"testUser1 can rob testUser2's Farm. /robberyPointsCap, userResources, userBuildingTreasury, robberyPoints after siege/": {
+		"firstBlock": 82,
+		"lastBlock": 96,
+		"gasUsed": "4694189"
+	},
+	"testUser1 can rob testUser2's Lumbermill. /robberyPointsCap, userResources, userBuildingTreasury, robberyPoints after siege/": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "8419145"
+	},
+	"testUser1 can rob testUser2's Mine. /robberyPointsCap, userResources, userBuildingTreasury, robberyPoints after siege/": {
+		"firstBlock": 82,
+		"lastBlock": 96,
+		"gasUsed": "5617850"
+	},
+	"testUser1 can rob testUser2's Smithy. /robberyPointsCap, userResources, userBuildingTreasury, robberyPoints after siege/": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "9606997"
+	},
+	"testUser1 can send Farm shares to another user and resource distribution when harvesting is correct. /userSharesBalance, producedResources/": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "3564403"
+	},
+	"testUser1 can send Lumbermill shares to another user and resource distribution when harvesting is correct. /userSharesBalance, producedResources/": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "4548056"
+	},
+	"testUser1 can send Mine shares to another user and resource distribution when harvesting is correct. /userSharesBalance, producedResources/": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "5602168"
+	},
+	"testUser1 can send Smithy shares to another user and resource distribution when harvesting is correct. /userSharesBalance, producedResources/": {
+		"firstBlock": 82,
+		"lastBlock": 91,
+		"gasUsed": "6754508"
+	},
+	"testUser1 can speed up building robbery by robbery multiplier. /fortHealth, robberyPointsRegenerationTime, stunDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 93,
+		"gasUsed": "2370322"
+	},
+	"testUser1 can stun own army. /stunDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 83,
+		"gasUsed": "97457"
+	},
+	"testUser1 can withdraw resources during production by Fort. /userBuildingSpendingResources, produceTimeLeft/": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "1914803"
+	},
+	"testUser1 can withdraw resources during production by Lumbermill. /userBuildingSpendingResources, produceTimeLeft/": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "2104280"
+	},
+	"testUser1 can withdraw resources during production by Mine. /userBuildingSpendingResources, produceTimeLeft/": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "2771827"
+	},
+	"testUser1 can withdraw resources during production by Smithy. /userBuildingSpendingResources, produceTimeLeft/": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "3523876"
+	},
+	"testUser1 can withdraw resources from Fort. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1257400"
+	},
+	"testUser1 can withdraw resources from Lumbermill. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1387463"
+	},
+	"testUser1 can withdraw resources from Mine. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1824085"
+	},
+	"testUser1 can withdraw resources from Smithy. /userResources, userBuildingResources, regionCorruptionIndex/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "2290303"
+	},
+	"testUser1 can withdraw workers from Farm. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1082385"
+	},
+	"testUser1 can withdraw workers from Fort. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "610676"
+	},
+	"testUser1 can withdraw workers from Lumbermill. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1105691"
+	},
+	"testUser1 can withdraw workers from Mine. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1121203"
+	},
+	"testUser1 can withdraw workers from Smithy. /assignedWorkers, unassignedWorkers/": {
+		"firstBlock": 82,
+		"lastBlock": 84,
+		"gasUsed": "1136673"
+	},
+	"testUser1 hidden maneuver can be revealed with speed up from cultists settlement without resource usage if there are no cultists. /maneuverTimeWithSpeedUp, userBuildingTreasury, armyPosition/": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "2140866"
+	},
+	"testUser1 hidden maneuver to another settlement can be cancelled by era change. /isArmyInHiddenManeuver, eraNumber, armyUnits/": {
+		"firstBlock": 82,
+		"lastBlock": 93,
+		"gasUsed": "7021707"
+	},
+	"testUser1 hidden maneuver to another settlement can be cancelled. /isArmyInHiddenManeuver, armyUnits, unassignedWorkers, prosperityBalance, armyPosition, stunDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1390411"
+	},
+	"testUser1 hidden maneuver to another settlement can be revealed during battle if battle and stun after it end until maneuver end time. /isArmyInHiddenManeuver/": {
+		"firstBlock": 82,
+		"lastBlock": 94,
+		"gasUsed": "3231914"
+	},
+	"testUser1 hidden maneuver to another settlement can be revealed with speed up after battle if battle and stun after it end until maneuver end time. /isArmyInHiddenManeuver, maneuverDuration/": {
+		"firstBlock": 82,
+		"lastBlock": 98,
+		"gasUsed": "4184992"
+	},
+	"testUser1 hidden maneuver to another settlement can be revealed with speed up. /isArmyInHiddenManeuver, userBuildingTreasury, maneuverDuration, armyPosition/": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "1737720"
+	},
+	"testUser1 hidden maneuver to another settlement can be revealed. /isArmyInHiddenManeuver, armyPosition/": {
+		"firstBlock": 82,
+		"lastBlock": 88,
+		"gasUsed": "1089210"
+	},
+	"testUser1 hidden maneuver to another settlement can not be cancelled by another user": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1033211"
+	},
+	"testUser1 hidden maneuver to another settlement can not be cancelled during battle": {
+		"firstBlock": 82,
+		"lastBlock": 94,
+		"gasUsed": "3177316"
+	},
+	"testUser1 hidden maneuver to another settlement can not be cancelled during stun": {
+		"firstBlock": 82,
+		"lastBlock": 97,
+		"gasUsed": "3379699"
+	},
+	"testUser1 hidden maneuver to another settlement can not be revealed by wrong reveal key": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1015088"
+	},
+	"testUser1 hidden maneuver to another settlement can not be revealed during battle if battle and stun after it end after maneuver end time": {
+		"firstBlock": 82,
+		"lastBlock": 94,
+		"gasUsed": "3167826"
+	},
+	"testUser1 hidden maneuver to another settlement can not be revealed with speed up": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1053934"
+	},
+	"testUser1 hidden maneuver to another settlement can not be revealed with speed up during battle if battle and stun after it end until maneuver end time": {
+		"firstBlock": 82,
+		"lastBlock": 94,
+		"gasUsed": "3185201"
+	},
+	"testUser1's Farm production slowed by production penalty. /productionSlowdownPercentage, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "3421557"
+	},
+	"testUser1's Fort production is not slowed by production penalty. /regenerationPerSecond/": {
+		"firstBlock": 82,
+		"lastBlock": 110,
+		"gasUsed": "10703229"
+	},
+	"testUser1's Lumbermill production slowed by production penalty. /productionSlowdownPercentage, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "4408045"
+	},
+	"testUser1's Mine production slowed by production penalty. /productionSlowdownPercentage, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "5464963"
+	},
+	"testUser1's Smithy production slowed by production penalty. /productionSlowdownPercentage, userResources, userBuildingResources/": {
+		"firstBlock": 82,
+		"lastBlock": 92,
+		"gasUsed": "6608198"
+	},
+	"testUser1's army can be attacked by another user during its movement and armies casualties are proportional to reduced battle duration. /battleEndTime, battleDuration, casualties/": {
+		"firstBlock": 96,
+		"lastBlock": 103,
+		"gasUsed": "2233531"
+	},
+	"testUser1's robbery is not affected by cultists penalty. /robberyPointsRegenerationPerSec, userBuildingTreasury, robberyPoints/": {
+		"firstBlock": 82,
+		"lastBlock": 101,
+		"gasUsed": "7632201"
+	},
+	"testUser1's unit quantity in battle does not change if siege ends /armyUnits, armyUnits in battle/": {
+		"firstBlock": 96,
+		"lastBlock": 99,
+		"gasUsed": "2468482"
+	},
+	"testUser2 can capture tile with Fort bonus in region number 1 and bonus workers amount is correct. /advancedProductionTileBonusType, prosperityBalance, investedWorkers, productionPerSecond/": {
+		"firstBlock": 96,
+		"lastBlock": 113,
+		"gasUsed": "11468554"
+	},
+	"testUser2 can capture tile with bonus captured by testUser1. /prosperityBalance, tileOwner/": {
+		"firstBlock": 82,
+		"lastBlock": 96,
+		"gasUsed": "14932832"
+	},
+	"testUser2 can hire archers during battle but units amount in battle does not change. /armyUnits, armyUnits in battle/": {
+		"firstBlock": 96,
+		"lastBlock": 99,
+		"gasUsed": "2074948"
+	},
+	"testUser2 can hire horsemen during battle but units amount in battle does not change. /armyUnits, armyUnits in battle/": {
+		"firstBlock": 96,
+		"lastBlock": 99,
+		"gasUsed": "2075070"
+	},
+	"testUser2 can hire warriors during battle but units amount in battle does not change. /armyUnits, armyUnits in battle/": {
+		"firstBlock": 96,
+		"lastBlock": 99,
+		"gasUsed": "2016952"
+	},
+	"testUser2 can join side A into battle between testUser1 and cultists. /sideUnits/": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "8625989"
+	},
+	"testUser2 can join side B into battle between testUser1 and cultists. /sideUnits/": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "8682066"
+	},
+	"testUser2 can not attack more cultists than exist": {
+		"firstBlock": 82,
+		"lastBlock": 95,
+		"gasUsed": "6225841"
+	},
+	"testUser2 can not order testUser1's settlement if shares were transferred after order was created": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1133310"
+	},
+	"testUser2 can not order testUser1's settlement with shares by not allowed address": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "325845"
+	},
+	"testUser2 can not order testUser1's settlement with shares if order expired": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "370265"
+	},
+	"testUser2 can not order testUser1's settlement with shares if order not started": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "367997"
+	},
+	"testUser2 can not order testUser1's settlement with shares more than max cap": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "470019"
+	},
+	"testUser2 can not summon cultists to battle if fight between testUser1 and them is not over": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "8994589"
+	},
+	"testUser2 can order testUser1's settlement with reduced shares amount. /userSharesBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "1653327"
+	},
+	"testUser2 can order testUser1's settlement with shares by bless. /orderStatus, userTokenBalance, userSharesBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 86,
+		"gasUsed": "2442178"
+	},
+	"testUser2 can order testUser1's settlement with shares by food. /orderStatus, userTokenBalance, userSharesBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "2549528"
+	},
+	"testUser2 can order testUser1's settlement with shares by ingot. /orderStatus, userTokenBalance, userSharesBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "2549528"
+	},
+	"testUser2 can order testUser1's settlement with shares by ore. /orderStatus, userTokenBalance, userSharesBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "2549528"
+	},
+	"testUser2 can order testUser1's settlement with shares by wood. /orderStatus, userTokenBalance, userSharesBalance/": {
+		"firstBlock": 82,
+		"lastBlock": 87,
+		"gasUsed": "2549528"
+	},
+	"testUser2 can purchase new settlement in region activated by another user and region transfer is correct. /tokenBalance, regionOwner/": {
+		"firstBlock": 101,
+		"lastBlock": 110,
+		"gasUsed": "10951091"
+	},
+	"testUser2 can repair own Fort during testUser1's siege. /fortHealth, structureResources/": {
+		"firstBlock": 82,
+		"lastBlock": 102,
+		"gasUsed": "5502330"
+	},
+	"testUser3 can join side A into battle between testUser1 and testUser2 and armies casualties are correct. /casualties, armyUnits, winningSide, stunDuration/": {
+		"firstBlock": 96,
+		"lastBlock": 103,
+		"gasUsed": "2486177"
+	},
+	"testUser3 can join side B into battle between testUser1 and testUser2 and armies casualties are correct. /casualties, armyUnits, winningSide, stunDuration/": {
+		"firstBlock": 96,
+		"lastBlock": 103,
+		"gasUsed": "2493746"
+	},
+	"testUser3 can liquidate testUser1's army during siege. /armyUnits in battle, armyUnits in siege/": {
+		"firstBlock": 82,
+		"lastBlock": 97,
+		"gasUsed": "6206651"
+	},
+	"testUser3 can not join side A into battle between testUser1 and testUser2 during stun": {
+		"firstBlock": 82,
+		"lastBlock": 96,
+		"gasUsed": "5896799"
+	},
+	"testUser3 can not join side B into battle between testUser1 and testUser2 during stun": {
+		"firstBlock": 82,
+		"lastBlock": 96,
+		"gasUsed": "5896827"
+	},
+	"unit price does not change before game started. /unitPrice/": {
+		"firstBlock": 174,
+		"lastBlock": 176,
+		"gasUsed": "0"
+	},
+	"worker price does not change before game started. /workerPrice/": {
+		"firstBlock": 148,
+		"lastBlock": 150,
+		"gasUsed": "0"
+	}
+}

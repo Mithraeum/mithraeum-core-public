@@ -1,0 +1,11 @@
+export interface MithraeumConfig {
+    RESOLVER_ADDRESS?: string;
+    MULTICALL3_ADDRESS: string | null;
+    ERC20_FOR_SETTLEMENT_PURCHASE_ADDRESS: string | null;
+    ERC20_FOR_REGION_INCLUSION_ADDRESS: string | null;
+    FLAG_JSON_CONFIG: string;
+    GLOBAL_MULTIPLIER: number;
+    SETTLEMENT_STARTING_PRICE: string;
+    REGION_INCLUSION_PRICE: string;
+    MAXIMUM_AMOUNT_OF_MINTED_BANNERS_PER_ADDRESS: bigint;
+}
