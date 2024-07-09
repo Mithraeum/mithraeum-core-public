@@ -1,2 +1,0 @@
-# IRegion.sol
-
