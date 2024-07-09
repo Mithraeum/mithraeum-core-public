@@ -2,7 +2,7 @@
 
 * [Mithraeum API Docs](README.md)
 * [Addresses](addresses.md)
-* [Artifacts](artifacts.md)
+* [Interacting with contracts](interacting-with-contracts.md)
 
 ## Structural elements
 
