@@ -16,11 +16,11 @@ Scheme above roughly represents how smart contracts placed in the system.
 
 ### World.sol
 
-Contains registry, geography, banners, bless token, distributions, cross epochs' memory, reward pool. Also contains helpful methods to interact with game assets such as batch resource transfers.
+Contains references to standalone contracts (initialized once when world is deployed) as well as produced eras during gameplay.
 
 ### Registry.sol
 
-Contains game configuration constants related to game balance, also contains configuration related to creation of new world assets and their implementations.
+Contains game configuration constants related to game balance.
 
 ### Geography.sol
 
@@ -36,19 +36,19 @@ Standalone ERC1155. Specifies distribution rules. Each building has own distribu
 
 ### CrossErasMemory.sol
 
-Contains saved data in between world destruction's, such as settlements positions, zones settlements count.
+Contains saved necessary data in between era destruction's.
 
 ### RewardPool.sol
 
-Contains bless tokens which can be swapped for weapons.
+Contains Erc20 tokens which can be swapped for ingots.
 
 ### Era.sol
 
-Contains addresses which represent current game tokens such as resources, units, workers, prosperity; Also contains placed settlements and activated zones in current epoch.
+Contains addresses which represent current game tokens such as resources, units, workers, prosperity; Also contains placed settlements and activated regions in current era.
 
 ### Resource.sol
 
-Custom ERC-20 token, interacts with world when transfer happens related to world assets and gives the world an ability to modify balances whenever necessary (in such events as productions, robbery, interacting with workers or units markets, etc.). Currently represents FOOD, WOOD, COPPER, WEAPON tokens.
+Custom ERC-20 token, interacts with world when transfer happens related to world assets and gives the world an ability to modify balances whenever necessary (in such events as productions, robbery, interacting with workers or units markets, etc.). Represents FOOD, WOOD, ORE, INGOT tokens.
 
 ### Workers.sol
 
@@ -64,7 +64,7 @@ Custom ERC-20 token, only certain world asset able to have this token, such as '
 
 ### Settlement.sol
 
-Central hub of user assets. Banner id specified in this contract will be considered as settlement owner. Contains settlements' assets, such as buildings, siege, army. Also methods to manage governors and settlement.&#x20;
+Central hub of user assets. Banner id specified in this contract will be considered as settlement owner. Contains settlements' assets, such as buildings, siege, army. Also methods to manage governors and settlement.
 
 ### Region.sol
 
@@ -88,7 +88,7 @@ Workers pool which related to its zone. Contains parameters and method to provid
 
 ### UnitsPool.sol
 
-Units pool which related to its zone. Contains parameters and method to provide units pool capabilities. Tools is the currency you use in this pool.
+Units pool which related to its zone. Contains parameters and method to provide units pool capabilities. Ingot is the currency you use in this pool.
 
 ### Building.sol
 
