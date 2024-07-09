@@ -34,7 +34,7 @@ Standalone ERC721 & ERC1155Receiver. Used to link settlement with Nft.
 
 Standalone ERC1155. Specifies distribution rules. Each building has own distribution rules.
 
-### CrossEpochsMemory.sol
+### CrossErasMemory.sol
 
 Contains saved data in between world destruction's, such as settlements positions, zones settlements count.
 
@@ -42,7 +42,7 @@ Contains saved data in between world destruction's, such as settlements position
 
 Contains bless tokens which can be swapped for weapons.
 
-### Epoch.sol
+### Era.sol
 
 Contains addresses which represent current game tokens such as resources, units, workers, prosperity; Also contains placed settlements and activated zones in current epoch.
 
@@ -66,11 +66,11 @@ Custom ERC-20 token, only certain world asset able to have this token, such as '
 
 Central hub of user assets. Banner id specified in this contract will be considered as settlement owner. Contains settlements' assets, such as buildings, siege, army. Also methods to manage governors and settlement.&#x20;
 
-### Zone.sol
+### Region.sol
 
-Contains settlement market, addresses to related workers and units pools and parameters which are related to these pools. Also contains method to spawn occultists.
+Contains settlement market, addresses to related workers and units pools and parameters which are related to these pools. Also contains method to spawn cultists.
 
-### OccultistsSettlement.sol
+### CultistsSettlement.sol
 
 Modified settlement entity, which doesn't have an owner. Main purpose of it is containing the army of occultists in each zone.
 
