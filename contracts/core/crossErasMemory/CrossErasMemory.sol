@@ -51,6 +51,7 @@ contract CrossErasMemory is ICrossErasMemory, WorldInitializable  {
         bool isNewSettlement
     ) public onlyActiveEra {
         settlementByBannerId[bannerId] = ISettlement(settlementAddress);
+        emit SettlementByBannerIdUpdated(bannerId, settlementAddress);
 
         if (isNewSettlement) {
             regionUserSettlementsCount[regionId]++;
@@ -87,25 +88,31 @@ contract CrossErasMemory is ICrossErasMemory, WorldInitializable  {
         emit SettlementOnPositionUpdated(position, address(0));
 
         settlementByBannerId[bannerId] = ISettlement(address(0));
+        emit SettlementByBannerIdUpdated(bannerId, address(0));
+
         regionUserSettlementsCount[regionId]--;
     }
 
     /// @dev Allows caller to be only active world era
     function _onlyActiveEra() internal view {
-        uint256 currentEraNumber = world.currentEraNumber();
-        if (msg.sender != address(world.eras(currentEraNumber))) revert OnlyActiveEra();
+        IWorld _world = world;
+
+        if (msg.sender != address(_world.eras(_world.currentEraNumber()))) revert OnlyActiveEra();
     }
 
     /// @dev Allows caller to be only world asset from its era
     function _onlyWorldAssetFromOldEra() internal view {
+        IWorld _world = world;
+
         uint256 eraNumberOfPotentialWorldAsset = IWorldAssetStorageAccessor(msg.sender).eraNumber();
-        if (eraNumberOfPotentialWorldAsset >= world.currentEraNumber() ||
-            world.worldAssets(eraNumberOfPotentialWorldAsset, msg.sender) == bytes32(0)) revert OnlyWorldAssetFromOldEra();
+        if (eraNumberOfPotentialWorldAsset >= _world.currentEraNumber() ||
+            _world.worldAssets(eraNumberOfPotentialWorldAsset, msg.sender) == bytes32(0)) revert OnlyWorldAssetFromOldEra();
     }
 
     /// @dev Allows caller to be only active world era
     function _onlyWorldAssetFromActiveEra() internal view {
-        uint256 currentEraNumber = world.currentEraNumber();
-        if (world.worldAssets(currentEraNumber, msg.sender) == bytes32(0)) revert OnlyWorldAssetFromActiveEra();
+        IWorld _world = world;
+
+        if (_world.worldAssets(_world.currentEraNumber(), msg.sender) == bytes32(0)) revert OnlyWorldAssetFromActiveEra();
     }
 }

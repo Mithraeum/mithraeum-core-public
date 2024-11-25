@@ -132,6 +132,37 @@ _Can be used to determine maximum amount of treasury by any level_
 
 
 
+### activateBuilding
+
+```solidity
+function activateBuilding(address resourcesOwner) public
+```
+
+Activates building
+
+_Necessary resources for activation will be taken either from msg.sender or resourcesOwner (if resource.allowance allows it)
+If resourcesOwner == address(0) -> resources will be taken from msg.sender
+If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= upgradePrice -> resources will be taken from resourcesOwner_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| resourcesOwner | address | Resources owner |
+
+
+
+### claimWorkersForBuildingActivation
+
+```solidity
+function claimWorkersForBuildingActivation() public
+```
+
+Claims workers for building activation
+
+_Workers can be claimed only once and after building cooldown duration after activation has passed_
+
+
+
+
 ### getUpgradePrice
 
 ```solidity

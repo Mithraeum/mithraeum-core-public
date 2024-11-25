@@ -38,10 +38,6 @@ Standalone ERC1155. Specifies distribution rules. Each building has own distribu
 
 Contains saved necessary data in between era destruction's.
 
-### RewardPool.sol
-
-Contains Erc20 tokens which can be swapped for ingots.
-
 ### Era.sol
 
 Contains addresses which represent current game tokens such as resources, units, workers, prosperity; Also contains placed settlements and activated regions in current era.

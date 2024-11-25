@@ -569,7 +569,7 @@ export class UnitsCoreTest {
   public static async impossibleUnitsHireDueTransactionLimitTest() {
     const {testUser1} = await getNamedAccounts();
 
-    const buildingLevel = 16;
+    const buildingLevel = 21;
     const assignWorkerQuantity = 10;
     const unitTypes = [UnitType.ARCHER];
 
@@ -582,7 +582,6 @@ export class UnitsCoreTest {
     await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort, buildingLevel, true);
 
     const actualMaxHealth = toLowBN(await fort.getMaxHealthOnLevel(buildingLevel));
-
     await FortHelper.repairFort(userSettlementInstance, assignWorkerQuantity, actualMaxHealth);
 
     const maxAvailableUnitQuantityToHire = await UnitHelper.getMaxAvailableUnitQuantityToHire(userSettlementInstance);

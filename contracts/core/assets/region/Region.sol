@@ -45,13 +45,14 @@ contract Region is WorldAsset, IRegion {
         lastUpdateTime = block.timestamp;
         lastUpdateRegionTime = getRegionTime(block.timestamp);
 
-        IRegistry _registry = registry();
+        IWorld _world = world();
+        uint256 _eraNumber = eraNumber();
         IWorldAssetFactory factory = worldAssetFactory();
 
         // 1. create workers pool
         address workersPoolAddress = factory.create(
-            address(world()),
-            eraNumber(),
+            address(_world),
+            _eraNumber,
             WORKERS_POOL_GROUP_TYPE_ID,
             BASIC_TYPE_ID,
             abi.encode(address(this))
@@ -62,8 +63,8 @@ contract Region is WorldAsset, IRegion {
 
         // 2. create settlements market
         address settlementsMarketAddress = factory.create(
-            address(world()),
-            eraNumber(),
+            address(_world),
+            _eraNumber,
             SETTLEMENT_MARKET_GROUP_TYPE_ID,
             BASIC_TYPE_ID,
             abi.encode(address(this))
@@ -73,16 +74,16 @@ contract Region is WorldAsset, IRegion {
         emit SettlementsMarketCreated(settlementsMarketAddress);
 
         // 3. create units pool
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
             bytes32 unitTypeId = unitTypeIds[i];
 
             address unitsPoolAddress = factory.create(
-                address(world()),
-                eraNumber(),
+                address(_world),
+                _eraNumber,
                 UNITS_POOL_GROUP_TYPE_ID,
-                _registry.getUnitPoolType(unitTypeId),
+                Config.getUnitPoolType(unitTypeId),
                 abi.encode(address(this), unitTypeId)
             );
 
@@ -97,12 +98,13 @@ contract Region is WorldAsset, IRegion {
             timestamp = block.timestamp;
         }
 
-        uint256 gameBeginTime = world().gameBeginTime();
+        IWorld _world = world();
+        uint256 gameBeginTime = _world.gameBeginTime();
         if (timestamp < gameBeginTime) {
             timestamp = gameBeginTime;
         }
 
-        uint256 gameEndTime = world().gameEndTime();
+        uint256 gameEndTime = _world.gameEndTime();
         if (gameEndTime != 0 && timestamp > gameEndTime) {
             timestamp = gameEndTime;
         }
@@ -154,11 +156,11 @@ contract Region is WorldAsset, IRegion {
 
         cultistsSettlement = ISettlement(cultistsSettlementAddress);
 
-        uint256 penaltyTier = registry().getMaxRegionTier() - world().geography().getRegionTier(regionId);
-        uint256 initialCultistsAmount = penaltyTier * registry().getInitialCultistsAmountPerRegionTier();
+        uint256 _regionTier = world().geography().getRegionTier(regionId);
+        uint256 initialCultistsAmount = Config.getInitialCultistsAmountByRegionTier(_regionTier);
         _summonCultists(initialCultistsAmount, _getCurrentCultistsSummonIntervalNumber());
 
-        uint256 initialCorruptionIndexAmount = penaltyTier * registry().getInitialCorruptionIndexAmountPerRegionTier();
+        uint256 initialCorruptionIndexAmount = initialCultistsAmount * Config.initialCorruptionIndexPerCultistMultiplier;
         _increaseCorruptionIndex(address(0), initialCorruptionIndexAmount);
     }
 
@@ -226,7 +228,7 @@ contract Region is WorldAsset, IRegion {
     /// @inheritdoc IRegion
     function getPenaltyFromCultists() public view returns (uint256) {
         uint256 cultistsAmount = _getCurrentCultistsAmount();
-        uint256 penalty = cultistsAmount * 1e18 / registry().getMaxCultistsPerRegion();
+        uint256 penalty = cultistsAmount * 1e18 / Config.maxCultistsPerRegion;
 
         if (penalty > 1e18) {
             return 1e18;
@@ -269,11 +271,11 @@ contract Region is WorldAsset, IRegion {
         if (_absCorruptionIndex > 0) {
             uint256 currentCultistsAmount = _getCurrentCultistsAmount();
 
-            cultistsToSummon = currentCultistsAmount / 2 > _absCorruptionIndex / 10
+            cultistsToSummon = currentCultistsAmount / 6 > _absCorruptionIndex / 30
                 ? 0
                 : Math.min(
-                    MathExtension.roundDownWithPrecision(_absCorruptionIndex / 10 - currentCultistsAmount / 2, 1e18),
-                    registry().getMaxCultistsPerRegion() - currentCultistsAmount
+                    MathExtension.roundDownWithPrecision(_absCorruptionIndex / 30 - currentCultistsAmount / 6, 1e18),
+                    Config.maxCultistsPerRegion - currentCultistsAmount
                 );
         }
 
@@ -282,7 +284,7 @@ contract Region is WorldAsset, IRegion {
 
     /// @dev Summons cultists with saving last time cultists were summoned
     function _summonCultists(uint256 cultistsAmountToSummon, uint256 cultistsSummonIntervalNumber) internal {
-        era().units(registry().getCultistUnitTypeId()).mint(
+        era().units(Config.cultistUnitTypeId).mint(
             address(cultistsSettlement.army()),
             cultistsAmountToSummon
         );
@@ -293,16 +295,15 @@ contract Region is WorldAsset, IRegion {
 
     /// @dev Calculates cultists summon interval number of current time
     function _getCurrentCultistsSummonIntervalNumber() internal view returns (uint256) {
-        IRegistry _registry = registry();
         uint256 _epochCreationTime = Math.max(era().creationTime(), world().gameBeginTime());
         return block.timestamp > _epochCreationTime
-            ? (block.timestamp - _epochCreationTime) / (_registry.getCultistsSummonDelay() / _registry.getGlobalMultiplier())
+            ? (block.timestamp - _epochCreationTime) / (Config.cultistsSummonDelay / Config.globalMultiplier)
             : 0;
     }
 
     /// @dev Calculates current cultists amount
     function _getCurrentCultistsAmount() internal view returns (uint256) {
-        return era().units(registry().getCultistUnitTypeId()).balanceOf(address(cultistsSettlement.army()));
+        return era().units(Config.cultistUnitTypeId).balanceOf(address(cultistsSettlement.army()));
     }
 
     /// @dev Increases corruptionIndex

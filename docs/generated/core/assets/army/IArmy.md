@@ -121,6 +121,19 @@ _Updated when #increaseUnitBattleMultiplier or #decreaseUnitBattleMultiplier is 
 
 
 
+### lastDemilitarizationTime
+
+```solidity
+function lastDemilitarizationTime() external view returns (uint64)
+```
+
+Last demilitarization time
+
+_Updated when #demilitarize is called_
+
+
+
+
 ### UpdatedPosition
 
 ```solidity
@@ -591,6 +604,18 @@ error ArmyCannotAccelerateManeuverFromCultistsSettlementWithNonZeroCultistsArmy(
 ```
 
 Thrown when attempting to use accelerate maneuver from cultists settlement with non zero cultists
+
+
+
+
+
+### ArmyCannotBeDemilitarizedDueToCooldown
+
+```solidity
+error ArmyCannotBeDemilitarizedDueToCooldown()
+```
+
+Thrown when attempting to demilitarize army during cooldown
 
 
 

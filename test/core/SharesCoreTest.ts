@@ -256,13 +256,23 @@ export class SharesCoreTest {
         producingResourceType
     );
 
-    await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-        ethers.ZeroAddress,
-        await buildingInstance1.getAddress(),
-        transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-        [],
-        []
+    await userSettlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance1.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: []
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+    //     ethers.ZeroAddress,
+    //     await buildingInstance1.getAddress(),
+    //     transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //     [],
+    //     []
+    // ).then((tx) => tx.wait());
 
     const buildingLastUpdateStateRegionTimeBefore = toBN((await buildingInstance1.productionInfo()).lastUpdateStateRegionTime);
 
@@ -414,13 +424,23 @@ export class SharesCoreTest {
         producingResourceType
     );
 
-    await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-        ethers.ZeroAddress,
-        await buildingInstance1.getAddress(),
-        transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-        [],
-        []
+    await userSettlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance1.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: []
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+    //     ethers.ZeroAddress,
+    //     await buildingInstance1.getAddress(),
+    //     transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //     [],
+    //     []
+    // ).then((tx) => tx.wait());
 
     const buildingLastUpdateStateRegionTimeBefore = toBN((await buildingInstance1.productionInfo()).lastUpdateStateRegionTime);
 

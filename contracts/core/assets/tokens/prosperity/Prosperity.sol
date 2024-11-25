@@ -71,6 +71,8 @@ contract Prosperity is ERC20IntBurnable, IProsperity, WorldAsset {
 
     /// @dev Checks if provided address is world or world asset
     function _isWorldAsset(address addressToCheck) internal view returns (bool) {
-        return addressToCheck == address(world()) || world().worldAssets(eraNumber(), addressToCheck) != bytes32(0);
+        IWorld _world = world();
+
+        return addressToCheck == address(_world) || _world.worldAssets(eraNumber(), addressToCheck) != bytes32(0);
     }
 }

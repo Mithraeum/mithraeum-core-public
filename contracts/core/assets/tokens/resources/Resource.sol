@@ -127,9 +127,11 @@ contract Resource is ERC20Burnable, IResource, WorldAsset {
 
     /// @dev Allows caller to be only world or world asset or reward pool
     function _onlyWorldAssetFromSameEraOrRewardPool() internal view {
-        if (msg.sender != address(world()) &&
-            world().worldAssets(eraNumber(), msg.sender) == bytes32(0) &&
-            msg.sender != address(world().rewardPool())) revert OnlyWorldAssetFromSameEraOrRewardPool();
+        IWorld _world = world();
+
+        if (msg.sender != address(_world) &&
+            _world.worldAssets(eraNumber(), msg.sender) == bytes32(0) &&
+            msg.sender != address(_world.rewardPool())) revert OnlyWorldAssetFromSameEraOrRewardPool();
     }
 
     /// @dev Checks if provided resource is required for building production
@@ -155,7 +157,8 @@ contract Resource is ERC20Burnable, IResource, WorldAsset {
 
     /// @dev Checks if provided address is world or world asset
     function _isWorldAsset(address addressToCheck) internal view returns (bool) {
-        return addressToCheck == address(world()) || world().worldAssets(eraNumber(), addressToCheck) != bytes32(0);
+        IWorld _world = world();
+        return addressToCheck == address(_world) || _world.worldAssets(eraNumber(), addressToCheck) != bytes32(0);
     }
 
     /// @notice Behaves same as default ERC20._transfer, however if resource is transferred to the building part of the resource is burned according to cultists balance
@@ -164,8 +167,11 @@ contract Resource is ERC20Burnable, IResource, WorldAsset {
         address to,
         uint256 amount
     ) internal override {
-        bool isTransferringFromBuilding = world().worldAssets(eraNumber(), from) == BUILDING_GROUP_TYPE_ID;
-        bool isTransferringToBuilding = world().worldAssets(eraNumber(), to) == BUILDING_GROUP_TYPE_ID;
+        IWorld _world = world();
+        uint256 _eraNumber = eraNumber();
+
+        bool isTransferringFromBuilding = _world.worldAssets(_eraNumber, from) == BUILDING_GROUP_TYPE_ID;
+        bool isTransferringToBuilding = _world.worldAssets(_eraNumber, to) == BUILDING_GROUP_TYPE_ID;
         bool isResourceProducedAtFromBuilding = isTransferringFromBuilding ? _isRequiredForBuildingProduction(resourceTypeId, from, true) : false;
         bool isResourceProducedAtToBuilding = isTransferringToBuilding ? _isRequiredForBuildingProduction(resourceTypeId, to, true) : false;
 
@@ -210,7 +216,7 @@ contract Resource is ERC20Burnable, IResource, WorldAsset {
                 ISettlement settlementOfBuilding = IBuilding(from).relatedSettlement();
                 settlementOfBuilding.relatedRegion().increaseCorruptionIndex(
                     address(settlementOfBuilding),
-                    registry().getCorruptionIndexByResource(resourceTypeId) * amount / 1e18
+                    Config.getCorruptionIndexByResource(resourceTypeId) * amount / 1e18
                 );
             }
         }
@@ -225,7 +231,7 @@ contract Resource is ERC20Burnable, IResource, WorldAsset {
                 ISettlement settlementOfBuilding = IBuilding(to).relatedSettlement();
                 settlementOfBuilding.relatedRegion().decreaseCorruptionIndex(
                     address(settlementOfBuilding),
-                    registry().getCorruptionIndexByResource(resourceTypeId) * amount / 1e18
+                    Config.getCorruptionIndexByResource(resourceTypeId) * amount / 1e18
                 );
             }
         }
@@ -265,7 +271,7 @@ contract Resource is ERC20Burnable, IResource, WorldAsset {
                 ISettlement settlementOfBuilding = IBuilding(to).relatedSettlement();
                 settlementOfBuilding.relatedRegion().decreaseCorruptionIndex(
                     address(settlementOfBuilding),
-                    registry().getCorruptionIndexByResource(resourceTypeId) * amount / 1e18
+                    Config.getCorruptionIndexByResource(resourceTypeId) * amount / 1e18
                 );
             }
         }

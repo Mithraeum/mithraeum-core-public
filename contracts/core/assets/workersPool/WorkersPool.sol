@@ -27,12 +27,12 @@ contract WorkersPool is WorldAsset, IWorkersPool {
 
         relatedRegion = IRegion(regionAddress);
         lastPurchaseTime = block.timestamp;
-        workerPrice = 10e18;
+        workerPrice = Config.startingWorkerPrice;
     }
 
     /// @inheritdoc IWorkersPool
     function calculateProsperityForExactWorkers(uint256 unitsToBuy) public view override returns (uint256, uint256) {
-        (uint256 numerator, uint256 denominator) = registry().getWorkerPriceIncreaseForEachWorker();
+        (uint256 numerator, uint256 denominator) = Config.getWorkerPriceIncreaseForEachWorker();
         int128 priceIncreasePerWorker64 = ABDKMath64x64.divu(numerator, denominator);
         return _calculatePriceShiftForUnits(unitsToBuy, priceIncreasePerWorker64);
     }
@@ -52,14 +52,16 @@ contract WorkersPool is WorldAsset, IWorkersPool {
 
         ISettlement(settlementAddress).updateProsperityAmount();
 
-        if (workersToBuy > registry().getMaxAllowedWorkersToBuyPerTransaction()) revert CannotHireWorkersExceedingTransactionLimit();
+        if (workersToBuy > Config.maxAllowedWorkersToBuyPerTransaction) revert CannotHireWorkersExceedingTransactionLimit();
 
         (uint256 prosperityToSell, uint256 newWorkerPrice) = calculateProsperityForExactWorkers(workersToBuy / 1e18);
 
         if (prosperityToSell > maxProsperityToSell) revert CannotHireWorkersDueToTheirCostIsHigherThanMaxProsperityToSellSpecified();
 
-        IProsperity prosperity = era().prosperity();
-        IWorkers workers = era().workers();
+        IEra _era = era();
+
+        IProsperity prosperity = _era.prosperity();
+        IWorkers workers = _era.workers();
 
         if (prosperity.balanceOf(settlementAddress) < prosperityToSell) revert CannotHireWorkersDueToNotEnoughProsperityInSettlement();
 
@@ -80,13 +82,15 @@ contract WorkersPool is WorldAsset, IWorkersPool {
 
     /// @dev Calculates dropped worker price after last purchase time
     function _getDroppedWorkerPrice() internal view returns (int128) {
+        IWorld _world = world();
+
         uint256 timestamp = block.timestamp;
-        uint256 gameBeginTime = world().gameBeginTime();
+        uint256 gameBeginTime = _world.gameBeginTime();
         if (timestamp < gameBeginTime) {
             timestamp = gameBeginTime;
         }
 
-        uint256 gameEndTime = world().gameEndTime();
+        uint256 gameEndTime = _world.gameEndTime();
         if (gameEndTime != 0) {
             timestamp = Math.min(timestamp, gameEndTime);
         }
@@ -104,7 +108,7 @@ contract WorkersPool is WorldAsset, IWorkersPool {
 
         uint256 secondsPassed = timestamp - _lastPurchaseTime;
 
-        (uint256 numerator, uint256 denominator) = registry().getWorkerPriceDrop();
+        (uint256 numerator, uint256 denominator) = Config.getWorkerPriceDrop();
         int128 priceDropPerSecond64 = ABDKMath64x64.divu(numerator, denominator);
         int128 priceDrop64 = ABDKMath64x64.pow(priceDropPerSecond64, secondsPassed);
         return ABDKMath64x64.mul(workerPrice64, priceDrop64);

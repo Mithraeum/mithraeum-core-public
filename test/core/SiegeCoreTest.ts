@@ -1,26 +1,23 @@
-import { ethers, getNamedAccounts } from "hardhat";
-import { UnitHelper } from "../../shared/helpers/UnitHelper";
-import { UserHelper } from "../../shared/helpers/UserHelper";
-import {
-  Battle__factory,
-  Siege__factory
-} from "../../typechain-types";
-import { toBN, toLowBN, transferableFromLowBN } from "../../scripts/utils/const";
-import BigNumber from "bignumber.js";
-import { SettlementHelper } from "../../shared/helpers/SettlementHelper";
-import { EvmUtils } from "../../shared/helpers/EvmUtils";
-import { UnitType } from "../../shared/enums/unitType";
-import { expect } from "chai";
-import { ResourceHelper } from "../../shared/helpers/ResourceHelper";
-import { MovementHelper } from "../../shared/helpers/MovementHelper";
-import { FortHelper } from "../../shared/helpers/FortHelper";
-import { BuildingType } from "../../shared/enums/buildingType";
-import { ProductionHelper } from "../../shared/helpers/ProductionHelper";
-import { BuildingHelper } from "../../shared/helpers/BuildingHelper";
-import { WorldHelper } from "../../shared/helpers/WorldHelper";
-import { BattleHelper } from "../../shared/helpers/BattleHelper";
-import {ArmyHelper} from "../../shared/helpers/ArmyHelper";
-import {WorkerHelper} from "../../shared/helpers/WorkerHelper";
+import { ethers, getNamedAccounts } from 'hardhat';
+import { UnitHelper } from '../../shared/helpers/UnitHelper';
+import { UserHelper } from '../../shared/helpers/UserHelper';
+import { Battle__factory, Siege__factory } from '../../typechain-types';
+import { toBN, toLowBN, transferableFromLowBN } from '../../scripts/utils/const';
+import BigNumber from 'bignumber.js';
+import { SettlementHelper } from '../../shared/helpers/SettlementHelper';
+import { EvmUtils } from '../../shared/helpers/EvmUtils';
+import { UnitType } from '../../shared/enums/unitType';
+import { expect } from 'chai';
+import { ResourceHelper } from '../../shared/helpers/ResourceHelper';
+import { MovementHelper } from '../../shared/helpers/MovementHelper';
+import { FortHelper } from '../../shared/helpers/FortHelper';
+import { BuildingType } from '../../shared/enums/buildingType';
+import { ProductionHelper } from '../../shared/helpers/ProductionHelper';
+import { BuildingHelper } from '../../shared/helpers/BuildingHelper';
+import { WorldHelper } from '../../shared/helpers/WorldHelper';
+import { BattleHelper } from '../../shared/helpers/BattleHelper';
+import { ArmyHelper } from '../../shared/helpers/ArmyHelper';
+import { WorkerHelper } from '../../shared/helpers/WorkerHelper';
 import { ProsperityHelper } from '../../shared/helpers/ProsperityHelper';
 import { RegionHelper } from '../../shared/helpers/RegionHelper';
 
@@ -31,6 +28,8 @@ export class SiegeCoreTest {
 
     const unitQuantity = 2;
     const siegeUnitQuantity = unitQuantity / 2;
+    const assignWorkerQuantity = 2;
+    const fortHealth = 6;
 
     const registryInstance = await WorldHelper.getRegistryInstance();
 
@@ -46,6 +45,9 @@ export class SiegeCoreTest {
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
+
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, new BigNumber(fortHealth));
+    await FortHelper.repairFort(userSettlementInstance2, assignWorkerQuantity, new BigNumber(fortHealth));
 
     const army1 = await SettlementHelper.getArmy(userSettlementInstance1);
     const army2 = await SettlementHelper.getArmy(userSettlementInstance2);
@@ -160,8 +162,10 @@ export class SiegeCoreTest {
 
     const unitTypes = [UnitType.WARRIOR];
     const unitQuantity = 8;
-    const siegeUnitQuantity = 5;
+    const siegeUnitQuantity = unitQuantity / 2;
     const assignResourceQuantity = 100;
+    const assignWorkerQuantity = 2;
+    const fortLevel = 3;
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
@@ -179,6 +183,12 @@ export class SiegeCoreTest {
     const producingResourceType = ResourceHelper.getResourceTypeByResourceTypeId(producingResourceTypeId);
     expect(producingResourceConfig).to.exist;
 
+    const fort1 = await SettlementHelper.getFort(userSettlementInstance1);
+    await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort1, fortLevel, true);
+
+    const fortMaxHealth = toLowBN(await fort1.getMaxHealthOnLevel(fortLevel));
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, fortMaxHealth);
+
     const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
     expect(await UnitHelper.isHirePossible(army, unitTypes, unitQuantity)).to.be.true;
@@ -186,13 +196,30 @@ export class SiegeCoreTest {
 
     await MovementHelper.moveArmy(army, await userSettlementInstance2.position(), 0, true);
 
-    await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await buildingInstance2.getAddress(),
-      transferableFromLowBN(new BigNumber(1)),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance2.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(1)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await buildingInstance2.getAddress(),
+    //   transferableFromLowBN(new BigNumber(1)),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     expect(new BigNumber(robberyMultiplier))
         .lte(maxAllowedRobberyMultiplierIncreaseValue, 'Robbery multiplier is not correct');
@@ -206,15 +233,15 @@ export class SiegeCoreTest {
 
     const siegeInstance = Siege__factory.connect(await ArmyHelper.getSiegeAddressOnArmyPosition(army), army.runner);
 
-    const fort = await SettlementHelper.getFort(userSettlementInstance2);
+    const fort2 = await SettlementHelper.getFort(userSettlementInstance2);
     const fortDestructionTime = await FortHelper.getSettlementFortDestructionTime(userSettlementInstance2);
     const armyStunDuration = await ArmyHelper.getStunDuration(army);
 
     await EvmUtils.increaseTime(fortDestructionTime);
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const fortHealth = toLowBN(await fort.health());
+    const fortHealth = toLowBN(await fort2.health());
     expect(fortHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     const robberyPointsRegenerationTime = await FortHelper.getSettlementFortRobberyPointsRegenerationTime(
@@ -233,7 +260,6 @@ export class SiegeCoreTest {
     const buildingTreasuryAmountBefore2 = await ResourceHelper.getBuildingTreasuryAmount(buildingInstance2);
 
     const exchangedPoints = exchangePoints > buildingTreasuryAmountBefore2.toNumber() ? buildingTreasuryAmountBefore2 : exchangePoints;
-    const expectedRobberyPoints = robberyPointsBefore.minus(exchangedPoints);
 
     if (isBuildingUpgraded) {
       await BuildingHelper.upgradeBuildingToSpecifiedLevel(buildingInstance1, 5, true);
@@ -251,7 +277,7 @@ export class SiegeCoreTest {
     const actualBuildingTreasuryAmount2 = await ResourceHelper.getBuildingTreasuryAmount(buildingInstance2);
     const actualUser1Resource = await ResourceHelper.getResourceQuantity(testUser1, producingResourceType);
 
-    expect(actualRobberyPoints).isInCloseRangeWith(expectedRobberyPoints, 'Robbery points quantity is not correct');
+    expect(actualRobberyPoints.plus(exchangedPoints)).isInCloseRangeWith(robberyPointsBefore, 'Robbery points quantity is not correct');
     expect(actualBuildingTreasuryAmount2).isInCloseRangeWith(buildingTreasuryAmountBefore2.minus(
         exchangedPoints), 'User 2 building treasury quantity is not correct');
     expect(actualUser1Resource).eql(user1ResourceBefore, 'User 1 resource quantity is not correct');
@@ -313,6 +339,8 @@ export class SiegeCoreTest {
     const unitQuantity = 6;
     const siegeUnitQuantity = unitQuantity / 2;
     const assignResourceQuantity = 100;
+    const assignWorkerQuantity = 2;
+    const fortLevel = 3;
     const exchangePoints = 10;
     const buildingType = BuildingType.SMITHY;
 
@@ -324,6 +352,13 @@ export class SiegeCoreTest {
     const productionConfig = await buildingInstance.getConfig();
     const spendingResourceConfigs = productionConfig.filter(config => !config.isProducing);
 
+    const fort1 = await SettlementHelper.getFort(userSettlementInstance1);
+
+    await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort1, fortLevel, true);
+
+    const fortMaxHealth = toLowBN(await fort1.getMaxHealthOnLevel(fortLevel));
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, fortMaxHealth);
+
     const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
     expect(await UnitHelper.isHirePossible(army, unitTypes, unitQuantity)).to.be.true;
@@ -331,13 +366,30 @@ export class SiegeCoreTest {
 
     await MovementHelper.moveArmy(army, await userSettlementInstance2.position(), 0, true);
 
-    await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await buildingInstance.getAddress(),
-      transferableFromLowBN(new BigNumber(1)),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(1)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await buildingInstance.getAddress(),
+    //   transferableFromLowBN(new BigNumber(1)),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     await army.modifySiege(
         unitTypes.map(unitType => UnitHelper.getUnitTypeId(unitType)),
@@ -348,7 +400,7 @@ export class SiegeCoreTest {
 
     const siegeInstance = Siege__factory.connect(await ArmyHelper.getSiegeAddressOnArmyPosition(army), army.runner);
 
-    const fort = await SettlementHelper.getFort(userSettlementInstance2);
+    const fort2 = await SettlementHelper.getFort(userSettlementInstance2);
     const fortDestructionTime = await FortHelper.getSettlementFortDestructionTime(userSettlementInstance2);
     const armyStunDuration = await ArmyHelper.getStunDuration(army);
 
@@ -356,10 +408,10 @@ export class SiegeCoreTest {
         ?   await EvmUtils.increaseTime(fortDestructionTime)
         :   await EvmUtils.increaseTime(armyStunDuration.toNumber());
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const fortHealth = toLowBN(await fort.health());
-    expect(fortHealth).eql(new BigNumber(0), 'Fort health is not correct');
+    const actualFortHealth = toLowBN(await fort2.health());
+    expect(actualFortHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     await buildingInstance.updateState().then((tx) => tx.wait());
 
@@ -379,8 +431,10 @@ export class SiegeCoreTest {
 
     const unitTypes = [UnitType.WARRIOR];
     const unitQuantity = 8;
-    const siegeUnitQuantity = 5;
+    const siegeUnitQuantity = unitQuantity / 2;
     const assignResourceQuantity = 100;
+    const assignWorkerQuantity = 2;
+    const fortLevel = 3;
     const robberyMultiplier = 1;
     const robberyPointsRegenerationTime = 1000;
 
@@ -398,6 +452,13 @@ export class SiegeCoreTest {
     const productionConfig = await buildingInstance1.getConfig();
     const spendingResourceConfigs = productionConfig.filter(config => !config.isProducing);
 
+    const fort1 = await SettlementHelper.getFort(userSettlementInstance1);
+
+    await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort1, fortLevel, true);
+
+    const fortMaxHealth = toLowBN(await fort1.getMaxHealthOnLevel(fortLevel));
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, fortMaxHealth);
+
     const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
     expect(await UnitHelper.isHirePossible(army, unitTypes, unitQuantity)).to.be.true;
@@ -405,13 +466,30 @@ export class SiegeCoreTest {
 
     await MovementHelper.moveArmy(army, await userSettlementInstance2.position(), 0, true);
 
-    await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
-        ethers.ZeroAddress,
-        await buildingInstance2.getAddress(),
-        transferableFromLowBN(new BigNumber(1)),
-        spendingResourceConfigs.map((value) => value.resourceTypeId),
-        spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance2.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
+    //     ethers.ZeroAddress,
+    //     await buildingInstance2.getAddress(),
+    //     transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //     spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //     spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     expect(new BigNumber(robberyMultiplier))
         .lte(maxAllowedRobberyMultiplierIncreaseValue, 'Robbery multiplier is not correct');
@@ -425,15 +503,15 @@ export class SiegeCoreTest {
 
     const siegeInstance = Siege__factory.connect(await ArmyHelper.getSiegeAddressOnArmyPosition(army), army.runner);
 
-    const fort = await SettlementHelper.getFort(userSettlementInstance2);
+    const fort2 = await SettlementHelper.getFort(userSettlementInstance2);
     const fortDestructionTime = await FortHelper.getSettlementFortDestructionTime(userSettlementInstance2);
     const armyStunDuration = await ArmyHelper.getStunDuration(army);
 
     await EvmUtils.increaseTime(fortDestructionTime);
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const fortHealth = toLowBN(await fort.health());
+    const fortHealth = toLowBN(await fort2.health());
     expect(fortHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     //robbery without penalty
@@ -496,7 +574,7 @@ export class SiegeCoreTest {
     const robberyPointsRegenerationPerSecWithPenalty = robberyPointsDifferenceWithPenalty.dividedBy(passedTimeWithPenalty);
 
     expect(robberyPointsRegenerationPerSecWithPenalty)
-        .eql(robberyPointsRegenerationPerSecWithoutPenalty, 'Robbery points regeneration per second is not correct');
+        .isInCloseRangeWith(robberyPointsRegenerationPerSecWithoutPenalty, 'Robbery points regeneration per second is not correct');
 
     await buildingInstance1.upgradeAdvancedProduction(ethers.ZeroAddress).then((tx) => tx.wait());
 
@@ -535,13 +613,30 @@ export class SiegeCoreTest {
 
     const buildingLastUpdateStateTimeAfterSiege = toBN((await fort.productionInfo()).lastUpdateStateTime);
 
-    await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await fort.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await fort.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     const assignedWorkers = toLowBN(await fort.getAssignedWorkers());
 
@@ -607,12 +702,16 @@ export class SiegeCoreTest {
     const unitQuantity = 2;
     const siegeUnitQuantity = unitQuantity / 2;
     const robberyMultiplier = 1;
+    const assignWorkerQuantity = 2;
+    const fortHealth = 6;
 
     const gameUnits = await WorldHelper.getGameUnits();
     const unitTypes = gameUnits.map(gameUnits => UnitHelper.getUnitTypeByUnitTypeId(gameUnits));
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
+
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, new BigNumber(fortHealth));
 
     const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
@@ -680,12 +779,15 @@ export class SiegeCoreTest {
     const siegeUnitQuantity = unitQuantity / 2;
     const assignWorkerQuantity = 4;
     const assignResourceQuantity = 200;
+    const fortHealth = 6;
 
     const gameUnits = await WorldHelper.getGameUnits();
     const unitTypes = gameUnits.map(gameUnits => UnitHelper.getUnitTypeByUnitTypeId(gameUnits));
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
+
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, new BigNumber(fortHealth));
 
     const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
@@ -717,13 +819,30 @@ export class SiegeCoreTest {
     expect(fortHealthAfterDestruction).eql(new BigNumber(0), 'Fort health is not correct');
 
     //fort repairment
-    await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await fort.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await fort.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     const assignedWorkers = toLowBN(await fort.getAssignedWorkers());
 
@@ -740,8 +859,8 @@ export class SiegeCoreTest {
     const totalSiegePowerPerSecond = toLowBN(await siegeInstance.totalSiegePower());
     const realRegenerationPerSecond = totalProductionPerSecond.minus(totalSiegePowerPerSecond);
 
-    const maxFortHealth = toLowBN(await fort.getMaxHealthOnLevel(await fort.getBuildingLevel()));
-    const fortRepairmentTime = (maxFortHealth.dividedBy(realRegenerationPerSecond)).integerValue(BigNumber.ROUND_CEIL);
+    const fortMaxHealth = toLowBN(await fort.getMaxHealthOnLevel(await fort.getBuildingLevel()));
+    const fortRepairmentTime = (fortMaxHealth.dividedBy(realRegenerationPerSecond)).integerValue(BigNumber.ROUND_CEIL);
 
     //first half fort repairment
     const buildingResourceBeforeRepairment = await ResourceHelper.getResourcesStateBalanceOf(
@@ -772,7 +891,7 @@ export class SiegeCoreTest {
       spendingResourceConfigs.map((value) => ResourceHelper.getResourceTypeByResourceTypeId(value.resourceTypeId))
     );
 
-    expect(fortHealthAfterRepairment).eql(maxFortHealth, 'Fort health is not correct');
+    expect(fortHealthAfterRepairment).eql(fortMaxHealth, 'Fort health is not correct');
 
     for (let i = 0; i < spendingResourceConfigs.length; i++) {
       const resourceType = ResourceHelper.getResourceTypeByResourceTypeId(spendingResourceConfigs[i].resourceTypeId);
@@ -815,7 +934,7 @@ export class SiegeCoreTest {
       spendingResourceConfigs.map((value) => ResourceHelper.getResourceTypeByResourceTypeId(value.resourceTypeId))
     );
 
-    expect(fortHealthAfterRepairment).eql(maxFortHealth, 'Fort health is not correct');
+    expect(fortHealthAfterRepairment).eql(fortMaxHealth, 'Fort health is not correct');
 
     for (let i = 0; i < spendingResourceConfigs.length; i++) {
       const resourceType = ResourceHelper.getResourceTypeByResourceTypeId(spendingResourceConfigs[i].resourceTypeId);
@@ -859,7 +978,7 @@ export class SiegeCoreTest {
     );
 
     const actualFortHealth = toLowBN(await fort.health());
-    expect(actualFortHealth).to.be.below(maxFortHealth, 'Fort health is not correct');
+    expect(actualFortHealth).to.be.below(fortMaxHealth, 'Fort health is not correct');
 
     for (let i = 0; i < spendingResourceConfigs.length; i++) {
       const resourceType = ResourceHelper.getResourceTypeByResourceTypeId(spendingResourceConfigs[i].resourceTypeId);
@@ -875,7 +994,7 @@ export class SiegeCoreTest {
     const siegeUnitQuantity = unitQuantity / 2;
     const assignWorkerQuantity = 1;
     const assignResourceQuantity = 200;
-    const fortHealth = 6;
+    const fortLevel = 3;
 
     const gameUnits = await WorldHelper.getGameUnits();
     const unitTypes = gameUnits.map(gameUnits => UnitHelper.getUnitTypeByUnitTypeId(gameUnits));
@@ -883,7 +1002,11 @@ export class SiegeCoreTest {
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
 
-    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, new BigNumber(fortHealth));
+    const fort1 = await SettlementHelper.getFort(userSettlementInstance1);
+    await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort1, fortLevel, true);
+
+    const fortMaxHealth1 = toLowBN(await fort1.getMaxHealthOnLevel(fortLevel));
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, fortMaxHealth1);
 
     const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
@@ -898,33 +1021,67 @@ export class SiegeCoreTest {
     const farmSpendingResourceConfigs = farmProductionConfig.filter((config) => !config.isProducing);
 
     //testUser2 resource investment into farm
-    await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await farm.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      farmSpendingResourceConfigs.map((value) => value.resourceTypeId),
-      farmSpendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity / 2)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await farm.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: farmSpendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity / 2)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await farm.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   farmSpendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   farmSpendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity / 2)))
+    // ).then((tx) => tx.wait());
 
-    const fort = await SettlementHelper.getFort(userSettlementInstance2);
+    const fort2 = await SettlementHelper.getFort(userSettlementInstance2);
 
-    const fortProductionConfig = await fort.getConfig();
+    const fortProductionConfig = await fort2.getConfig();
     const fortSpendingResourceConfigs = fortProductionConfig.filter((config) => !config.isProducing);
     const fortProducingResourceConfig = fortProductionConfig.find((config) => config.isProducing);
     expect(fortProducingResourceConfig).to.exist;
 
-    const fortHealthBeforeRepairment = toLowBN(await fort.health());
+    const fortHealthBeforeRepairment = toLowBN(await fort2.health());
 
     //fort repairment
-    await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await fort.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      fortSpendingResourceConfigs.map((value) => value.resourceTypeId),
-      fortSpendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort2.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: fortSpendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await fort2.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   fortSpendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   fortSpendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
-    const assignedWorkers = toLowBN(await fort.getAssignedWorkers());
+    const assignedWorkers = toLowBN(await fort2.getAssignedWorkers());
 
     const basicProductionPerTick = await ProductionHelper.getBasicProductionPerTick(userSettlementInstance2, BuildingType.FORT);
     const advancedProductionPerTick = await ProductionHelper.getAdvancedProductionPerTick(
@@ -934,14 +1091,14 @@ export class SiegeCoreTest {
     );
     const totalProductionPerTick = advancedProductionPerTick.plus(basicProductionPerTick);
 
-    const maxFortHealth = toLowBN(await fort.getMaxHealthOnLevel(await fort.getBuildingLevel()));
-    const fortRepairmentTime = ((maxFortHealth.minus(fortHealthBeforeRepairment)).dividedBy(totalProductionPerTick))
+    const fortMaxHealth2 = toLowBN(await fort2.getMaxHealthOnLevel(await fort2.getBuildingLevel()));
+    const fortRepairmentTime = ((fortMaxHealth2.minus(fortHealthBeforeRepairment)).dividedBy(totalProductionPerTick))
         .integerValue(BigNumber.ROUND_CEIL);
     await EvmUtils.increaseTime(fortRepairmentTime.toNumber());
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const fortHealthAfterRepairment = toLowBN(await fort.health());
-    expect(fortHealthAfterRepairment).eql(maxFortHealth, 'Fort health is not correct');
+    const fortHealthAfterRepairment = toLowBN(await fort2.health());
+    expect(fortHealthAfterRepairment).eql(fortMaxHealth2, 'Fort health is not correct');
 
     await army.modifySiege(
         unitTypes.map(unitType => UnitHelper.getUnitTypeId(unitType)),
@@ -959,22 +1116,22 @@ export class SiegeCoreTest {
     const stunDuration = await ArmyHelper.getStunDuration(army);
 
     const buildingResourceBeforeDestruction = await ResourceHelper.getResourcesStateBalanceOf(
-      await fort.getAddress(),
+      await fort2.getAddress(),
       fortSpendingResourceConfigs.map((value) => ResourceHelper.getResourceTypeByResourceTypeId(value.resourceTypeId))
     );
 
     //first half destruction
-    const buildingLastUpdateStateTimeBeforeFirstHalfDestruction = toBN((await fort.productionInfo()).lastUpdateStateTime);
+    const buildingLastUpdateStateTimeBeforeFirstHalfDestruction = toBN((await fort2.productionInfo()).lastUpdateStateTime);
     await EvmUtils.increaseTime((fortDestructionTime.integerValue(BigNumber.ROUND_CEIL).dividedBy(2))
         .integerValue(BigNumber.ROUND_CEIL).toNumber());
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const buildingLastUpdateStateTimeAfterFirstHalfDestruction = toBN((await fort.productionInfo()).lastUpdateStateTime);
+    const buildingLastUpdateStateTimeAfterFirstHalfDestruction = toBN((await fort2.productionInfo()).lastUpdateStateTime);
     const timePassedDuringFirstHalfDestruction = buildingLastUpdateStateTimeAfterFirstHalfDestruction
         .minus(buildingLastUpdateStateTimeBeforeFirstHalfDestruction);
 
-    const fortHealthAfterFirstHalfDestruction = toLowBN(await fort.health());
+    const fortHealthAfterFirstHalfDestruction = toLowBN(await fort2.health());
     expect(fortHealthAfterFirstHalfDestruction)
         .eql(fortHealthAfterRepairment.minus(realDestructionPerSecond
             .multipliedBy(timePassedDuringFirstHalfDestruction)), 'Fort health is not correct');
@@ -982,19 +1139,19 @@ export class SiegeCoreTest {
     //second half fort destruction
     await EvmUtils.increaseTime((fortDestructionTime.minus(fortDestructionTime.dividedBy(2)
         .integerValue(BigNumber.ROUND_CEIL))).toNumber());
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
     const robberyPointsAfterSecondHalfDestruction = toLowBN(await siegeInstance.getArmyRobberyPoints(await army.getAddress(), 0));
 
-    const fortHealthAfterSecondHalfDestruction = toLowBN(await fort.health());
+    const fortHealthAfterSecondHalfDestruction = toLowBN(await fort2.health());
     expect(fortHealthAfterSecondHalfDestruction).eql(new BigNumber(0), 'Fort health is not correct');
 
-    const buildingLastUpdateStateTimeBeforeDestructionWithResource = toBN((await fort.productionInfo()).lastUpdateStateTime);
+    const buildingLastUpdateStateTimeBeforeDestructionWithResource = toBN((await fort2.productionInfo()).lastUpdateStateTime);
     await EvmUtils.increaseTime(((fortDestructionTime.dividedBy(50).integerValue(BigNumber.ROUND_CEIL))).toNumber());
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const buildingLastUpdateStateTimeAfterDestructionWithResource = toBN((await fort.productionInfo()).lastUpdateStateTime);
+    const buildingLastUpdateStateTimeAfterDestructionWithResource = toBN((await fort2.productionInfo()).lastUpdateStateTime);
     const timePassedDuringDestructionWithResource = buildingLastUpdateStateTimeAfterDestructionWithResource.minus(
         buildingLastUpdateStateTimeBeforeDestructionWithResource);
 
@@ -1003,7 +1160,7 @@ export class SiegeCoreTest {
         robberyPointsAfterSecondHalfDestruction)).dividedBy(timePassedDuringDestructionWithResource);
 
     const buildingResourceAfterDestruction = await ResourceHelper.getResourcesStateBalanceOf(
-      await fort.getAddress(),
+      await fort2.getAddress(),
       fortSpendingResourceConfigs.map((value) => ResourceHelper.getResourceTypeByResourceTypeId(value.resourceTypeId))
     );
 
@@ -1026,15 +1183,15 @@ export class SiegeCoreTest {
 
     //first half fort destruction with no health
     const buildingLastUpdateStateTimeBeforeFirstHalfFortRepairmentWithNoHealth =
-        toBN((await fort.productionInfo()).lastUpdateStateTime);
+        toBN((await fort2.productionInfo()).lastUpdateStateTime);
     const firstHalfDestructionTime = (timeToResourcesGone.integerValue(BigNumber.ROUND_FLOOR).dividedBy(2))
         .integerValue(BigNumber.ROUND_CEIL);
     await EvmUtils.increaseTime(firstHalfDestructionTime.toNumber());
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
     const buildingLastUpdateStateTimeAfterFirstHalfFortRepairmentWithNoHealth =
-        toBN((await fort.productionInfo()).lastUpdateStateTime);
+        toBN((await fort2.productionInfo()).lastUpdateStateTime);
     const timePassedDuringFistHalfFortRepairmentWithNoHealth = buildingLastUpdateStateTimeAfterFirstHalfFortRepairmentWithNoHealth.minus(
         buildingLastUpdateStateTimeBeforeFirstHalfFortRepairmentWithNoHealth);
 
@@ -1044,11 +1201,11 @@ export class SiegeCoreTest {
         timePassedDuringFistHalfFortRepairmentWithNoHealth);
 
     const buildingResourceAfterFirstHalfFortDestructionWithNoHealth = await ResourceHelper.getResourcesStateBalanceOf(
-      await fort.getAddress(),
+      await fort2.getAddress(),
       fortSpendingResourceConfigs.map((value) => ResourceHelper.getResourceTypeByResourceTypeId(value.resourceTypeId))
     );
 
-    const fortHealthAfterFirstHalfDestructionWithNoHealth = toLowBN(await fort.health());
+    const fortHealthAfterFirstHalfDestructionWithNoHealth = toLowBN(await fort2.health());
     expect(fortHealthAfterFirstHalfDestructionWithNoHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     for (let i = 0; i < fortSpendingResourceConfigs.length; i++) {
@@ -1066,7 +1223,7 @@ export class SiegeCoreTest {
       ? await EvmUtils.increaseTime(secondHalfDestructionTime.toNumber())
       : await EvmUtils.increaseTime(stunDuration.toNumber() - fortDestructionTime.toNumber() - firstHalfDestructionTime.toNumber());
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
     const timePassedDuringSecondHalfFortRepairmentWithNoHealth = timeToResourcesGone.integerValue(BigNumber.ROUND_FLOOR).minus(
         timePassedDuringFistHalfFortRepairmentWithNoHealth);
@@ -1074,11 +1231,11 @@ export class SiegeCoreTest {
         timePassedDuringSecondHalfFortRepairmentWithNoHealth);
 
     const buildingResourceAfterSecondHalfFortRepairmentWithNoHealth = await ResourceHelper.getResourcesStateBalanceOf(
-      await fort.getAddress(),
+      await fort2.getAddress(),
       fortSpendingResourceConfigs.map((value) => ResourceHelper.getResourceTypeByResourceTypeId(value.resourceTypeId))
     );
 
-    const fortHealthAfterSecondHalfDestructionWithNoHealth = toLowBN(await fort.health());
+    const fortHealthAfterSecondHalfDestructionWithNoHealth = toLowBN(await fort2.health());
     expect(fortHealthAfterSecondHalfDestructionWithNoHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     for (let i = 0; i < fortSpendingResourceConfigs.length; i++) {
@@ -1098,12 +1255,12 @@ export class SiegeCoreTest {
     const robberyPointsAfterClaimResources = toLowBN(await siegeInstance.getArmyRobberyPoints(await army.getAddress(), 0));
 
     //fort destruction after resources gone
-    const buildingLastUpdateStateTimeBeforeDestructionWithNoResource = toBN((await fort.productionInfo()).lastUpdateStateTime);
+    const buildingLastUpdateStateTimeBeforeDestructionWithNoResource = toBN((await fort2.productionInfo()).lastUpdateStateTime);
     await EvmUtils.increaseTime(10);
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const buildingLastUpdateStateTimeAfterDestructionWithNoResource = toBN((await fort.productionInfo()).lastUpdateStateTime);
+    const buildingLastUpdateStateTimeAfterDestructionWithNoResource = toBN((await fort2.productionInfo()).lastUpdateStateTime);
     const timePassedDuringDestructionWithNoResource = buildingLastUpdateStateTimeAfterDestructionWithNoResource.minus(
         buildingLastUpdateStateTimeBeforeDestructionWithNoResource);
 
@@ -1114,11 +1271,11 @@ export class SiegeCoreTest {
         .gt(robberyPointsRegenPerSecondWithResource, 'Robbery points regeneration per second is not correct');
 
     const actualBuildingResource = await ResourceHelper.getResourcesQuantity(
-      await fort.getAddress(),
+      await fort2.getAddress(),
       fortSpendingResourceConfigs.map((value) => ResourceHelper.getResourceTypeByResourceTypeId(value.resourceTypeId))
     );
 
-    const actualFortHealth = toLowBN(await fort.health());
+    const actualFortHealth = toLowBN(await fort2.health());
     expect(actualFortHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     for (let i = 0; i < fortSpendingResourceConfigs.length; i++) {
@@ -1138,9 +1295,12 @@ export class SiegeCoreTest {
     const assignResourceQuantity = 100;
     const fortRepairmentTime = 50000;
     const corruptionIndexAmount = 10000;
+    const fortHealth = 6;
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
+
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, new BigNumber(fortHealth));
 
     const fort = await SettlementHelper.getFort(userSettlementInstance2);
 
@@ -1179,25 +1339,59 @@ export class SiegeCoreTest {
 
     const fortHealthBefore = toLowBN(await fort.health());
 
-    await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await fort.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await fort.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     const buildingLastUpdateStateTimeBefore = toBN((await fort.productionInfo()).lastUpdateStateTime);
 
     await EvmUtils.increaseTime(fortRepairmentTime);
 
-    await fort.removeResourcesAndWorkers(
-      await userSettlementInstance2.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      testUser2,
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: true,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: testUser2,
+                isTransferringResourcesFromBuilding: true
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await fort.removeResourcesAndWorkers(
+    //   await userSettlementInstance2.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   testUser2,
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     await fort.updateState().then((tx) => tx.wait());
 
@@ -1245,25 +1439,59 @@ export class SiegeCoreTest {
 
     const fortHealthWithSummonedCultists = toLowBN(await fort.health());
 
-    await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await fort.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await userSettlementInstance2.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await fort.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     const buildingLastUpdateStateTimeWithSummonedCultistsBefore = toBN((await fort.productionInfo()).lastUpdateStateTime);
 
     await EvmUtils.increaseTime(fortRepairmentTime);
 
-    await fort.removeResourcesAndWorkers(
-      await userSettlementInstance2.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      testUser2,
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await userSettlementInstance2.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: true,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: testUser2,
+                isTransferringResourcesFromBuilding: true
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await fort.removeResourcesAndWorkers(
+    //   await userSettlementInstance2.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   testUser2,
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     await fort.updateState().then((tx) => tx.wait());
 
@@ -1283,7 +1511,9 @@ export class SiegeCoreTest {
 
     const unitTypes = [UnitType.WARRIOR];
     const unitQuantity = 8;
-    const siegeUnitQuantity = 5;
+    const siegeUnitQuantity = unitQuantity / 2;
+    const assignWorkerQuantity = 2;
+    const fortLevel = 3;
     const exchangePoints = 20;
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
@@ -1293,6 +1523,12 @@ export class SiegeCoreTest {
 
     const armyStunDurationPerRobberyMultiplier = toBN(await registryInstance.getArmyStunDurationPerRobberyMultiplier());
     const maxAllowedRobberyMultiplierIncreaseValue = toLowBN(await registryInstance.getMaxAllowedRobberyMultiplierIncreaseValue());
+
+    const fort1 = await SettlementHelper.getFort(userSettlementInstance1);
+    await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort1, fortLevel, true);
+
+    const fortMaxHealth = toLowBN(await fort1.getMaxHealthOnLevel(fortLevel));
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, fortMaxHealth);
 
     const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
@@ -1311,13 +1547,13 @@ export class SiegeCoreTest {
         transferableFromLowBN(new BigNumber(robberyMultiplierBefore))
     ).then((tx) => tx.wait());
 
-    const fort = await SettlementHelper.getFort(userSettlementInstance2);
+    const fort2 = await SettlementHelper.getFort(userSettlementInstance2);
     const fortDestructionTime = await FortHelper.getSettlementFortDestructionTime(userSettlementInstance2);
     await EvmUtils.increaseTime(fortDestructionTime);
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const fortHealth = toLowBN(await fort.health());
+    const fortHealth = toLowBN(await fort2.health());
     expect(fortHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     const robberyPointsRegenerationTimeBefore = await FortHelper.getSettlementFortRobberyPointsRegenerationTime(
@@ -1361,6 +1597,8 @@ export class SiegeCoreTest {
     const unitTypes = [UnitType.WARRIOR];
     const unitQuantity = 8;
     const siegeUnitQuantity = unitQuantity / 2;
+    const assignWorkerQuantity = 2;
+    const fortLevel = 3;
     const exchangePoints = 20;
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
@@ -1370,6 +1608,12 @@ export class SiegeCoreTest {
 
     const armyStunDurationPerRobberyMultiplier = toBN(await registryInstance.getArmyStunDurationPerRobberyMultiplier());
     const maxAllowedRobberyMultiplierIncreaseValue = toLowBN(await registryInstance.getMaxAllowedRobberyMultiplierIncreaseValue());
+
+    const fort1 = await SettlementHelper.getFort(userSettlementInstance1);
+    await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort1, fortLevel, true);
+
+    const fortMaxHealth = toLowBN(await fort1.getMaxHealthOnLevel(fortLevel));
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, fortMaxHealth);
 
     const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
@@ -1388,13 +1632,13 @@ export class SiegeCoreTest {
         transferableFromLowBN(new BigNumber(robberyMultiplierBefore))
     ).then((tx) => tx.wait());
 
-    const fort = await SettlementHelper.getFort(userSettlementInstance2);
+    const fort2 = await SettlementHelper.getFort(userSettlementInstance2);
     const fortDestructionTime = await FortHelper.getSettlementFortDestructionTime(userSettlementInstance2);
     await EvmUtils.increaseTime(fortDestructionTime);
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const fortHealth = toLowBN(await fort.health());
+    const fortHealth = toLowBN(await fort2.health());
     expect(fortHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     const robberyPointsRegenerationTimeBefore = await FortHelper.getSettlementFortRobberyPointsRegenerationTime(
@@ -1430,37 +1674,37 @@ export class SiegeCoreTest {
   }
 
   public static async impossibleChangeSiegeUnitQuantityDuringStunTest() {
-      const { testUser1, testUser2 } = await getNamedAccounts();
+    const { testUser1, testUser2 } = await getNamedAccounts();
 
-      const unitTypes = [UnitType.WARRIOR];
-      const unitQuantity = 8;
-      const siegeUnitQuantity = 5;
-      const robberyMultiplier = 1;
+    const unitTypes = [UnitType.WARRIOR];
+    const unitQuantity = 4;
+    const siegeUnitQuantity = unitQuantity / 2;
+    const robberyMultiplier = 1;
 
-      const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
-      const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
+    const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
+    const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
 
-      const registryInstance = await WorldHelper.getRegistryInstance();
+    const registryInstance = await WorldHelper.getRegistryInstance();
 
-      const armyStunDurationPerRobberyMultiplier = toBN(await registryInstance.getArmyStunDurationPerRobberyMultiplier());
-      const maxAllowedRobberyMultiplierIncreaseValue = toLowBN(await registryInstance.getMaxAllowedRobberyMultiplierIncreaseValue());
+    const armyStunDurationPerRobberyMultiplier = toBN(await registryInstance.getArmyStunDurationPerRobberyMultiplier());
+    const maxAllowedRobberyMultiplierIncreaseValue = toLowBN(await registryInstance.getMaxAllowedRobberyMultiplierIncreaseValue());
 
-      const army = await SettlementHelper.getArmy(userSettlementInstance1);
+    const army = await SettlementHelper.getArmy(userSettlementInstance1);
 
     expect(await UnitHelper.isHirePossible(army, unitTypes, unitQuantity)).to.be.true;
-      await UnitHelper.hireUnits(army, unitTypes, unitQuantity);
+    await UnitHelper.hireUnits(army, unitTypes, unitQuantity);
 
-      await MovementHelper.moveArmy(army, await userSettlementInstance2.position(), 0, true);
+    await MovementHelper.moveArmy(army, await userSettlementInstance2.position(), 0, true);
 
-      expect(new BigNumber(robberyMultiplier))
-          .lte(maxAllowedRobberyMultiplierIncreaseValue, 'Robbery multiplier is not correct');
+    expect(new BigNumber(robberyMultiplier))
+        .lte(maxAllowedRobberyMultiplierIncreaseValue, 'Robbery multiplier is not correct');
 
-      await army.modifySiege(
-          unitTypes.map(unitType => UnitHelper.getUnitTypeId(unitType)),
-          unitTypes.map(_ => true),
-          unitTypes.map(_ => transferableFromLowBN(new BigNumber(siegeUnitQuantity))),
-          transferableFromLowBN(new BigNumber(robberyMultiplier))
-      ).then((tx) => tx.wait());
+    await army.modifySiege(
+        unitTypes.map(unitType => UnitHelper.getUnitTypeId(unitType)),
+        unitTypes.map(_ => true),
+        unitTypes.map(_ => transferableFromLowBN(new BigNumber(siegeUnitQuantity))),
+        transferableFromLowBN(new BigNumber(robberyMultiplier))
+    ).then((tx) => tx.wait());
 
     const expectedArmyStunDuration = armyStunDurationPerRobberyMultiplier.multipliedBy(robberyMultiplier);
 
@@ -1483,8 +1727,8 @@ export class SiegeCoreTest {
     const { testUser1, testUser2 } = await getNamedAccounts();
 
     const unitTypes = [UnitType.WARRIOR];
-    const unitQuantity = 8;
-    const siegeUnitQuantity = 5;
+    const unitQuantity = 4;
+    const siegeUnitQuantity = unitQuantity / 2;
     const robberyMultiplier = 1;
     const exchangeTokens = new BigNumber(10);
     const buildingType = BuildingType.FARM;

@@ -29,7 +29,7 @@ contract BattleView {
         IWorld world = IWorldAsset(battleAddress).world();
         IEra era = IWorldAsset(battleAddress).era();
 
-        bytes32[] memory unitTypeIds = world.registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         uint256[] memory side1Casualties = new uint256[](unitTypeIds.length);
         uint256[] memory side2Casualties = new uint256[](unitTypeIds.length);

@@ -474,7 +474,7 @@ export class BattleCoreTest {
   public static async impossibleCultistsSummonDueBattleTest() {
     const { testUser1, testUser2 } = await getNamedAccounts();
 
-    const unitQuantity = 2;
+    const unitQuantity = 1;
     const corruptionIndexAmount = 10000;
 
     const registryInstance = await WorldHelper.getRegistryInstance();
@@ -582,7 +582,7 @@ export class BattleCoreTest {
   public static async battleJoinVersusCultistsTest(side: number) {
     const { testUser1, testUser2 } = await getNamedAccounts();
 
-    const unitQuantity = 2;
+    const unitQuantity = 1;
     const corruptionIndexAmount = 10000;
 
     const registryInstance = await WorldHelper.getRegistryInstance();
@@ -659,7 +659,7 @@ export class BattleCoreTest {
     const { testUser1 } = await getNamedAccounts();
 
     const corruptionIndexAmount = 10000;
-    const unitQuantity = 4;
+    const unitQuantity = 2;
     const cultistAmount = new BigNumber(5);
 
     const gameUnits = await WorldHelper.getGameUnits();
@@ -826,7 +826,7 @@ export class BattleCoreTest {
   public static async minBattleDurationTest() {
     const {testUser1, testUser2} = await getNamedAccounts();
 
-    const buildingLevel = 22;
+    const buildingLevel = 30;
     const assignWorkerQuantity = 10;
     const unitTypes = [UnitType.ARCHER];
     const unitQuantity = 1;
@@ -841,7 +841,6 @@ export class BattleCoreTest {
     await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort, buildingLevel, true);
 
     const fortMaxHealth = toLowBN(await fort.getMaxHealthOnLevel(buildingLevel));
-
     await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, fortMaxHealth);
 
     const maxAllowedUnitsToBuyPerTransaction = toLowBN(await registryInstance.getMaxAllowedUnitsToBuyPerTransaction());
@@ -853,7 +852,7 @@ export class BattleCoreTest {
 
     const maxAvailableUnitQuantityToHire = await UnitHelper.getMaxAvailableUnitQuantityToHire(userSettlementInstance1);
     expect(maxAvailableUnitQuantityToHire)
-        .gte(maxAllowedUnitsToBuyPerTransaction.multipliedBy(3), 'Unit quantity is not correct')
+        .gte(maxAllowedUnitsToBuyPerTransaction.multipliedBy(3), 'Unit quantity is not correct');
 
     for (let i = 0; i < 3; i++) {
       await UnitHelper.hireUnits(army1, unitTypes, maxAllowedUnitsToBuyPerTransaction.toNumber());

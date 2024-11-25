@@ -40,6 +40,10 @@ contract Banners is ERC721Enumerable, Ownable, ERC1155Receiver {
     /// @dev Updated when #mint is called
     mapping(address => uint256) public mintedBannersByAddress;
 
+    /// @notice Mapping containing max amount of banners per address
+    /// @dev Updated when #setMaxAmountOfBannersByAddress (0 by default and it means 'maxAmountOfMintedBannersPerAddress' value is used in validation)
+    mapping(address => uint256) public overriddenMaxAmountOfBannersByAddress;
+
     /// @notice Emitted when #mint is called
     /// @param tokenId Newly created token id
     /// @param bannerName Banner name
@@ -161,6 +165,12 @@ contract Banners is ERC721Enumerable, Ownable, ERC1155Receiver {
         baseURI = _uri;
     }
 
+    /// @notice Sets max amount of banners by address
+    /// @dev Only owner can specify different banners limit
+    function setMaxAmountOfBannersByAddress(address _address, uint256 _maxAmountOfBannersByAddress) public onlyOwner {
+        overriddenMaxAmountOfBannersByAddress[_address] = _maxAmountOfBannersByAddress;
+    }
+
     /// @notice Mints banner with specified parameters
     /// @dev Specified banner parts will be taken from msg.sender
     /// @param name Banner name
@@ -171,8 +181,13 @@ contract Banners is ERC721Enumerable, Ownable, ERC1155Receiver {
         Part[16] memory parts,
         bytes memory data
     ) public {
+        uint256 maxAmountOfBannersByAddress = overriddenMaxAmountOfBannersByAddress[msg.sender];
+        uint256 maxActualAmountOfBannersByAddress = maxAmountOfBannersByAddress == 0
+            ? maxAmountOfMintedBannersPerAddress
+            : maxAmountOfBannersByAddress;
+
         uint256 amountOfBannersMintedByMsgSender = mintedBannersByAddress[msg.sender];
-        if (amountOfBannersMintedByMsgSender >= maxAmountOfMintedBannersPerAddress) {
+        if (amountOfBannersMintedByMsgSender >= maxActualAmountOfBannersByAddress) {
             revert CannotMintMoreThanMaximumAllowedAmountToMintForThisMsgSender();
         }
 

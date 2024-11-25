@@ -10,10 +10,6 @@ contract Registry is IRegistry, Initializable {
     address public override mightyCreator;
     /// @inheritdoc IRegistry
     IWorldAssetFactory public override worldAssetFactory;
-    /// @inheritdoc IRegistry
-    uint256 public override globalMultiplier;
-    /// @inheritdoc IRegistry
-    uint256 public override settlementStartingPrice;
 
     /// @dev Only mighty creator modifier
     /// @dev Modifier is calling internal function in order to reduce contract size
@@ -23,13 +19,8 @@ contract Registry is IRegistry, Initializable {
     }
 
     /// @inheritdoc IRegistry
-    function init(
-        uint256 _globalMultiplier,
-        uint256 _settlementStartingPrice
-    ) public override initializer {
+    function init() public override initializer {
         mightyCreator = msg.sender;
-        globalMultiplier = _globalMultiplier;
-        settlementStartingPrice = _settlementStartingPrice;
     }
 
     /// @inheritdoc IRegistry
@@ -44,636 +35,347 @@ contract Registry is IRegistry, Initializable {
 
     /// @inheritdoc IRegistry
     function getGlobalMultiplier() public view override returns (uint256) {
-        return globalMultiplier;
+        return Config.globalMultiplier;
     }
 
     /// @inheritdoc IRegistry
-    function getUnitStats(bytes32 unitTypeId) public pure returns (UnitStats memory) {
-        if (unitTypeId == WARRIOR_TYPE_ID) {
-            return UnitStats({
-                offenseStage1: 0,
-                defenceStage1: 20,
-                offenseStage2: 5,
-                defenceStage2: 5,
-                siegePower: 11574074074074,//uint256(1e18 / 1 days),
-                siegeSupport: 23148148148148//2 * siegePower
-            });
-        }
-
-        if (unitTypeId == ARCHER_TYPE_ID) {
-            return UnitStats({
-                offenseStage1: 5,
-                defenceStage1: 5,
-                offenseStage2: 0,
-                defenceStage2: 5,
-                siegePower: 11574074074074,//uint256(1e18 / 1 days),
-                siegeSupport: 23148148148148//2 * siegePower
-            });
-        }
-
-        if (unitTypeId == HORSEMAN_TYPE_ID) {
-            return UnitStats({
-                offenseStage1: 0,
-                defenceStage1: 5,
-                offenseStage2: 5,
-                defenceStage2: 20,
-                siegePower: 11574074074074,//uint256(1e18 / 1 days),
-                siegeSupport: 23148148148148//2 * siegePower
-            });
-        }
-
-        revert UnknownInputParameter();
+    function getUnitStats(bytes32 unitTypeId) public pure returns (Config.UnitStats memory) {
+        return Config.getUnitStats(unitTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getRobberyPointsPerDamageMultiplier() public pure override returns (uint256) {
-        return 5e18;
+        return Config.robberyPointsPerDamageMultiplier;
     }
 
     /// @inheritdoc IRegistry
     function getRobberyPointsToResourceMultiplier(bytes32 resourceTypeId) public view override returns (uint256) {
-        if (resourceTypeId == FOOD_TYPE_ID) {
-            return 1e18;
-        }
-
-        if (resourceTypeId == WOOD_TYPE_ID) {
-            return 1e18;
-        }
-
-        if (resourceTypeId == ORE_TYPE_ID) {
-            return 1e18;
-        }
-
-        if (resourceTypeId == INGOT_TYPE_ID) {
-            return 1e18;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getRobberyPointsToResourceMultiplier(resourceTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getWorkerCapacityCoefficient(bytes32 buildingTypeId) public pure override returns (uint256) {
-        if (buildingTypeId == FARM_TYPE_ID) {
-            return 10e18;
-        }
+        return Config.getWorkerCapacityCoefficient(buildingTypeId);
+    }
 
-        if (buildingTypeId == LUMBERMILL_TYPE_ID) {
-            return 7e18;
-        }
-
-        if (buildingTypeId == MINE_TYPE_ID) {
-            return 5e18;
-        }
-
-        if (buildingTypeId == SMITHY_TYPE_ID) {
-            return 3e18;
-        }
-
-        if (buildingTypeId == FORT_TYPE_ID) {
-            return 5e18;
-        }
-
-        revert UnknownInputParameter();
+    /// @inheritdoc IRegistry
+    function getBuildingUpgradeCostMultiplier(bytes32 buildingTypeId) public pure override returns (uint256) {
+        return Config.getBuildingUpgradeCostMultiplier(buildingTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getBasicProductionBuildingCoefficient(bytes32 buildingTypeId) public pure override returns (uint256) {
-        if (buildingTypeId == FARM_TYPE_ID) {
-            return 0.5e18;
-        }
-
-        if (buildingTypeId == LUMBERMILL_TYPE_ID) {
-            return 0.43e18;
-        }
-
-        if (buildingTypeId == MINE_TYPE_ID) {
-            return 0.4e18;
-        }
-
-        if (buildingTypeId == SMITHY_TYPE_ID) {
-            return 0.33e18;
-        }
-
-        if (buildingTypeId == FORT_TYPE_ID) {
-            return 0.4e18;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getBasicProductionBuildingCoefficient(buildingTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getCorruptionIndexByResource(bytes32 resourceTypeId) public pure override returns (uint256) {
-        if (resourceTypeId == FOOD_TYPE_ID) {
-            return 0.3e18;
-        }
-
-        if (resourceTypeId == WOOD_TYPE_ID) {
-            return 1e18;
-        }
-
-        if (resourceTypeId == ORE_TYPE_ID) {
-            return 3e18;
-        }
-
-        if (resourceTypeId == INGOT_TYPE_ID) {
-            return 10e18;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getCorruptionIndexByResource(resourceTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getResourceWeight(bytes32 resourceTypeId) public pure override returns (uint256) {
-        if (resourceTypeId == FOOD_TYPE_ID) {
-            return 0.5e18;
-        }
-
-        if (resourceTypeId == WOOD_TYPE_ID) {
-            return 1e18;
-        }
-
-        if (resourceTypeId == ORE_TYPE_ID) {
-            return 2e18;
-        }
-
-        if (resourceTypeId == INGOT_TYPE_ID) {
-            return 3e18;
-        }
-
-        return 0;
+        return Config.getResourceWeight(resourceTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getToTreasuryPercent() public pure override returns (uint256) {
-        return 1e18;
+        return Config.toTreasuryPercent;
     }
 
     /// @inheritdoc IRegistry
     function getBaseBattleDuration() public pure override returns (uint256) {
-        return 18 hours;
+        return Config.baseBattleDuration;
     }
 
     /// @inheritdoc IRegistry
     function getBattleDurationLosingArmyStunMultiplier() public pure override returns (uint256) {
-        return 0.665e18;
+        return Config.battleDurationLosingArmyStunMultiplier;
     }
 
     /// @inheritdoc IRegistry
     function getBattleDurationWinningArmyStunMultiplier() public pure override returns (uint256) {
-        return 0.335e18;
+        return Config.battleDurationWinningArmyStunMultiplier;
     }
 
     /// @inheritdoc IRegistry
-    function getManeuverDurationStunMultiplier() public pure override returns (uint256) {
-        return 0.6e18;
+    function getManeuverStunDuration() public pure override returns (uint256) {
+        return Config.maneuverStunDuration;
     }
 
     /// @inheritdoc IRegistry
     function getBuildingTypeIds() public pure override returns (bytes32[] memory) {
-        bytes32[] memory buildingTypeIds = new bytes32[](5);
-
-        buildingTypeIds[0] = FARM_TYPE_ID;
-        buildingTypeIds[1] = LUMBERMILL_TYPE_ID;
-        buildingTypeIds[2] = MINE_TYPE_ID;
-        buildingTypeIds[3] = SMITHY_TYPE_ID;
-        buildingTypeIds[4] = FORT_TYPE_ID;
-
-        return buildingTypeIds;
+        return Config.getBuildingTypeIds();
     }
 
     /// @inheritdoc IRegistry
-    function getGameResources() public pure override returns (GameResource[] memory) {
-        GameResource[] memory resources = new GameResource[](4);
-
-        resources[0] = GameResource("Mithraeum Food", "mFOOD", FOOD_TYPE_ID);
-        resources[1] = GameResource("Mithraeum Wood", "mWOOD", WOOD_TYPE_ID);
-        resources[2] = GameResource("Mithraeum Ore", "mORE", ORE_TYPE_ID);
-        resources[3] = GameResource("Mithraeum Ingot", "mINGOT", INGOT_TYPE_ID);
-
-        return resources;
+    function getGameResources() public pure override returns (Config.GameResource[] memory) {
+        return Config.getGameResources();
     }
 
     /// @inheritdoc IRegistry
-    function getGameUnits() public pure override returns (GameUnit[] memory) {
-        GameUnit[] memory gameUnits = new GameUnit[](3);
-
-        gameUnits[0] = GameUnit("Mithraeum Warrior", "mWARRIOR", WARRIOR_TYPE_ID);
-        gameUnits[1] = GameUnit("Mithraeum Archer", "mARCHER", ARCHER_TYPE_ID);
-        gameUnits[2] = GameUnit("Mithraeum Horseman", "mHORSEMAN", HORSEMAN_TYPE_ID);
-
-        return gameUnits;
+    function getGameUnits() public pure override returns (Config.GameUnit[] memory) {
+        return Config.getGameUnits();
     }
 
     /// @inheritdoc IRegistry
     function getUnitTypeIds() public pure override returns (bytes32[] memory) {
-        GameUnit[] memory gameUnits = getGameUnits();
-        bytes32[] memory unitTypeIds = new bytes32[](gameUnits.length);
-
-        for (uint256 i = 0; i < unitTypeIds.length; i++) {
-            unitTypeIds[i] = gameUnits[i].unitTypeId;
-        }
-
-        return unitTypeIds;
+        return Config.getUnitTypeIds();
     }
 
     /// @inheritdoc IRegistry
     function getUnitHiringFortHpMultiplier() public pure override returns (uint256) {
-        return 5e18;
+        return Config.unitHiringFortHpMultiplier;
     }
 
     /// @inheritdoc IRegistry
     function getUnitResourceUsagePer1SecondOfDecreasedManeuverDuration(bytes32 unitTypeId) public pure override returns (uint256) {
-        if (unitTypeId == WARRIOR_TYPE_ID) {
-            // 1e18 / 5 hours = irrational const
-            return 0.000055555e18;
-        }
-
-        if (unitTypeId == ARCHER_TYPE_ID) {
-            // 1e18 / 20 hours = irrational const
-            return 0.000013888e18;
-        }
-
-        if (unitTypeId == HORSEMAN_TYPE_ID) {
-            // 1e18 / 50 hours = irrational const
-            return 0.000005555e18;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getUnitResourceUsagePer1SecondOfDecreasedManeuverDuration(unitTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getProsperityForUnitLiquidation(bytes32 unitTypeId) public pure override returns (uint256) {
-        if (unitTypeId == WARRIOR_TYPE_ID) {
-            return 0e18;
-        }
-
-        if (unitTypeId == ARCHER_TYPE_ID) {
-            return 3e18;
-        }
-
-        if (unitTypeId == HORSEMAN_TYPE_ID) {
-            return 4e18;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getProsperityForUnitLiquidation(unitTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getWorkersForUnitLiquidation(bytes32 unitTypeId) public pure override returns (uint256) {
-        if (unitTypeId == WARRIOR_TYPE_ID) {
-            return 1e18;
-        }
-
-        if (unitTypeId == ARCHER_TYPE_ID) {
-            return 0e18;
-        }
-
-        if (unitTypeId == HORSEMAN_TYPE_ID) {
-            return 0e18;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getWorkersForUnitLiquidation(unitTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getCultistsSummonDelay() public pure override returns (uint256) {
-        return 2 weeks;
+        return Config.cultistsSummonDelay;
     }
 
     /// @inheritdoc IRegistry
     function getMaxSettlementsPerRegion() public pure override returns (uint256) {
-        return 40;
+        return Config.maxSettlementsPerRegion;
     }
 
     /// @inheritdoc IRegistry
     function getCultistsNoDestructionDelay() public pure override returns (uint256) {
-        return 10 days;
+        return Config.cultistsNoDestructionDelay;
     }
 
     /// @inheritdoc IRegistry
     function getCultistsPerRegionMultiplier() public pure override returns (uint256) {
-        return 5000e18;
+        return Config.cultistsPerRegionMultiplier;
     }
 
     /// @inheritdoc IRegistry
     function getMaxCultistsPerRegion() public pure override returns (uint256) {
-        return 10000e18;
+        return Config.maxCultistsPerRegion;
     }
 
     /// @inheritdoc IRegistry
     function getCultistUnitTypeId() public pure override returns (bytes32) {
-        return WARRIOR_TYPE_ID;
+        return Config.cultistUnitTypeId;
     }
 
     /// @inheritdoc IRegistry
     function getBuildingTokenTransferThresholdPercent() public pure override returns (uint256) {
-        return 0.3e18;
+        return Config.buildingTokenTransferThresholdPercent;
     }
 
     /// @inheritdoc IRegistry
     function getNewSettlementStartingPrice() public view override returns (uint256) {
-        return settlementStartingPrice;
+        return Config.newSettlementStartingPrice;
     }
 
     /// @inheritdoc IRegistry
     function getProductionTicksInSecond() public view override returns (uint256) {
-        return getMaxCultistsPerRegion() / 1e18;
+        return Config.productionTicksInSecond;
     }
 
     /// @inheritdoc IRegistry
-    function getUnitPriceIncreaseForEachUnit() public pure override returns (uint256, uint256) {
-        return (1004, 1000);
+    function getUnitPriceIncreaseByUnitTypeId(bytes32 unitTypeId) public pure override returns (uint256, uint256) {
+        return Config.getUnitPriceIncreaseByUnitTypeId(unitTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getMaxAllowedUnitsToBuyPerTransaction() public pure override returns (uint256) {
-        return 5000e18;
+        return Config.maxAllowedUnitsToBuyPerTransaction;
     }
 
     /// @inheritdoc IRegistry
     function getUnitPriceDropByUnitTypeId(bytes32 unitTypeId) public pure override returns (uint256, uint256) {
-        if (unitTypeId == ARCHER_TYPE_ID) {
-            //10% drop in 1 day (90% leftover)
-            return (9999987805503308, 10000000000000000);
-        }
-
-        if (unitTypeId == HORSEMAN_TYPE_ID) {
-            //7% drop in 1 day (93% leftover)
-            return (9999991600617782, 10000000000000000);
-        }
-
-        revert UnknownInputParameter();
+        return Config.getUnitPriceDropByUnitTypeId(unitTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getWorkerPriceIncreaseForEachWorker() public pure override returns (uint256, uint256) {
-        return (1004, 1000);
+        return Config.getWorkerPriceIncreaseForEachWorker();
     }
 
     /// @inheritdoc IRegistry
     function getMaxAllowedWorkersToBuyPerTransaction() public pure override returns (uint256) {
-        return 5000e18;
+        return Config.maxAllowedWorkersToBuyPerTransaction;
     }
 
     /// @inheritdoc IRegistry
     function getWorkerPriceDrop() public pure override returns (uint256, uint256) {
-        //7% drop in 1 day (93% leftover)
-        return (9999991600617782, 10000000000000000);
+        return Config.getWorkerPriceDrop();
     }
 
     /// @inheritdoc IRegistry
     function getMaxAdvancedProductionTileBuff() public pure override returns (uint256) {
-        return 1e18;
+        return Config.maxAdvancedProductionTileBuff;
     }
 
     /// @inheritdoc IRegistry
     function getCaptureTileDurationPerTile() public pure override returns (uint256) {
-        return 9 hours;
+        return Config.captureTileDurationPerTile;
     }
 
     /// @inheritdoc IRegistry
     function getNextCaptureProsperityBasicThreshold() public pure override returns (uint256) {
-        return 1.2e18;
+        return Config.nextCaptureProsperityBasicThreshold;
     }
 
     /// @inheritdoc IRegistry
     function getNextCaptureProsperityPerTileThreshold() public pure override returns (uint256) {
-        return 0.05e18;
+        return Config.nextCaptureProsperityPerTileThreshold;
     }
 
     /// @inheritdoc IRegistry
     function getNecessaryProsperityPercentForClaimingTileCapture() public pure override returns (uint256) {
-        return 0.7e18;
+        return Config.necessaryProsperityPercentForClaimingTileCapture;
     }
 
     /// @inheritdoc IRegistry
     function getTileCaptureCancellationFee() public pure override returns (uint256) {
-        return 0.25e18;
+        return Config.tileCaptureCancellationFee;
     }
 
     /// @inheritdoc IRegistry
     function getMaxCapturedTilesForSettlement(uint8 tileBonusType) public pure override returns (uint256) {
-        if (tileBonusType == 1) {
-            return 2;
-        }
-
-        if (tileBonusType == 2) {
-            return 1;
-        }
-
-        return 0;
+        return Config.getMaxCapturedTilesForSettlement(tileBonusType);
     }
 
     /// @inheritdoc IRegistry
     function getAdvancedProductionTileBonusByVariation(uint8 variation) public pure override returns (bytes32, uint256) {
-        if (variation == 0) {
-            return (FARM_TYPE_ID, 0.25e18);
-        }
-
-        if (variation == 1) {
-            return (FARM_TYPE_ID, 0.4e18);
-        }
-
-        if (variation == 2) {
-            return (LUMBERMILL_TYPE_ID, 0.3e18);
-        }
-
-        if (variation == 3) {
-            return (LUMBERMILL_TYPE_ID, 0.6e18);
-        }
-
-        if (variation == 4) {
-            return (MINE_TYPE_ID, 0.5e18);
-        }
-
-        if (variation == 5) {
-            return (MINE_TYPE_ID, 0.8e18);
-        }
-
-        if (variation == 6) {
-            return (SMITHY_TYPE_ID, 0.7e18);
-        }
-
-        if (variation == 7) {
-            return (SMITHY_TYPE_ID, 1e18);
-        }
-
-        if (variation == 8) {
-            return (FORT_TYPE_ID, 0.4e18);
-        }
-
-        if (variation == 9) {
-            return (FORT_TYPE_ID, 0.6e18);
-        }
-
-        revert UnknownInputParameter();
+        return Config.getAdvancedProductionTileBonusByVariation(variation);
     }
 
     /// @inheritdoc IRegistry
     function getUnitBattleMultiplierTileBonusByVariation(uint8 variation) public pure override returns (bytes32, uint256) {
-        if (variation == 0) {
-            return (WARRIOR_TYPE_ID, 0.3e18);
-        }
-
-        if (variation == 1) {
-            return (ARCHER_TYPE_ID, 0.5e18);
-        }
-
-        if (variation == 2) {
-            return (HORSEMAN_TYPE_ID, 1e18);
-        }
-
-        revert UnknownInputParameter();
+        return Config.getUnitBattleMultiplierTileBonusByVariation(variation);
     }
 
     /// @inheritdoc IRegistry
     function getMaxRegionTier() public pure override returns (uint256) {
-        return 4;
+        return Config.maxRegionTier;
     }
 
     /// @inheritdoc IRegistry
-    function getInitialCultistsAmountPerRegionTier() public pure override returns (uint256) {
-        return 1500e18;
+    function getInitialCultistsAmountByRegionTier(uint256 regionTier) public pure override returns (uint256) {
+        return Config.getInitialCultistsAmountByRegionTier(regionTier);
     }
 
     /// @inheritdoc IRegistry
-    function getInitialCorruptionIndexAmountPerRegionTier() public pure override returns (uint256) {
-        return getInitialCultistsAmountPerRegionTier() * 5;
+    function getInitialCorruptionIndexPerCultistMultiplier() public pure override returns (uint256) {
+        return Config.initialCorruptionIndexPerCultistMultiplier;
     }
 
     /// @inheritdoc IRegistry
     function getSettlementPriceMultiplierPerIncreasedRegionTier() public pure override returns (uint256) {
-        return 2;
+        return Config.settlementPriceMultiplierPerIncreasedRegionTier;
     }
 
     /// @inheritdoc IRegistry
-    function getStunDurationMultiplierOfCancelledSecretManeuver() public pure override returns (uint256) {
-        return 0.5e18;
+    function getStunDurationOfCancelledSecretManeuver() public pure override returns (uint256) {
+        return Config.stunDurationOfCancelledSecretManeuver;
+    }
+
+    /// @inheritdoc IRegistry
+    function getDemilitarizationCooldown() public pure override returns (uint256) {
+        return Config.demilitarizationCooldown;
     }
 
     /// @inheritdoc IRegistry
     function getMaxAllowedRobberyMultiplierIncreaseValue() public pure override returns (uint256) {
-        return 3e18;
+        return Config.maxAllowedRobberyMultiplierIncreaseValue;
     }
 
     /// @inheritdoc IRegistry
     function getArmyStunDurationPerRobberyMultiplier() public pure override returns (uint256) {
-        return 1 days;
+        return Config.armyStunDurationPerRobberyMultiplier;
     }
 
     /// @inheritdoc IRegistry
     function getChanceForTileWithBonusByRegionTier(uint256 regionTier) public pure override returns (uint256) {
-        if (regionTier == 1) {
-            return 0.04e18;
-        }
-
-        if (regionTier == 2) {
-            return 0.08e18;
-        }
-
-        if (regionTier == 3) {
-            return 0.12e18;
-        }
-
-        if (regionTier == 4) {
-            return 0.15e18;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getChanceForTileWithBonusByRegionTier(regionTier);
     }
 
     /// @inheritdoc IRegistry
     function getRegionInclusionPrice(uint256 regionTier) public pure override returns (uint256) {
-        if (regionTier == 1) {
-            return 40000e18;
-        }
-
-        if (regionTier == 2) {
-            return 80000e18;
-        }
-
-        if (regionTier == 3) {
-            return 160000e18;
-        }
-
-        if (regionTier == 4) {
-            return 320000e18;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getRegionInclusionPrice(regionTier);
     }
 
     /// @inheritdoc IRegistry
     function getRegionOwnerSettlementPurchasePercent(uint256 regionTier) public pure override returns (uint256) {
-        if (regionTier == 1) {
-            return 0.4e18;
-        }
-
-        if (regionTier == 2) {
-            return 0.2e18;
-        }
-
-        if (regionTier == 3) {
-            return 0.1e18;
-        }
-
-        if (regionTier == 4) {
-            return 0;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getRegionOwnerSettlementPurchasePercent(regionTier);
     }
 
     /// @inheritdoc IRegistry
     function getUnitPoolType(bytes32 unitTypeId) public pure override returns (bytes32) {
-        if (unitTypeId == WARRIOR_TYPE_ID) {
-            return WORKERS_UNIT_POOL_TYPE_ID;
-        }
-
-        if (unitTypeId == ARCHER_TYPE_ID) {
-            return INGOTS_UNIT_POOL_TYPE_ID;
-        }
-
-        if (unitTypeId == HORSEMAN_TYPE_ID) {
-            return INGOTS_UNIT_POOL_TYPE_ID;
-        }
-
-        revert UnknownInputParameter();
+        return Config.getUnitPoolType(unitTypeId);
     }
 
     /// @inheritdoc IRegistry
     function getArmyStunDurationByJoiningBattleAtAttackingSide() public pure override returns (uint256) {
-        return 12 hours;
+        return Config.armyStunDurationByJoiningBattleAtAttackingSide;
     }
 
     /// @inheritdoc IRegistry
     function getInitialCaptureProsperityBasicValue() public pure override returns (uint256) {
-        return 1e18;
+        return Config.initialCaptureProsperityBasicValue;
     }
 
     /// @inheritdoc IRegistry
     function getInitialCaptureProsperityPerTileValue() public pure override returns (uint256) {
-        return 0.25e18;
+        return Config.initialCaptureProsperityPerTileValue;
+    }
+
+    /// @inheritdoc IRegistry
+    function getCaptureTileInitialDuration() public pure override returns (uint256) {
+        return Config.captureTileInitialDuration;
     }
 
     /// @inheritdoc IRegistry
     function getMinimumUserSettlementsCountInNeighboringRegionRequiredToIncludeRegion() public pure override returns (uint256) {
-        return 20;
+        return Config.minimumUserSettlementsCountInNeighboringRegionRequiredToIncludeRegion;
     }
 
     /// @inheritdoc IRegistry
     function getSettlementPayToDecreaseCorruptionIndexPenaltyMultiplier() public pure override returns (uint256) {
-        return 0.5e18;
+        return Config.settlementPayToDecreaseCorruptionIndexPenaltyMultiplier;
     }
 
     /// @inheritdoc IRegistry
     function getMinimumBattleDuration() public pure override returns (uint256) {
-        return 10;
+        return Config.minimumBattleDuration;
     }
 
     /// @inheritdoc IRegistry
     function getNewSettlementPriceIncreaseMultiplier() public pure override returns (uint256) {
-        return 1.3e18;
+        return Config.newSettlementPriceIncreaseMultiplier;
+    }
+
+    /// @inheritdoc IRegistry
+    function getBuildingActivationPrice() public pure override returns (bytes32[] memory, uint256[] memory) {
+        return Config.getBuildingActivationPrice();
+    }
+
+    /// @inheritdoc IRegistry
+    function getBuildingCooldownDurationAfterActivation() public pure override returns (uint256) {
+        return Config.buildingCooldownDurationAfterActivation;
+    }
+
+    /// @inheritdoc IRegistry
+    function getWorkersAmountForBuildingActivation() public pure override returns (uint256) {
+        return Config.workersAmountForBuildingActivation;
     }
 
     /// @dev Allows caller to be only mighty creator

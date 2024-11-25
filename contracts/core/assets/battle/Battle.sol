@@ -62,8 +62,8 @@ contract Battle is WorldAsset, IBattle {
                 bytes32 unitTypeId = maxUnitTypeIdsToAttack[i];
                 uint256 maxUnitAmountToAttack = maxUnitsToAttack[i];
 
-                battleWithCultistsInitiationInfo.maxUnitTypeIdsToAttack.push(maxUnitTypeIdsToAttack[i]);
-                battleWithCultistsInitiationInfo.maxUnitsToAttack.push(maxUnitsToAttack[i]);
+                battleWithCultistsInitiationInfo.maxUnitTypeIdsToAttack.push(unitTypeId);
+                battleWithCultistsInitiationInfo.maxUnitsToAttack.push(maxUnitAmountToAttack);
 
                 totalUnitsToAttack += maxUnitAmountToAttack;
             }
@@ -79,7 +79,7 @@ contract Battle is WorldAsset, IBattle {
             maxBattleDuration = attackedArmyManeuverEndTime - battleTimeInfo.beginTime;
 
             // However it cannot be reduced lower than minimum battle duration
-            if (maxBattleDuration < registry().getMinimumBattleDuration()) revert BattleCannotBeCreatedWhenAttackedArmyIsAlmostOnAnotherPosition();
+            if (maxBattleDuration < Config.minimumBattleDuration) revert BattleCannotBeCreatedWhenAttackedArmyIsAlmostOnAnotherPosition();
         }
 
         battleTimeInfo.duration = getBattleDuration(
@@ -107,7 +107,7 @@ contract Battle is WorldAsset, IBattle {
         address armyAddress,
         uint256 side
     ) public override onlyWorldAssetFromSameEra {
-        bytes32[] memory allUnitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory allUnitTypeIds = Config.getUnitTypeIds();
 
         // 1. Add units to battle based on army type
         // If cultists -> add selected amount
@@ -117,10 +117,11 @@ contract Battle is WorldAsset, IBattle {
             ? battleWithCultistsInitiationInfo.maxUnitTypeIdsToAttack
             : allUnitTypeIds;
 
+        IEra _era = era();
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
             bytes32 unitTypeId = unitTypeIds[i];
 
-            uint256 actualUnitsAmount = era().units(unitTypeId).balanceOf(armyAddress);
+            uint256 actualUnitsAmount = _era.units(unitTypeId).balanceOf(armyAddress);
             uint256 amountOfUnitsToJoinBattle = actualUnitsAmount;
 
             if (isCultistsArmy) {
@@ -179,7 +180,7 @@ contract Battle is WorldAsset, IBattle {
     {
         uint256 side = armySide[armyAddress];
 
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         uint256[] memory result = new uint256[](unitTypeIds.length);
 
@@ -260,14 +261,10 @@ contract Battle is WorldAsset, IBattle {
         uint256 side1UnitsAmount,
         uint256 side2UnitsAmount
     ) public view override returns (uint64) {
-        uint256 globalMultiplier = registry().getGlobalMultiplier();
-        uint256 baseBattleDuration = registry().getBaseBattleDuration();
-        uint256 minimumBattleDuration = registry().getMinimumBattleDuration();
-
         return calculateBattleDuration(
-            globalMultiplier,
-            baseBattleDuration,
-            minimumBattleDuration,
+            Config.globalMultiplier,
+            Config.baseBattleDuration,
+            Config.minimumBattleDuration,
             isCultistsAttacked,
             side1UnitsAmount,
             side2UnitsAmount,
@@ -280,9 +277,11 @@ contract Battle is WorldAsset, IBattle {
         if (!canEndBattle()) revert BattleCannotBeFinishedAtThisTime();
         if (isEndedBattle()) revert BattleCannotBeFinishedMoreThanOnce();
 
-        battleTimeInfo.endTime = uint64(battleTimeInfo.beginTime + battleTimeInfo.duration);
+        uint64 battleEndTime = uint64(battleTimeInfo.beginTime + battleTimeInfo.duration);
 
-        emit BattleEnded(battleTimeInfo.endTime);
+        battleTimeInfo.endTime = battleEndTime;
+
+        emit BattleEnded(battleEndTime);
 
         // In case if battle is ended on cultists position & cultists are in this battle
         // => update cultists army state (aka remove them from ended battle)
@@ -308,7 +307,7 @@ contract Battle is WorldAsset, IBattle {
             bytes memory stageParams
         )
     {
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         _side1Casualties = new uint256[](unitTypeIds.length);
         _side2Casualties = new uint256[](unitTypeIds.length);
@@ -323,7 +322,7 @@ contract Battle is WorldAsset, IBattle {
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
             bytes32 unitTypeId = unitTypeIds[i];
 
-            IRegistry.UnitStats memory unitStats = registry().getUnitStats(unitTypeId);
+            Config.UnitStats memory unitStats = Config.getUnitStats(unitTypeId);
 
             side1Offense += sideUnitsAmount[1][unitTypeId] * unitStats.offenseStage1 * 1e18;
             side2Offense += sideUnitsAmount[2][unitTypeId] * unitStats.offenseStage1 * 1e18;
@@ -338,14 +337,14 @@ contract Battle is WorldAsset, IBattle {
             side2Offense,
             side1Defence,
             battleTimeInfo.duration,
-            registry().getBaseBattleDuration() / registry().getGlobalMultiplier()
+            Config.baseBattleDuration / Config.globalMultiplier
         );
 
         uint256 side2LossPercentageAfterStage1 = _calculateSideLossPercentage(
             side1Offense,
             side2Defence,
             battleTimeInfo.duration,
-            registry().getBaseBattleDuration() / registry().getGlobalMultiplier()
+            Config.baseBattleDuration / Config.globalMultiplier
         );
 
         // 2nd stage
@@ -382,7 +381,7 @@ contract Battle is WorldAsset, IBattle {
             bytes memory stageParams
         )
     {
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         _side1Casualties = new uint256[](unitTypeIds.length);
         _side2Casualties = new uint256[](unitTypeIds.length);
@@ -396,7 +395,7 @@ contract Battle is WorldAsset, IBattle {
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
             bytes32 unitTypeId = unitTypeIds[i];
 
-            IRegistry.UnitStats memory unitStats = registry().getUnitStats(unitTypeId);
+            Config.UnitStats memory unitStats = Config.getUnitStats(unitTypeId);
 
             uint256 unitsARemaining = sideUnitsAmount[1][unitTypeId] - stage1Side1Casualties[i];
             uint256 unitsBRemaining = sideUnitsAmount[2][unitTypeId] - stage1Side2Casualties[i];
@@ -423,14 +422,14 @@ contract Battle is WorldAsset, IBattle {
             side2Offense,
             side1Defence,
             battleTimeInfo.duration,
-            registry().getBaseBattleDuration() / registry().getGlobalMultiplier()
+            Config.baseBattleDuration / Config.globalMultiplier
         );
 
         uint256 side2LossPercentageAfterStage2 = _calculateSideLossPercentage(
             side1Offense,
             side2Defence,
             battleTimeInfo.duration,
-            registry().getBaseBattleDuration() / registry().getGlobalMultiplier()
+            Config.baseBattleDuration / Config.globalMultiplier
         );
 
        // result
@@ -516,12 +515,12 @@ contract Battle is WorldAsset, IBattle {
 
     /// @dev Calculates total amount of units of specified army
     function _calculateUnitsAmount(address armyAddress) internal view returns (uint256) {
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
+        IEra _era = era();
 
         uint256 unitsAmount = 0;
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
-            bytes32 unitTypeId = unitTypeIds[i];
-            unitsAmount += era().units(unitTypeId).balanceOf(armyAddress);
+            unitsAmount += _era.units(unitTypeIds[i]).balanceOf(armyAddress);
         }
 
         return unitsAmount;
@@ -535,7 +534,7 @@ contract Battle is WorldAsset, IBattle {
             uint256 _winningSide
         ) = calculateAllCasualties();
 
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
             bytes32 unitTypeId = unitTypeIds[i];
@@ -601,8 +600,10 @@ contract Battle is WorldAsset, IBattle {
         bytes32[] memory unitTypeIds,
         uint256[] memory maxUnits
     ) internal view returns (bool) {
+        IEra _era = era();
+
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
-            uint256 balance = era().units(unitTypeIds[i]).balanceOf(armyAddress);
+            uint256 balance = _era.units(unitTypeIds[i]).balanceOf(armyAddress);
             if (balance > maxUnits[i]) {
                 return true;
             }

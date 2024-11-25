@@ -84,6 +84,18 @@ Emitted when #placeSettlementOnMap or #removeUserSettlement is called
 
 
 
+### SettlementByBannerIdUpdated
+
+```solidity
+event SettlementByBannerIdUpdated(uint256 bannerId, address settlementAddress)
+```
+
+Emitted when #addUserSettlement or #removeUserSettlement is called
+
+
+
+
+
 ### OnlyActiveEra
 
 ```solidity

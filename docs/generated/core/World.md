@@ -413,18 +413,6 @@ _Anyone can call this function_
 
 
 
-### destroyCurrentEraWithoutCondition
-
-```solidity
-function destroyCurrentEraWithoutCondition() public
-```
-
-TODO FOR TESTS REMOVE AFTER
-
-
-
-
-
 ### getRegionRadius
 
 ```solidity

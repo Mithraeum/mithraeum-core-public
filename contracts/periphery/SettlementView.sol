@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "../core/assets/settlement/ISettlement.sol";
 import "../core/assets/IWorldAsset.sol";
 import "../const/GameAssetTypes.sol";
+import "../libraries/MathExtension.sol";
 
 /// @title Settlement view contract
 /// @notice Contains helper read/write requests for interacting with settlement
@@ -44,7 +45,7 @@ contract SettlementView {
         uint256 spentProsperity = settlementEra.prosperity().prosperitySpent(settlementAddress);
         uint256 extendedProsperityAmount = settlement.extendedProsperityAmount();
 
-        bytes32[] memory buildingTypeIds = registry.getBuildingTypeIds();
+        bytes32[] memory buildingTypeIds = Config.getBuildingTypeIds();
 
         for (uint256 i = 0; i < buildingTypeIds.length; i++) {
             IBuilding building = settlement.buildings(buildingTypeIds[i]);
@@ -60,9 +61,17 @@ contract SettlementView {
         IBuilding building,
         uint256 timestamp
     ) internal view returns (uint256) {
+        uint256 buildingLevel = building.getBuildingLevel();
+        if (buildingLevel == 0) {
+            return 0;
+        }
+
+        uint256 levelCoefficient = building.getBuildingCoefficient(buildingLevel);
+        uint256 sqrtLevelCoefficient = MathExtension.sqrt(levelCoefficient * 1e8);// After sqrt level coefficient has 1e4 multiplier, it must be deducted from overall (thats why 1e14)
+
         return building.getTreasuryAmount(timestamp)
-            * registry.getResourceWeight(building.getProducingResourceTypeId())
-            / building.getBuildingCoefficient(building.getBuildingLevel())
-            / 1e18;
+            * Config.getResourceWeight(building.getProducingResourceTypeId())
+            / sqrtLevelCoefficient
+            / 1e14;
     }
 }

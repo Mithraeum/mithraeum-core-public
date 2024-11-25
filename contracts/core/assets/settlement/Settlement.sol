@@ -59,10 +59,57 @@ contract Settlement is WorldAsset, ISettlement, ProxyReentrancyGuard {
         bannerId = createdWithBannerId;
         position = settlementPosition;
 
-        _createBuildings();
-        _createArmy();
-        _createSiege();
-        _mintInitialWorkers();
+        address worldAddress = address(world());
+        uint256 _eraNumber = eraNumber();
+        IWorldAssetFactory factory = worldAssetFactory();
+
+        // 1. Buildings
+        bytes32[] memory buildingTypeIds = Config.getBuildingTypeIds();
+        for (uint256 i = 0; i < buildingTypeIds.length; i++) {
+            bytes32 buildingTypeId = buildingTypeIds[i];
+
+            address newBuildingAddress = factory.create(
+                worldAddress,
+                _eraNumber,
+                BUILDING_GROUP_TYPE_ID,
+                buildingTypeId,
+                abi.encode(address(this), buildingTypeId)
+            );
+
+            buildings[buildingTypeId] = IBuilding(newBuildingAddress);
+            emit BuildingCreated(newBuildingAddress, buildingTypeId);
+        }
+
+        // 2. Army
+        address newArmyAddress = factory.create(
+            worldAddress,
+            _eraNumber,
+            ARMY_GROUP_TYPE_ID,
+            BASIC_TYPE_ID,
+            abi.encode(address(this))
+        );
+
+        army = IArmy(newArmyAddress);
+        emit ArmyCreated(newArmyAddress, position);
+
+        // 3. Siege
+        address newSiegeAddress = factory.create(
+            worldAddress,
+            _eraNumber,
+            SIEGE_GROUP_TYPE_ID,
+            BASIC_TYPE_ID,
+            abi.encode(address(this))
+        );
+
+        siege = ISiege(newSiegeAddress);
+        emit SiegeCreated(newSiegeAddress);
+
+        // 4. Initial workers
+        //era().workers().mint(address(this), 7e18);
+
+        // 5. Initial resources
+        era().resources(WOOD_TYPE_ID).mint(getSettlementOwner(), 15e18);
+        era().resources(ORE_TYPE_ID).mint(getSettlementOwner(), 15e18);
     }
 
     /// @inheritdoc ISettlement
@@ -72,7 +119,7 @@ contract Settlement is WorldAsset, ISettlement, ProxyReentrancyGuard {
 
     /// @inheritdoc ISettlement
     function updateProsperityAmount() public override {
-        bytes32[] memory buildingTypeIds = registry().getBuildingTypeIds();
+        bytes32[] memory buildingTypeIds = Config.getBuildingTypeIds();
 
         for (uint256 i = 0; i < buildingTypeIds.length; i++) {
             buildings[buildingTypeIds[i]].updateState();
@@ -89,25 +136,51 @@ contract Settlement is WorldAsset, ISettlement, ProxyReentrancyGuard {
     }
 
     /// @inheritdoc ISettlement
-    function assignResourcesAndWorkersToBuilding(
-        address resourcesOwner,
-        address buildingAddress,
-        uint256 workersAmount,
-        bytes32[] memory resourceTypeIds,
-        uint256[] memory resourcesAmounts
+    function modifyBuildingsProduction(
+        BuildingProductionModificationParam[] memory params
     ) public override onlyActiveGame onlyRulerOrWorldAsset {
-        if (workersAmount > 0) {
-            _transferWorkers(buildingAddress, workersAmount);
-        }
+        IEra _era = era();
 
-        for (uint256 i = 0; i < resourceTypeIds.length; i++) {
-            IResource resource = era().resources(resourceTypeIds[i]);
+        for (uint256 i = 0; i < params.length; i++) {
+            BuildingProductionModificationParam memory param = params[i];
+            address buildingAddress = address(buildings[param.buildingTypeId]);
 
-            if (resourcesOwner == address(0)) {
-                resource.transferFrom(msg.sender, buildingAddress, resourcesAmounts[i]);
-            } else {
-                resource.spendAllowance(resourcesOwner, msg.sender, resourcesAmounts[i]);
-                resource.transferFrom(resourcesOwner, buildingAddress, resourcesAmounts[i]);
+            if (param.workersAmount > 0) {
+                if (param.isTransferringWorkersFromBuilding) {
+                    _transferWorkersFromBuilding(
+                        _era,
+                        buildingAddress,
+                        param.workersAmount
+                    );
+                } else {
+                    _transferWorkersToBuilding(
+                        _era,
+                        buildingAddress,
+                        param.workersAmount
+                    );
+                }
+            }
+
+            for (uint256 j = 0; j < param.resources.length; j++) {
+                ResourcesModificationParam memory resourcesParam = param.resources[j];
+
+                if (resourcesParam.isTransferringResourcesFromBuilding) {
+                    _transferResourcesFromBuilding(
+                        _era,
+                        buildingAddress,
+                        resourcesParam.resourceTypeId,
+                        resourcesParam.resourcesOwnerOrResourcesReceiver,
+                        resourcesParam.resourcesAmount
+                    );
+                } else {
+                    _transferResourcesToBuilding(
+                        _era,
+                        buildingAddress,
+                        resourcesParam.resourceTypeId,
+                        resourcesParam.resourcesOwnerOrResourcesReceiver,
+                        resourcesParam.resourcesAmount
+                    );
+                }
             }
         }
     }
@@ -143,7 +216,11 @@ contract Settlement is WorldAsset, ISettlement, ProxyReentrancyGuard {
         onlyActiveGame
         onlyRulerOrWorldAsset
     {
-        uint256 newWorkers = relatedRegion.workersPool().swapProsperityForExactWorkers(address(this), workersToBuy, maxProsperityToSell);
+        uint256 newWorkers = relatedRegion.workersPool().swapProsperityForExactWorkers(
+            address(this),
+            workersToBuy,
+            maxProsperityToSell
+        );
     }
 
     /// @inheritdoc ISettlement
@@ -205,11 +282,12 @@ contract Settlement is WorldAsset, ISettlement, ProxyReentrancyGuard {
     function destroyRottenSettlement() public override onlyActiveGame {
         if (!isRottenSettlement()) revert SettlementCannotBeDestroyedIfItsNotRotten();
 
-        ICrossErasMemory crossErasMemory = world().crossErasMemory();
+        IWorld _world = world();
+        ICrossErasMemory crossErasMemory = _world.crossErasMemory();
         if (address(crossErasMemory.settlementByPosition(position)) != address(this)) revert SettlementCannotBeDestroyedIfItsAlreadyRebuilt();
 
         // 1. freshRegion.settlementMarket.updateState() in order to persist current price
-        IEra currentActiveEra = world().eras(world().currentEraNumber());
+        IEra currentActiveEra = _world.eras(_world.currentEraNumber());
         IRegion sameRegionOfCurrentActiveEra = currentActiveEra.regions(relatedRegion.regionId());
         ISettlementsMarket settlementMarket = sameRegionOfCurrentActiveEra.settlementsMarket();
         settlementMarket.updateState();
@@ -231,9 +309,10 @@ contract Settlement is WorldAsset, ISettlement, ProxyReentrancyGuard {
         onlyActiveGame
         nonReentrant
     {
-        if (eraNumber() != world().currentEraNumber()) revert SettlementCannotDecreaseCorruptionIndexViaPaymentInInactiveEra();
+        IWorld _world = world();
+        if (eraNumber() != _world.currentEraNumber()) revert SettlementCannotDecreaseCorruptionIndexViaPaymentInInactiveEra();
 
-        IERC20 erc20ForSettlementPurchase = world().erc20ForSettlementPurchase();
+        IERC20 erc20ForSettlementPurchase = _world.erc20ForSettlementPurchase();
         bool isNativeCurrency = address(erc20ForSettlementPurchase) == address(0);
 
         if (isNativeCurrency && tokensAmount != 0) revert SettlementCannotDecreaseCorruptionIndexViaPaymentWrongParamProvided();
@@ -243,22 +322,98 @@ contract Settlement is WorldAsset, ISettlement, ProxyReentrancyGuard {
             : tokensAmount;
 
         if (isNativeCurrency) {
-            Address.sendValue(payable(address(world().rewardPool())), _tokensAmount);
+            Address.sendValue(payable(address(_world.rewardPool())), _tokensAmount);
         } else {
             SafeERC20.safeTransferFrom(
                 erc20ForSettlementPurchase,
                 msg.sender,
-                address(world().rewardPool()),
+                address(_world.rewardPool()),
                 _tokensAmount
             );
         }
 
-        uint256 currentRewardPoolTokenPrice = world().rewardPool().getCurrentPrice();
-        uint256 ingotsEquivalentOfTokensAmount = _tokensAmount * currentRewardPoolTokenPrice / 1e18;
-        uint256 corruptionIndexEquivalentOfIngots = ingotsEquivalentOfTokensAmount * registry().getCorruptionIndexByResource(INGOT_TYPE_ID) / 1e18;
-        uint256 corruptionIndexForTokensAmount = corruptionIndexEquivalentOfIngots * registry().getSettlementPayToDecreaseCorruptionIndexPenaltyMultiplier() / 1e18;
+//        uint256 currentRewardPoolTokenPrice = _world.rewardPool().getCurrentPrice();
+//        uint256 ingotsEquivalentOfTokensAmount = _tokensAmount * currentRewardPoolTokenPrice / 1e18;
+//        uint256 corruptionIndexEquivalentOfIngots = ingotsEquivalentOfTokensAmount * Config.getCorruptionIndexByResource(INGOT_TYPE_ID) / 1e18;
+//        uint256 corruptionIndexForTokensAmount = corruptionIndexEquivalentOfIngots * Config.settlementPayToDecreaseCorruptionIndexPenaltyMultiplier / 1e18;
+        uint256 corruptionIndexForTokensAmount = _tokensAmount / 500;
 
         relatedRegion.decreaseCorruptionIndex(address(this), corruptionIndexForTokensAmount);
+    }
+
+    /// @dev Transfers workers from building to this settlement
+    function _transferWorkersFromBuilding(
+        IEra era,
+        address buildingAddress,
+        uint256 workersAmount
+    ) internal {
+        if (!MathExtension.isIntegerWithPrecision(workersAmount, 1e18)) revert SettlementCannotSendWorkersWithFractions();
+
+        era.workers().transferFrom(buildingAddress, address(this), workersAmount);
+    }
+
+    /// @dev Transfers workers to specified building address
+    function _transferWorkersToBuilding(
+        IEra era,
+        address buildingAddress,
+        uint256 workersAmount
+    ) internal {
+        if (!MathExtension.isIntegerWithPrecision(workersAmount, 1e18)) revert SettlementCannotSendWorkersWithFractions();
+
+        IBuilding building = IBuilding(buildingAddress);
+
+        uint256 newWorkersAmount = building.getAssignedWorkers() + workersAmount;
+        uint256 availableForAdvancedProductionWorkersCapacity = building.getAvailableForAdvancedProductionWorkersCapacity();
+        if (newWorkersAmount > availableForAdvancedProductionWorkersCapacity) revert SettlementCannotSendWorkersToBuildingOverMaximumAllowedCapacity();
+
+        era.workers().transfer(buildingAddress, workersAmount);
+    }
+
+    /// @dev Transfers resources from specified building to specified address
+    function _transferResourcesFromBuilding(
+        IEra era,
+        address buildingAddress,
+        bytes32 resourceTypeId,
+        address resourcesReceiver,
+        uint256 resourcesAmount
+    ) internal {
+        IBuilding building = IBuilding(buildingAddress);
+
+        if (resourceTypeId == building.getProducingResourceTypeId()) {
+            revert CannotTransferProducingResourceFromBuilding();
+        }
+
+        IResource resource = era.resources(resourceTypeId);
+        uint256 balance = resource.balanceOf(buildingAddress);
+        if (balance == 0) {
+            return;
+        }
+
+        if (resourcesAmount > balance) {
+            resourcesAmount = balance;
+        }
+
+        if (resourcesAmount > 0) {
+            resource.transferFrom(buildingAddress, resourcesReceiver, resourcesAmount);
+        }
+    }
+
+    /// @dev Transfers resources from specified address (or msg.sender) to specified building
+    function _transferResourcesToBuilding(
+        IEra era,
+        address buildingAddress,
+        bytes32 resourceTypeId,
+        address resourcesOwnerOrResourcesReceiver,
+        uint256 resourcesAmount
+    ) internal {
+        IResource resource = era.resources(resourceTypeId);
+
+        if (resourcesOwnerOrResourcesReceiver == address(0)) {
+            resource.transferFrom(msg.sender, buildingAddress, resourcesAmount);
+        } else {
+            resource.spendAllowance(resourcesOwnerOrResourcesReceiver, msg.sender, resourcesAmount);
+            resource.transferFrom(resourcesOwnerOrResourcesReceiver, buildingAddress, resourcesAmount);
+        }
     }
 
     /// @dev Allows caller to be settlement owner
@@ -269,77 +424,5 @@ contract Settlement is WorldAsset, ISettlement, ProxyReentrancyGuard {
     /// @dev Allows caller to be settlement ruler or world asset
     function _onlyRulerOrWorldAsset() internal view {
         if (!isRuler(msg.sender) && world().worldAssets(eraNumber(), msg.sender) == bytes32(0)) revert OnlyRulerOrWorldAsset();
-    }
-
-    /// @dev Transfers workers to specified building address
-    function _transferWorkers(
-        address buildingAddress,
-        uint256 workersAmount
-    ) internal {
-        if (!MathExtension.isIntegerWithPrecision(workersAmount, 1e18)) revert SettlementCannotSendWorkersWithFractions();
-
-        uint256 newWorkersAmount = IBuilding(buildingAddress).getAssignedWorkers() + workersAmount;
-        uint256 availableForAdvancedProductionWorkersCapacity = IBuilding(buildingAddress).getAvailableForAdvancedProductionWorkersCapacity();
-        if (newWorkersAmount > availableForAdvancedProductionWorkersCapacity) revert SettlementCannotSendWorkersToBuildingOverMaximumAllowedCapacity();
-
-        era().workers().transfer(buildingAddress, workersAmount);
-    }
-
-    /// @dev Mints initial settlement workers
-    function _mintInitialWorkers() internal {
-        era().workers().mint(address(this), 7e18);
-    }
-
-    /// @dev Creates settlements buildings
-    function _createBuildings() internal {
-        bytes32[] memory buildingTypeIds = registry().getBuildingTypeIds();
-        for (uint256 i = 0; i < buildingTypeIds.length; i++) {
-            _createBuilding(buildingTypeIds[i]);
-        }
-    }
-
-    /// @dev Creates settlements army
-    function _createArmy() internal {
-        address newArmyAddress = worldAssetFactory().create(
-            address(world()),
-            eraNumber(),
-            ARMY_GROUP_TYPE_ID,
-            BASIC_TYPE_ID,
-            abi.encode(address(this))
-        );
-
-        army = IArmy(newArmyAddress);
-
-        emit ArmyCreated(newArmyAddress, position);
-    }
-
-    /// @dev Creates building
-    function _createBuilding(bytes32 buildingTypeId) internal {
-        address newBuildingAddress = worldAssetFactory().create(
-            address(world()),
-            eraNumber(),
-            BUILDING_GROUP_TYPE_ID,
-            buildingTypeId,
-            abi.encode(address(this), buildingTypeId)
-        );
-
-        buildings[buildingTypeId] = IBuilding(newBuildingAddress);
-
-        emit BuildingCreated(newBuildingAddress, buildingTypeId);
-    }
-
-    /// @dev Creates new siege
-    function _createSiege() internal {
-        address newSiegeAddress = worldAssetFactory().create(
-            address(world()),
-            eraNumber(),
-            SIEGE_GROUP_TYPE_ID,
-            BASIC_TYPE_ID,
-            abi.encode(address(this))
-        );
-
-        siege = ISiege(newSiegeAddress);
-
-        emit SiegeCreated(newSiegeAddress);
     }
 }

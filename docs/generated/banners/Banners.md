@@ -105,6 +105,19 @@ _Updated when #mint is called_
 
 
 
+### overriddenMaxAmountOfBannersByAddress
+
+```solidity
+mapping(address => uint256) overriddenMaxAmountOfBannersByAddress
+```
+
+Mapping containing max amount of banners per address
+
+_Updated when #setMaxAmountOfBannersByAddress (0 by default and it means 'maxAmountOfMintedBannersPerAddress' value is used in validation)_
+
+
+
+
 ### BannerCreated
 
 ```solidity
@@ -327,6 +340,19 @@ function updateURI(string _uri) public
 Updates base token uri
 
 _Only owner can modify base token uri_
+
+
+
+
+### setMaxAmountOfBannersByAddress
+
+```solidity
+function setMaxAmountOfBannersByAddress(address _address, uint256 _maxAmountOfBannersByAddress) public
+```
+
+Sets max amount of banners by address
+
+_Only owner can specify different banners limit_
 
 
 

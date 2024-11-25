@@ -1,8 +1,8 @@
-import {DeployOptions, DeployResult, ProxyOptions} from "hardhat-deploy/dist/types";
+import {Deployment, DeployOptions, DeployResult, ProxyOptions} from "hardhat-deploy/dist/types";
 import {sleep} from "./utils/const";
 import {Signer} from "ethers";
 import {SimpleProxy__factory} from "../typechain-types";
-import {ethers} from "hardhat";
+import {deployments, ethers} from "hardhat";
 import BigNumber from "bignumber.js";
 
 export interface SimpleContractDeployConfig {
@@ -12,23 +12,23 @@ export interface SimpleContractDeployConfig {
     libraries?: { [key: string]: string },
 }
 
-let deploy: ((name: string, options: DeployOptions) => Promise<DeployResult>) | null = null;
+let deploy: ((name: string, options: DeployOptions) => Promise<Deployment>) | null = null;
 let deployer: string | null = null;
 
 export function setupDeployer(
-    _deploy: (name: string, options: DeployOptions) => Promise<DeployResult>,
+    _deploy: (name: string, options: DeployOptions) => Promise<Deployment>,
     _deployer: string,
 ) {
     deploy = _deploy;
     deployer = _deployer;
 }
 
-export const deployBatch = async (...contractDeployConfigs: (string | SimpleContractDeployConfig)[]): Promise<DeployResult[]> => {
+export const deployBatch = async (...contractDeployConfigs: (string | SimpleContractDeployConfig)[]): Promise<Deployment[]> => {
     if (!deploy || !deployer) {
         throw new Error("deployBatch not configured")
     }
 
-    const result: DeployResult[] = [];
+    const result: Deployment[] = [];
 
     for (let i = 0; i < contractDeployConfigs.length; i++) {
         const config = contractDeployConfigs[i];
@@ -75,7 +75,7 @@ export const deployBatch = async (...contractDeployConfigs: (string | SimpleCont
     return result;
 };
 
-async function deployWithRetries(retriesCount: number, name: string, deployOptions: DeployOptions): Promise<DeployResult> {
+async function deployWithRetries(retriesCount: number, name: string, deployOptions: DeployOptions): Promise<Deployment> {
     while (retriesCount > 0) {
         try {
             return await deploy!(name, deployOptions);
@@ -89,8 +89,8 @@ async function deployWithRetries(retriesCount: number, name: string, deployOptio
 }
 
 export const ensureRightImplementation = async (
-    proxyDeployment: DeployResult,
-    implementationDeployment: DeployResult,
+    proxyDeployment: Deployment,
+    implementationDeployment: Deployment,
     signer: Signer,
 ): Promise<boolean> => {
     const proxyInstance = SimpleProxy__factory.connect(proxyDeployment.address, signer);

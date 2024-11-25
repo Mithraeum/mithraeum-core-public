@@ -30,6 +30,12 @@ describe("Fort Assign Test", async function () {
     await runWithSavingGasUsage(this.test!.title, async () => await ResourceCoreTest.notAcceptableResourceAssignTest(BuildingType.FORT));
   });
 
+  it(`testUser1 can assign resources from another user into Fort. /userResources, userBuildingResources, regionCorruptionIndex/`, async function () {
+    this.timeout(1_000_000);
+    await runWithSavingGasUsage(this.test!.title, async () => await ResourceCoreTest.resourceAssignFromAnotherUserTest(BuildingType.FORT));
+  });
+
+
   it(`testUser1 can not assign more resources than available into Fort`, async function () {
     this.timeout(1_000_000);
     await runWithSavingGasUsage(this.test!.title, async () => await ResourceCoreTest.impossibleResourceAssignMoreThanAvailableTest(BuildingType.FORT));

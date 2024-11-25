@@ -49,13 +49,13 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
     ) public override onlyMightyCreator {
         updateState();
 
-        if (block.timestamp >= world().gameBeginTime()) revert SettlementCannotBeBoughtForFreeAfterGameBegan();
+        IWorld _world = world();
+        if (block.timestamp >= _world.gameBeginTime()) revert SettlementCannotBeBoughtForFreeAfterGameBegan();
 
-        address owner = world().bannerContract().ownerOf(bannerId);
+        address owner = _world.bannerContract().ownerOf(bannerId);
         if (msg.sender != owner) revert SettlementCannotBeBoughtForNotOwnerBannerNft();
 
-        IGeography geography = world().geography();
-        (uint64 regionId, bool isPositionExist) = geography.getRegionIdByPosition(position);
+        (uint64 regionId, bool isPositionExist) = _world.geography().getRegionIdByPosition(position);
 
         if (!isPositionExist) revert SettlementCannotBeBoughtOnNonExistentPosition();
         if (regionId != relatedRegion.regionId()) revert SettlementCannotBeBoughtOnPositionWhichIsNotRelatedToThisSettlementMarket();
@@ -69,8 +69,8 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
         );
 
         // Bump settlement price after purchase
-        uint256 bumpedSettlementPrice = newSettlementCost * registry().getNewSettlementPriceIncreaseMultiplier() / 1e18;
-        world().crossErasMemory().changeRegionSettlementPrice(
+        uint256 bumpedSettlementPrice = newSettlementCost * Config.newSettlementPriceIncreaseMultiplier / 1e18;
+        _world.crossErasMemory().changeRegionSettlementPrice(
             relatedRegion.regionId(),
             bumpedSettlementPrice,
             block.timestamp
@@ -87,10 +87,11 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
     ) public payable override onlyActiveGame nonReentrant {
         updateState();
 
-        address owner = world().bannerContract().ownerOf(bannerId);
+        IWorld _world = world();
+        address owner = _world.bannerContract().ownerOf(bannerId);
         if (msg.sender != owner) revert SettlementCannotBeBoughtForNotOwnerBannerNft();
 
-        IGeography geography = world().geography();
+        IGeography geography = _world.geography();
         (uint64 regionId, bool isPositionExist) = geography.getRegionIdByPosition(position);
 
         if (!isPositionExist) revert SettlementCannotBeBoughtOnNonExistentPosition();
@@ -99,10 +100,10 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
         uint256 newSettlementCost = getNewSettlementCost(block.timestamp);
         if (maxTokensToUse < newSettlementCost) revert SettlementCannotBeBoughtDueToCostIsHigherThanMaxTokensToUseSpecified();
 
-        uint256 amountOfTokensGoingToRegionOwner = newSettlementCost * world().registry().getRegionOwnerSettlementPurchasePercent(geography.getRegionTier(regionId)) / 1e18;
+        uint256 amountOfTokensGoingToRegionOwner = newSettlementCost * Config.getRegionOwnerSettlementPurchasePercent(geography.getRegionTier(regionId)) / 1e18;
         uint256 amountOfTokensGoingToRewardPool = newSettlementCost - amountOfTokensGoingToRegionOwner;
 
-        IERC20 erc20ForSettlementPurchase = world().erc20ForSettlementPurchase();
+        IERC20 erc20ForSettlementPurchase = _world.erc20ForSettlementPurchase();
         if (address(erc20ForSettlementPurchase) == address(0)) {
             if (msg.value < newSettlementCost) revert SettlementCannotBeBoughtDueInsufficientValueSent();
             uint256 valueToSendBack = msg.value > newSettlementCost ? msg.value - newSettlementCost : 0;
@@ -111,22 +112,31 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
                 Address.sendValue(payable(msg.sender), valueToSendBack);
             }
 
-            Address.sendValue(payable(address(world().rewardPool())), amountOfTokensGoingToRewardPool);
-            Address.sendValue(payable(address(geography.getRegionOwner(regionId))), amountOfTokensGoingToRegionOwner);
-        } else {
-            SafeERC20.safeTransferFrom(
-                erc20ForSettlementPurchase,
-                msg.sender,
-                address(world().rewardPool()),
-                amountOfTokensGoingToRewardPool
-            );
+            if (amountOfTokensGoingToRewardPool > 0) {
+                Address.sendValue(payable(address(_world.rewardPool())), amountOfTokensGoingToRewardPool);
+            }
 
-            SafeERC20.safeTransferFrom(
-                erc20ForSettlementPurchase,
-                msg.sender,
-                address(geography.getRegionOwner(regionId)),
-                amountOfTokensGoingToRegionOwner
-            );
+            if (amountOfTokensGoingToRegionOwner > 0) {
+                Address.sendValue(payable(address(geography.getRegionOwner(regionId))), amountOfTokensGoingToRegionOwner);
+            }
+        } else {
+            if (amountOfTokensGoingToRewardPool > 0) {
+                SafeERC20.safeTransferFrom(
+                    erc20ForSettlementPurchase,
+                    msg.sender,
+                    address(_world.rewardPool()),
+                    amountOfTokensGoingToRewardPool
+                );
+            }
+
+            if (amountOfTokensGoingToRegionOwner > 0) {
+                SafeERC20.safeTransferFrom(
+                    erc20ForSettlementPurchase,
+                    msg.sender,
+                    address(geography.getRegionOwner(regionId)),
+                    amountOfTokensGoingToRegionOwner
+                );
+            }
         }
 
         address settlementAddress = era().createUserSettlement(
@@ -136,8 +146,8 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
         );
 
         // Bump settlement price after purchase
-        uint256 bumpedSettlementPrice = newSettlementCost * registry().getNewSettlementPriceIncreaseMultiplier() / 1e18;
-        world().crossErasMemory().changeRegionSettlementPrice(
+        uint256 bumpedSettlementPrice = newSettlementCost * Config.newSettlementPriceIncreaseMultiplier / 1e18;
+        _world.crossErasMemory().changeRegionSettlementPrice(
             relatedRegion.regionId(),
             bumpedSettlementPrice,
             block.timestamp
@@ -156,17 +166,19 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
 
         uint64 regionId = relatedRegion.regionId();
 
-        ICrossErasMemory crossErasMemory = world().crossErasMemory();
+        IWorld _world = world();
+        ICrossErasMemory crossErasMemory = _world.crossErasMemory();
         uint256 userSettlementsCount = crossErasMemory.regionUserSettlementsCount(regionId);
         uint256 priceUpdateTime = crossErasMemory.regionSettlementPriceUpdateTime(regionId);
 
-        uint256 priceDecayBeginTime = _getPriceDecayBeginTime(world().gameBeginTime(), marketCreationTime, priceUpdateTime);
-        uint256 priceDecayEndTime = _getPriceDecayEndTime(timestamp, world().gameEndTime());
+        uint256 priceDecayBeginTime = _getPriceDecayBeginTime(_world.gameBeginTime(), marketCreationTime, priceUpdateTime);
+        uint256 priceDecayEndTime = _getPriceDecayEndTime(timestamp, _world.gameEndTime());
 
+        IGeography _geography = _world.geography();
         uint256 newSettlementStartingPrice = 0;
         if (priceUpdateTime == 0) {
-            uint256 regionTier = world().geography().getRegionTier(regionId);
-            newSettlementStartingPrice = registry().getNewSettlementStartingPrice() * (registry().getSettlementPriceMultiplierPerIncreasedRegionTier() ** (regionTier - 1));
+            uint256 regionTier = _geography.getRegionTier(regionId);
+            newSettlementStartingPrice = Config.newSettlementStartingPrice * (Config.settlementPriceMultiplierPerIncreasedRegionTier ** (regionTier - 1));
         } else {
             newSettlementStartingPrice = crossErasMemory.regionSettlementPrice(regionId);
         }
@@ -175,6 +187,21 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
             return newSettlementStartingPrice;
         }
 
+        int128 settlementPriceDropMultiplier64 = _getSettlementPriceDropMultiplier64(
+            priceDecayBeginTime,
+            priceDecayEndTime,
+            userSettlementsCount
+        );
+
+        return uint256(ABDKMath64x64.muli(settlementPriceDropMultiplier64, int256(newSettlementStartingPrice)));
+    }
+
+    /// @dev Calculates settlement price drop multiplier
+    function _getSettlementPriceDropMultiplier64(
+        uint256 priceDecayBeginTime,
+        uint256 priceDecayEndTime,
+        uint256 userSettlementsCount
+    ) internal pure returns (int128) {
         uint256 secondsPassed = priceDecayEndTime - priceDecayBeginTime;
         uint256 hoursPassed = secondsPassed / 3600;
 
@@ -192,12 +219,10 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
         int128 nextHourPriceDrop64 = ABDKMath64x64.pow(hourPriceDrop64, hoursPassed + 1);
         int128 currentHourPercentPassed = ABDKMath64x64.divu(secondsPassed % 3600, 3600);
 
-        int128 priceDrop64 = ABDKMath64x64.sub(
+        return ABDKMath64x64.sub(
             closestHourPriceDrop64,
             ABDKMath64x64.mul(ABDKMath64x64.sub(closestHourPriceDrop64, nextHourPriceDrop64), currentHourPercentPassed)
         );
-
-        return uint256(ABDKMath64x64.muli(priceDrop64, int256(newSettlementStartingPrice)));
     }
 
     /// @dev Calculates price decay begin time based on provided params
@@ -227,8 +252,10 @@ contract SettlementsMarket is WorldAsset, ISettlementsMarket, ProxyReentrancyGua
 
     /// @dev Calculates current game time, taking into an account game end time
     function _getCurrentTime() internal view returns (uint256) {
-        uint256 gameBeginTime = world().gameBeginTime();
-        uint256 gameEndTime = world().gameEndTime();
+        IWorld _world = world();
+
+        uint256 gameBeginTime = _world.gameBeginTime();
+        uint256 gameEndTime = _world.gameEndTime();
         uint256 timestamp = block.timestamp;
 
         if (timestamp < gameBeginTime) {

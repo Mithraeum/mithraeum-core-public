@@ -94,12 +94,20 @@ export class WorkersCoreTest {
         const expectedAvailableWorkers = unassignedWorkersBefore.minus(workersCapOnCurrentLevel);
         expect(assignedWorkersBefore).eql(new BigNumber(0), 'Assigned worker quantity is not correct');
 
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-          ethers.ZeroAddress,
-          await buildingInstance.getAddress(),
-          transferableFromLowBN(workersCapOnCurrentLevel),
-          [],
-          []
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    isTransferringWorkersFromBuilding: false,
+                    workersAmount: transferableFromLowBN(workersCapOnCurrentLevel),
+                    resources: []
+                }
+            ]
+          // ethers.ZeroAddress,
+          // await buildingInstance.getAddress(),
+          // transferableFromLowBN(workersCapOnCurrentLevel),
+          // [],
+          // []
         ).then((tx) => tx.wait());
 
         const actualAssignedWorkers = toLowBN(await buildingInstance.getAssignedWorkers());
@@ -118,12 +126,20 @@ export class WorkersCoreTest {
         const workersCapOnCurrentLevel = toLowBN(await buildingInstance.getWorkersCapacity());
 
         await expect(
-          userSettlementInstance.assignResourcesAndWorkersToBuilding(
-            ethers.ZeroAddress,
-            await buildingInstance.getAddress(),
-            transferableFromLowBN(workersCapOnCurrentLevel.plus(1)),
-            [],
-            []
+          userSettlementInstance.modifyBuildingsProduction(
+              [
+                  {
+                      buildingTypeId: await buildingInstance.buildingTypeId(),
+                      isTransferringWorkersFromBuilding: false,
+                      workersAmount: transferableFromLowBN(workersCapOnCurrentLevel.plus(1)),
+                      resources: []
+                  }
+              ]
+            // ethers.ZeroAddress,
+            // await buildingInstance.getAddress(),
+            // transferableFromLowBN(workersCapOnCurrentLevel.plus(1)),
+            // [],
+            // []
           ).then((tx) => tx.wait())
         ).to.be.revertedWith("SettlementCannotSendWorkersToBuildingOverMaximumAllowedCapacity()");
     }
@@ -136,24 +152,42 @@ export class WorkersCoreTest {
 
         const workersCapOnCurrentLevel = toLowBN(await buildingInstance.getWorkersCapacity());
 
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-          ethers.ZeroAddress,
-          await buildingInstance.getAddress(),
-          transferableFromLowBN(workersCapOnCurrentLevel),
-          [],
-          []
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    isTransferringWorkersFromBuilding: false,
+                    workersAmount: transferableFromLowBN(workersCapOnCurrentLevel),
+                    resources: []
+                }
+            ]
+          // ethers.ZeroAddress,
+          // await buildingInstance.getAddress(),
+          // transferableFromLowBN(workersCapOnCurrentLevel),
+          // [],
+          // []
         ).then((tx) => tx.wait());
 
         const assignedWorkersBefore = toLowBN(await buildingInstance.getAssignedWorkers());
         const unassignedWorkersBefore = await WorkerHelper.getUnassignedWorkerQuantity(userSettlementInstance);
 
-        await buildingInstance.removeResourcesAndWorkers(
-          await userSettlementInstance.getAddress(),
-          transferableFromLowBN(workersCapOnCurrentLevel),
-          testUser1,
-          [],
-          []
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    isTransferringWorkersFromBuilding: true,
+                    workersAmount: transferableFromLowBN(workersCapOnCurrentLevel),
+                    resources: []
+                }
+            ]
         ).then((tx) => tx.wait());
+        // await buildingInstance.removeResourcesAndWorkers(
+        //   await userSettlementInstance.getAddress(),
+        //   transferableFromLowBN(workersCapOnCurrentLevel),
+        //   testUser1,
+        //   [],
+        //   []
+        // ).then((tx) => tx.wait());
 
         const expectedAssignedWorkers = assignedWorkersBefore.minus(workersCapOnCurrentLevel);
         const expectedUnassignedWorkers = unassignedWorkersBefore.plus(workersCapOnCurrentLevel);
@@ -173,25 +207,43 @@ export class WorkersCoreTest {
 
         const workersCapOnCurrentLevel = toLowBN(await buildingInstance.getWorkersCapacity());
 
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-          ethers.ZeroAddress,
-          await buildingInstance.getAddress(),
-          transferableFromLowBN(workersCapOnCurrentLevel),
-          [],
-          []
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    isTransferringWorkersFromBuilding: false,
+                    workersAmount: transferableFromLowBN(workersCapOnCurrentLevel),
+                    resources: []
+                }
+            ]
+          // ethers.ZeroAddress,
+          // await buildingInstance.getAddress(),
+          // transferableFromLowBN(workersCapOnCurrentLevel),
+          // [],
+          // []
         ).then((tx) => tx.wait());
 
         const assignedWorkersBefore = toLowBN(await buildingInstance.getAssignedWorkers());
         expect(assignedWorkersBefore).eql(workersCapOnCurrentLevel, 'Assigned worker quantity is not correct');
 
         await expect(
-          buildingInstance.removeResourcesAndWorkers(
-            await userSettlementInstance.getAddress(),
-            transferableFromLowBN(workersCapOnCurrentLevel.plus(1)),
-            testUser1,
-            [],
-            []
-          ).then((tx) => tx.wait())
+            userSettlementInstance.modifyBuildingsProduction(
+                [
+                    {
+                        buildingTypeId: await buildingInstance.buildingTypeId(),
+                        isTransferringWorkersFromBuilding: true,
+                        workersAmount: transferableFromLowBN(workersCapOnCurrentLevel.plus(1)),
+                        resources: []
+                    }
+                ]
+            ).then((tx) => tx.wait())
+          // buildingInstance.removeResourcesAndWorkers(
+          //   await userSettlementInstance.getAddress(),
+          //   transferableFromLowBN(workersCapOnCurrentLevel.plus(1)),
+          //   testUser1,
+          //   [],
+          //   []
+          // ).then((tx) => tx.wait())
         ).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'ERC20: transfer amount exceeds balance'");
     }
 

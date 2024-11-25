@@ -28,6 +28,8 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
     uint256 public override distributionId;
     /// @inheritdoc IBuilding
     mapping(address => uint256) public override producedResourceDebt;
+    /// @inheritdoc IBuilding
+    BuildingActivationInfo public override buildingActivationInfo;
 
     /// @dev Only distributions contract modifier
     /// @dev Modifier is calling internal function in order to reduce contract size
@@ -60,11 +62,11 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         relatedSettlement = ISettlement(settlementAddress);
         buildingTypeId = currentBuildingTypeId;
 
-        basicProduction.level = 1;
-        basicProduction.coefficient = 1;
+        basicProduction.level = 0;
+        basicProduction.coefficient = 0;
 
-        advancedProduction.level = 1;
-        advancedProduction.coefficient = 1;
+        advancedProduction.level = 0;
+        advancedProduction.coefficient = 0;
 
         _updateProductionInfo(
             block.timestamp,
@@ -122,6 +124,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
             productionInfo.totalDebt
         );
 
+        IEra _era = era();
         for (uint256 i = 0; i < productionResult.length; i++) {
             if (productionResult[i].balanceDelta == 0) {
                 continue;
@@ -130,11 +133,9 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
             if (productionResult[i].isProduced) {
                 _saveProducedResource(productionResult[i].resourceTypeId, productionResult[i].balanceDelta);
             } else {
-                era().resources(productionResult[i].resourceTypeId).burn(productionResult[i].balanceDelta);
+                _era.resources(productionResult[i].resourceTypeId).burn(productionResult[i].balanceDelta);
             }
         }
-
-        _updateProsperity();
     }
 
     /// @inheritdoc IBuilding
@@ -190,14 +191,15 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
     function distributeToAllShareholders() public override {
         updateState();
 
+        IWorld _world = world();
         uint256 readyToBeDistributed = productionInfo.readyToBeDistributed;
         bytes32 producingResourceTypeId = getProducingResourceTypeId();
         IResource producingResource = era().resources(producingResourceTypeId);
-        IDistributions distributions = world().distributions();
+        IDistributions distributions = _world.distributions();
         uint256 itemsPerNft = distributions.getItemsPerNft();
 
         uint256 newReadyToBeDistributed = readyToBeDistributed;
-        address[] memory topHolders = world().distributions().getDistributionReceivers(distributionId);
+        address[] memory topHolders = distributions.getDistributionReceivers(distributionId);
         for (uint256 i = 0; i < topHolders.length; i++) {
             address holder = topHolders[i];
 
@@ -238,6 +240,8 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         returns (uint256)
     {
         ProductionResultItem[] memory result = getProductionResult(timestamp);
+        IEra _era = era();
+        bytes32 producingResourceTypeId = getProducingResourceTypeId();
 
         for (uint256 i = 0; i < result.length; i++) {
             if (result[i].resourceTypeId == resourceTypeId) {
@@ -247,8 +251,8 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
                         return 0;
                     }
 
-                    uint256 amountOfResourcePotentiallyGoingToTreasury = (result[i].balanceDelta * registry().getToTreasuryPercent()) / 1e18;
-                    uint256 currentTreasuryResourcesAmount = era().resources(getProducingResourceTypeId()).stateBalanceOf(address(this));
+                    uint256 amountOfResourcePotentiallyGoingToTreasury = (result[i].balanceDelta * Config.toTreasuryPercent) / 1e18;
+                    uint256 currentTreasuryResourcesAmount = _era.resources(producingResourceTypeId).stateBalanceOf(address(this));
 
                     // In case if building has more resources than max in treasury -> none of production resources will go to the treasury
                     // therefore building doesnt produced anything to the building
@@ -261,7 +265,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
                         maxTreasury
                     );
                 } else {
-                    return era().resources(resourceTypeId).stateBalanceOf(address(this)) - result[i].balanceDelta;
+                    return _era.resources(resourceTypeId).stateBalanceOf(address(this)) - result[i].balanceDelta;
                 }
             }
         }
@@ -277,16 +281,18 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         override
         returns (ProductionResultItem[] memory)
     {
+        IWorld _world = world();
+
         if (timestamp == 0) {
             timestamp = block.timestamp;
         }
 
-        uint256 gameBeginTime = world().gameBeginTime();
+        uint256 gameBeginTime = _world.gameBeginTime();
         if (timestamp < gameBeginTime) {
             timestamp = gameBeginTime;
         }
 
-        uint256 gameEndTime = world().gameEndTime();
+        uint256 gameEndTime = _world.gameEndTime();
         if (gameEndTime != 0) {
             timestamp = Math.min(timestamp, gameEndTime);
         }
@@ -368,21 +374,6 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
     }
 
     /// @inheritdoc IBuilding
-    function removeResourcesAndWorkers(
-        address workersReceiverAddress,
-        uint256 workersAmount,
-        address resourcesReceiverAddress,
-        bytes32[] calldata resourceTypeIds,
-        uint256[] calldata resourcesAmounts
-    ) public override onlyActiveGame onlyRulerOrWorldAssetFromSameEra {
-        if (workersAmount > 0) {
-            _transferWorkers(workersReceiverAddress, workersAmount);
-        }
-
-        _batchTransferResources(resourceTypeIds, resourcesReceiverAddress, resourcesAmounts);
-    }
-
-    /// @inheritdoc IBuilding
     function getUpgradePrice(uint256 level)
         public
         view
@@ -394,7 +385,9 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         uint256 maxTreasuryByNextLevel = getMaxTreasuryByLevel(level + 1);
         uint256 maxTreasuryByLevelWithCoefficient = (maxTreasuryByLevel * 75) / 100;
         uint256 treasuryDifference = maxTreasuryByNextLevel - maxTreasuryByLevelWithCoefficient;
-        return treasuryDifference / 6;
+        uint256 defaultUpgradePrice = treasuryDifference / 6;
+
+        return defaultUpgradePrice * Config.getBuildingUpgradeCostMultiplier(buildingTypeId) / 1e18;
     }
 
     /// @inheritdoc IBuilding
@@ -408,9 +401,63 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
     }
 
     /// @inheritdoc IBuilding
+    function activateBuilding(address resourcesOwner) public virtual override onlyActiveGame onlyRulerOrWorldAssetFromSameEra {
+        updateState();
+
+        if (buildingActivationInfo.activationTime != 0) revert BuildingCannotBeActivatedMoreThanOnce();
+
+        (bytes32[] memory resourceTypeIds, uint256[] memory resourcesAmounts) = Config.getBuildingActivationPrice();
+        for (uint256 i = 0; i < resourceTypeIds.length; i++) {
+            if (resourcesOwner == address(0)) {
+                era().resources(resourceTypeIds[i]).burnFrom(msg.sender, resourcesAmounts[i]);
+            } else {
+                IResource upgradeResource = era().resources(resourceTypeIds[i]);
+                upgradeResource.spendAllowance(resourcesOwner, msg.sender, resourcesAmounts[i]);
+                upgradeResource.burnFrom(resourcesOwner, resourcesAmounts[i]);
+            }
+
+            relatedSettlement.relatedRegion().decreaseCorruptionIndex(
+                address(relatedSettlement),
+                Config.getCorruptionIndexByResource(resourceTypeIds[i]) * resourcesAmounts[i] / 1e18
+            );
+        }
+
+        upgradeCooldownEndTime = block.timestamp + (Config.buildingCooldownDurationAfterActivation / Config.globalMultiplier);
+
+        basicProduction.coefficient = 1;
+        basicProduction.level = 1;
+
+        advancedProduction.coefficient = 1;
+        advancedProduction.level = 1;
+
+        buildingActivationInfo.activationTime = uint64(block.timestamp);
+
+        _updateProsperity();
+
+        emit BasicProductionUpgraded(1, 1);
+        emit AdvancedProductionUpgraded(1, 1);
+    }
+
+    /// @inheritdoc IBuilding
+    function claimWorkersForBuildingActivation() public virtual override onlyActiveGame onlyRulerOrWorldAssetFromSameEra {
+        updateState();
+
+        uint64 buildingActivationTime = buildingActivationInfo.activationTime;
+        if (buildingActivationTime == 0 || block.timestamp < buildingActivationTime + (Config.buildingCooldownDurationAfterActivation / Config.globalMultiplier)) revert BuildingCannotGiveWorkersBeforeActivationCooldownFinished();
+        if (buildingActivationInfo.isWorkersClaimed) revert BuildingCannotGiveWorkersMoreThanOnce();
+
+        era().workers().mint(address(relatedSettlement), Config.workersAmountForBuildingActivation);
+
+        buildingActivationInfo.isWorkersClaimed = true;
+
+        emit WorkersClaimed();
+    }
+
+    /// @inheritdoc IBuilding
     function upgradeBasicProduction(address resourcesOwner) public virtual override onlyActiveGame onlyRulerOrWorldAssetFromSameEra {
         updateState();
 
+        if (buildingActivationInfo.activationTime == 0) revert BuildingCannotBeUpgradedWhileItsNotActivated();
         if (block.timestamp < upgradeCooldownEndTime) revert BuildingCannotBeUpgradedWhileUpgradeIsOnCooldown();
 
         uint256 buildingLevel = getBuildingLevel();
@@ -427,7 +474,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
 
         relatedSettlement.relatedRegion().decreaseCorruptionIndex(
             address(relatedSettlement),
-            registry().getCorruptionIndexByResource(upgradeResourceTypeId) * upgradePrice / 1e18
+            Config.getCorruptionIndexByResource(upgradeResourceTypeId) * upgradePrice / 1e18
         );
 
         upgradeCooldownEndTime = block.timestamp + getBasicUpgradeCooldownDuration(buildingLevel);
@@ -447,6 +494,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
     function upgradeAdvancedProduction(address resourcesOwner) public virtual override onlyActiveGame onlyRulerOrWorldAssetFromSameEra {
         updateState();
 
+        if (buildingActivationInfo.activationTime == 0) revert BuildingCannotBeUpgradedWhileItsNotActivated();
         if (block.timestamp < upgradeCooldownEndTime) revert BuildingCannotBeUpgradedWhileUpgradeIsOnCooldown();
 
         uint256 buildingLevel = getBuildingLevel();
@@ -463,7 +511,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
 
         relatedSettlement.relatedRegion().decreaseCorruptionIndex(
             address(relatedSettlement),
-            registry().getCorruptionIndexByResource(upgradeResourceTypeId) * upgradePrice / 1e18
+            Config.getCorruptionIndexByResource(upgradeResourceTypeId) * upgradePrice / 1e18
         );
 
         upgradeCooldownEndTime = block.timestamp + getAdvancedUpgradeCooldownDuration(buildingLevel);
@@ -481,7 +529,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
 
     /// @inheritdoc IBuilding
     function getBasicUpgradeCooldownDuration(uint256 level) public view virtual override returns (uint256) {
-        return level * 6 hours / registry().getGlobalMultiplier();
+        return level * 6 hours / Config.globalMultiplier;
     }
 
     /// @inheritdoc IBuilding
@@ -503,7 +551,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
 
     /// @inheritdoc IBuilding
     function getWorkersCapacity() public view override returns (uint256) {
-        return advancedProduction.coefficient * registry().getWorkerCapacityCoefficient(buildingTypeId);
+        return advancedProduction.coefficient * Config.getWorkerCapacityCoefficient(buildingTypeId);
     }
 
     /// @inheritdoc IBuilding
@@ -585,7 +633,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         uint256 assignedWorkers = getAssignedWorkers();
         if (assignedWorkers > availableForAdvancedProductionWorkersCapacity) {
             uint256 workersToKickOut = assignedWorkers - availableForAdvancedProductionWorkersCapacity;
-            _transferWorkers(address(relatedSettlement), workersToKickOut);
+            era().workers().transfer(address(relatedSettlement), workersToKickOut);
         }
         //
     }
@@ -603,12 +651,11 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
     function getAdditionalWorkersFromAdditionalWorkersCapacityMultiplier() public view override returns (uint256) {
         uint256 currentWorkersCapacityMultiplier = Math.min(
             advancedProduction.additionalWorkersCapacityMultiplier,
-            registry().getMaxAdvancedProductionTileBuff()
+            Config.maxAdvancedProductionTileBuff
         );
 
-        uint256 workersCapacity = getWorkersCapacity();
         return MathExtension.roundDownWithPrecision(
-            workersCapacity * currentWorkersCapacityMultiplier / 1e18,
+            getWorkersCapacity() * currentWorkersCapacityMultiplier / 1e18,
             1e18
         );
     }
@@ -633,9 +680,11 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
 
     /// @dev Allows caller to be ruler or world or world asset
     function _onlyRulerOrWorldAssetFromSameEra() internal view {
+        IWorld _world = world();
+
         if (!relatedSettlement.isRuler(msg.sender) &&
-            msg.sender != address(world()) &&
-            world().worldAssets(eraNumber(), msg.sender) == bytes32(0)) revert OnlyRulerOrWorldAssetFromSameEra();
+            msg.sender != address(_world) &&
+            _world.worldAssets(eraNumber(), msg.sender) == bytes32(0)) revert OnlyRulerOrWorldAssetFromSameEra();
     }
 
     /// @dev Calculates how many ticks produced by advanced production by provided begin time, end time and to be produced ticks
@@ -651,7 +700,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         uint256 advancedProductionDuration = advancedProductionEndTime - advancedProductionBeginTime;
 
         uint256 productionMultiplier = _getAdvancedProductionMultiplier();
-        uint256 ticksPassed = advancedProductionDuration / (1e18 / registry().getProductionTicksInSecond());
+        uint256 ticksPassed = advancedProductionDuration / (1e18 / Config.productionTicksInSecond);
 
         return Math.min(
             ticksPassed * productionMultiplier / 1e18,
@@ -665,7 +714,7 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         uint256 basicProductionEndTime
     ) internal view returns (uint256) {
         uint256 basicProductionDuration = basicProductionEndTime - basicProductionBeginTime;
-        uint256 ticksPassed = basicProductionDuration / (1e18 / registry().getProductionTicksInSecond());
+        uint256 ticksPassed = basicProductionDuration / (1e18 / Config.productionTicksInSecond);
 
         return _getBasicProductionMultiplier() * ticksPassed / 1e18;
     }
@@ -683,9 +732,10 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         }
 
         //N% of resources moves to treasury pool
-        uint256 amountOfResourceGoingToTreasury = (amount * registry().getToTreasuryPercent()) / 1e18;
+        uint256 amountOfResourceGoingToTreasury = (amount * Config.toTreasuryPercent) / 1e18;
+        IEra _era = era();
 
-        uint256 currentTreasury = era().resources(resourceTypeId).stateBalanceOf(address(this));
+        uint256 currentTreasury = _era.resources(resourceTypeId).stateBalanceOf(address(this));
         uint256 maxTreasury = getMaxTreasuryByLevel(getBuildingLevel());
 
         if (currentTreasury >= maxTreasury) {
@@ -695,14 +745,14 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
         }
 
         if (amountOfResourceGoingToTreasury > 0) {
-            era().resources(resourceTypeId).mint(address(this), amountOfResourceGoingToTreasury);
+            _era.resources(resourceTypeId).mint(address(this), amountOfResourceGoingToTreasury);
             amount = amount - amountOfResourceGoingToTreasury;
         }
 
         if (amount > 0) {
             relatedSettlement.relatedRegion().increaseCorruptionIndex(
                 address(relatedSettlement),
-                registry().getCorruptionIndexByResource(resourceTypeId) * amount / 1e18
+                Config.getCorruptionIndexByResource(resourceTypeId) * amount / 1e18
             );
 
             _updateProductionInfo(
@@ -717,32 +767,41 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
     /// @dev Updates building prosperity according to changed amount of resources in building
     function _updateProsperity() internal virtual {
         uint256 buildingLevel = getBuildingLevel();
-        uint256 levelCoefficient = getBuildingCoefficient(buildingLevel);
 
-        uint256 currentProductionResourceBalance = era().resources(getProducingResourceTypeId()).stateBalanceOf(
+        bytes32 producingResourceTypeId = getProducingResourceTypeId();
+        IEra _era = era();
+
+        uint256 currentProductionResourceBalance = _era.resources(producingResourceTypeId).stateBalanceOf(
             address(this)
         );
 
         uint256 prosperityBefore = givenProsperityAmount;
 
-        uint256 resourceWeight = registry().getResourceWeight(getProducingResourceTypeId());
-        uint256 potentialNewProsperity = (currentProductionResourceBalance * resourceWeight / levelCoefficient) / 1e18;
-        uint256 maxProsperity = (getMaxTreasuryByLevel(buildingLevel) * resourceWeight / levelCoefficient) / 1e18;
+        uint256 prosperityAfter = 0;
+        if (buildingLevel > 0) {
+            uint256 levelCoefficient = getBuildingCoefficient(buildingLevel);
+            uint256 resourceWeight = Config.getResourceWeight(producingResourceTypeId);
+            uint256 sqrtLevelCoefficient = MathExtension.sqrt(levelCoefficient * 1e8); // After sqrt level coefficient has 1e4 multiplier, it must be deducted from overall (thats why 1e14)
+            uint256 potentialNewProsperity = (currentProductionResourceBalance * resourceWeight / sqrtLevelCoefficient) / 1e14;
+            uint256 maxProsperity = (getMaxTreasuryByLevel(buildingLevel) * resourceWeight / sqrtLevelCoefficient) / 1e14;
+            prosperityAfter = Math.min(maxProsperity, potentialNewProsperity);
+        }
 
-        uint256 prosperityAfter = Math.min(maxProsperity, potentialNewProsperity);
         givenProsperityAmount = prosperityAfter;
 
         if (prosperityBefore > prosperityAfter) {
-            era().prosperity().burnFrom(address(relatedSettlement), prosperityBefore - prosperityAfter);
+            _era.prosperity().burnFrom(address(relatedSettlement), prosperityBefore - prosperityAfter);
         } else if (prosperityBefore < prosperityAfter) {
-            era().prosperity().mint(address(relatedSettlement), prosperityAfter - prosperityBefore);
+            _era.prosperity().mint(address(relatedSettlement), prosperityAfter - prosperityBefore);
         }
     }
 
     /// @dev Calculates current game time, taking into an account game end time
     function _getCurrentTime() internal view returns (uint256) {
-        uint256 gameBeginTime = world().gameBeginTime();
-        uint256 gameEndTime = world().gameEndTime();
+        IWorld _world = world();
+
+        uint256 gameBeginTime = _world.gameBeginTime();
+        uint256 gameEndTime = _world.gameEndTime();
         uint256 timestamp = block.timestamp;
 
         if (timestamp < gameBeginTime) {
@@ -762,29 +821,30 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
 
         return (
             basicProduction.coefficient
-            * registry().getBasicProductionBuildingCoefficient(_buildingTypeId)
-            * registry().getWorkerCapacityCoefficient(_buildingTypeId)
-            * registry().getGlobalMultiplier()
+            * Config.getBasicProductionBuildingCoefficient(_buildingTypeId)
+            * Config.getWorkerCapacityCoefficient(_buildingTypeId)
+            * Config.globalMultiplier
         ) / 1e18;
     }
 
     /// @dev Calculates advanced production multiplier
     function _getAdvancedProductionMultiplier() internal view returns (uint256) {
         uint256 multiplierFromWorkers = getAssignedWorkers() + getAdditionalWorkersFromAdditionalWorkersCapacityMultiplier();
-        return multiplierFromWorkers * registry().getGlobalMultiplier();
+        return multiplierFromWorkers * Config.globalMultiplier;
     }
 
     /// @dev Calculates amount of production ticks for current building according to its resources balances
     function _calculateProductionTicksAmount() internal view returns (uint256) {
         ProductionConfigItem[] memory config = getConfig();
         uint256 productionTicksAmountUntilStop = type(uint256).max;
+        IEra _era = era();
 
         for (uint256 i = 0; i < config.length; i++) {
             if (config[i].isProducing) {
                 continue;
             }
 
-            uint256 balance = era().resources(config[i].resourceTypeId).stateBalanceOf(address(this));
+            uint256 balance = _era.resources(config[i].resourceTypeId).stateBalanceOf(address(this));
             if (balance == 0) {
                 return 0;
             }
@@ -806,53 +866,10 @@ abstract contract Building is WorldAsset, ERC1155Receiver, IBuilding {
             return false;
         }
 
-        uint256 currentTreasuryThreshold = (maxTreasury * registry().getBuildingTokenTransferThresholdPercent()) / 1e18;
+        uint256 currentTreasuryThreshold = (maxTreasury * Config.buildingTokenTransferThresholdPercent) / 1e18;
         uint256 currentTreasury = era().resources(producingResourceTypeId).balanceOf(address(this));
 
         return currentTreasury <= currentTreasuryThreshold;
-    }
-
-    /// @dev Batch transfer resources from building to specified address
-    function _batchTransferResources(
-        bytes32[] calldata resourceTypeIds,
-        address to,
-        uint256[] calldata amounts
-    ) internal {
-        for (uint256 i = 0; i < resourceTypeIds.length; i++) {
-            _transferResources(resourceTypeIds[i], to, amounts[i]);
-        }
-    }
-
-    /// @dev Transfers workers from building to specified address
-    function _transferWorkers(address to, uint256 amount) internal {
-        era().workers().transfer(to, amount);
-    }
-
-    /// @dev Transfers resources from building to specified address
-    function _transferResources(
-        bytes32 resourceTypeId,
-        address to,
-        uint256 amount
-    ) internal {
-        updateState();
-
-        if (resourceTypeId == getProducingResourceTypeId()) {
-            revert CannotTransferProducingResourceFromBuilding();
-        }
-
-        IResource resource = era().resources(resourceTypeId);
-        uint256 balance = resource.balanceOf(address(this));
-        if (balance == 0) {
-            return;
-        }
-
-        if (amount > balance) {
-            amount = balance;
-        }
-
-        if (amount > 0) {
-            resource.transfer(to, amount);
-        }
     }
 
     /// @dev Updates production info

@@ -49,7 +49,7 @@ contract ArmyView {
         IWorld world = IWorldAsset(armyAddress).world();
         IEra era = IWorldAsset(armyAddress).era();
 
-        bytes32[] memory unitTypeIds = world.registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         armyCombinedData.id = armyAddress;
 
@@ -76,7 +76,7 @@ contract ArmyView {
             armyCombinedData.destinationPositionSettlementId = address(0);
 
             uint64 maneuverDuration = armyCombinedData.maneuverEndTime - armyCombinedData.maneuverBeginTime;
-            uint64 maneuverStunDuration = uint64(maneuverDuration * world.registry().getManeuverDurationStunMultiplier() / 1e18);
+            uint64 maneuverStunDuration = uint64(Config.maneuverStunDuration / Config.globalMultiplier);
             uint64 maneuverStunBeginTime = armyCombinedData.maneuverEndTime;
             uint64 maneuverStunEndTime = maneuverStunBeginTime + maneuverStunDuration;
 
@@ -109,8 +109,8 @@ contract ArmyView {
 
                 (uint64 battleBeginTime, uint64 battleDuration,) = battle.battleTimeInfo();
                 uint256 battleStunMultiplier = isArmyWon
-                    ? world.registry().getBattleDurationWinningArmyStunMultiplier()
-                    : world.registry().getBattleDurationLosingArmyStunMultiplier();
+                    ? Config.battleDurationWinningArmyStunMultiplier
+                    : Config.battleDurationLosingArmyStunMultiplier;
 
                 uint64 stunDuration = uint64(battleDuration * battleStunMultiplier / 1e18);
                 uint64 battleStunBeginTime = battleBeginTime + battleDuration;

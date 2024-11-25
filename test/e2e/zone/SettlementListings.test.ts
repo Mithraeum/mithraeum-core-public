@@ -45,7 +45,7 @@ describe("Settlement Listings Test", async function () {
     await runWithSavingGasUsage(this.test!.title, async () => await SettlementListingsTest.cancelSettlementOrderTest());
   });
 
-  it(`testUser1 can modify his own settlement order. /orderStatus, orderPrice/`, async function () {
+  it(`testUser1 can modify his own settlement order. /orderPrice/`, async function () {
     this.timeout(1_000_000);
     await runWithSavingGasUsage(this.test!.title, async () => await SettlementListingsTest.modifySettlementOrderTest());
   });

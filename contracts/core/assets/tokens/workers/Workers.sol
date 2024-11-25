@@ -66,7 +66,9 @@ contract Workers is ERC20Burnable, IWorkers, WorldAsset {
 
     /// @dev Checks if provided address is world or world asset
     function _isWorldAsset(address addressToCheck) internal view returns (bool) {
-        return addressToCheck == address(world()) || world().worldAssets(eraNumber(), addressToCheck) != bytes32(0);
+        IWorld _world = world();
+
+        return addressToCheck == address(_world) || _world.worldAssets(eraNumber(), addressToCheck) != bytes32(0);
     }
 
     /// @dev Returns this buildings settlement
@@ -80,18 +82,18 @@ contract Workers is ERC20Burnable, IWorkers, WorldAsset {
         address to,
         uint256 amount
     ) internal override {
-        IWorld world = world();
-        uint256 eraNumber = eraNumber();
+        IWorld _world = world();
+        uint256 _eraNumber = eraNumber();
 
-        bool isFromWorkersPool = world.worldAssets(eraNumber, from) == WORKERS_POOL_GROUP_TYPE_ID;
-        bool isFromSettlement = world.worldAssets(eraNumber, from) == SETTLEMENT_GROUP_TYPE_ID;
-        bool isFromBuilding = world.worldAssets(eraNumber, from) == BUILDING_GROUP_TYPE_ID;
+        bool isFromWorkersPool = _world.worldAssets(_eraNumber, from) == WORKERS_POOL_GROUP_TYPE_ID;
+        bool isFromSettlement = _world.worldAssets(_eraNumber, from) == SETTLEMENT_GROUP_TYPE_ID;
+        bool isFromBuilding = _world.worldAssets(_eraNumber, from) == BUILDING_GROUP_TYPE_ID;
 
         //From can be address(0) or settlement or building
         if (from != address(0) && !isFromWorkersPool && !isFromSettlement && !isFromBuilding) revert WorkersTransferInvalidParams();
 
-        bool isToSettlement = world.worldAssets(eraNumber, to) == SETTLEMENT_GROUP_TYPE_ID;
-        bool isToBuilding = world.worldAssets(eraNumber, to) == BUILDING_GROUP_TYPE_ID;
+        bool isToSettlement = _world.worldAssets(_eraNumber, to) == SETTLEMENT_GROUP_TYPE_ID;
+        bool isToBuilding = _world.worldAssets(_eraNumber, to) == BUILDING_GROUP_TYPE_ID;
 
         //To can be address(0) or settlement or building
         if (to != address(0) && !isToSettlement && !isToBuilding) revert WorkersTransferInvalidParams();

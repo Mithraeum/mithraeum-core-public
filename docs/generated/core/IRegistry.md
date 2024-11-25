@@ -7,60 +7,6 @@ Functions related to current game configuration
 
 
 
-### GameResource
-
-
-
-
-
-
-
-
-```solidity
-struct GameResource {
-  string tokenName;
-  string tokenSymbol;
-  bytes32 resourceTypeId;
-}
-```
-
-### GameUnit
-
-
-
-
-
-
-
-
-```solidity
-struct GameUnit {
-  string tokenName;
-  string tokenSymbol;
-  bytes32 unitTypeId;
-}
-```
-
-### UnitStats
-
-
-
-
-
-
-
-
-```solidity
-struct UnitStats {
-  uint256 offenseStage1;
-  uint256 defenceStage1;
-  uint256 offenseStage2;
-  uint256 defenceStage2;
-  uint256 siegePower;
-  uint256 siegeSupport;
-}
-```
-
 ### mightyCreator
 
 ```solidity
@@ -87,32 +33,6 @@ _During new world asset creation process registry is asked for factory contract_
 
 
 
-### globalMultiplier
-
-```solidity
-function globalMultiplier() external view returns (uint256)
-```
-
-Global multiplier
-
-_Immutable, initialized on the registry creation_
-
-
-
-
-### settlementStartingPrice
-
-```solidity
-function settlementStartingPrice() external view returns (uint256)
-```
-
-Settlement starting price
-
-_Immutable, initialized on the registry creation_
-
-
-
-
 ### OnlyMightyCreator
 
 ```solidity
@@ -125,32 +45,16 @@ Thrown when attempting to call action which can only be called by mighty creator
 
 
 
-### UnknownInputParameter
-
-```solidity
-error UnknownInputParameter()
-```
-
-Thrown when attempting to call function by providing unknown parameter
-
-
-
-
-
 ### init
 
 ```solidity
-function init(uint256 globalMultiplier, uint256 settlementStartingPrice) external
+function init() external
 ```
 
 Proxy initializer
 
 _Called by address which created current instance_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| globalMultiplier | uint256 | Global multiplier |
-| settlementStartingPrice | uint256 | Settlement starting price |
 
 
 
@@ -203,6 +107,25 @@ _Used for internal calculation of max workers for each building_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | workerCapacityCoefficient | uint256 | Worker capacity coefficient |
+
+
+### getBuildingUpgradeCostMultiplier
+
+```solidity
+function getBuildingUpgradeCostMultiplier(bytes32 buildingTypeId) external pure returns (uint256 buildingUpgradeCostMultiplier)
+```
+
+Returns building upgrade cost multiplier by provided building type
+
+_Used for internal calculation of building upgrade cost_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| buildingTypeId | bytes32 | Building type id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| buildingUpgradeCostMultiplier | uint256 | Building upgrade cost multiplier |
 
 
 ### getBasicProductionBuildingCoefficient
@@ -316,7 +239,7 @@ _Used everywhere, where time is involved. Essentially determines game speed_
 ### getUnitStats
 
 ```solidity
-function getUnitStats(bytes32 unitTypeId) external pure returns (struct IRegistry.UnitStats unitStats)
+function getUnitStats(bytes32 unitTypeId) external pure returns (struct Config.UnitStats unitStats)
 ```
 
 Returns unit stats by provided unit type
@@ -329,7 +252,7 @@ _Used everywhere, where game logic based on unit stats_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| unitStats | struct IRegistry.UnitStats | Unit stats |
+| unitStats | struct Config.UnitStats | Unit stats |
 
 
 ### getToTreasuryPercent
@@ -395,20 +318,20 @@ _Used internally to determine how long stun will last after army won the battle_
 | battleDurationWinningArmyStunMultiplier | uint256 | Battle duration winning army stun multiplier |
 
 
-### getManeuverDurationStunMultiplier
+### getManeuverStunDuration
 
 ```solidity
-function getManeuverDurationStunMultiplier() external pure returns (uint256 maneuverDurationStunMultiplier)
+function getManeuverStunDuration() external pure returns (uint256 maneuverStunDuration)
 ```
 
-Returns maneuver duration stun multiplier
+Returns maneuver stun duration
 
 _Used internally to determine how long stun will last after armies' maneuver_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| maneuverDurationStunMultiplier | uint256 | Maneuver duration stun multiplier |
+| maneuverStunDuration | uint256 | Maneuver stun duration |
 
 
 ### getBuildingTypeIds
@@ -446,7 +369,7 @@ _Used internally in many places where interaction with units is necessary_
 ### getGameResources
 
 ```solidity
-function getGameResources() external view returns (struct IRegistry.GameResource[] resources)
+function getGameResources() external view returns (struct Config.GameResource[] resources)
 ```
 
 Returns game resources
@@ -461,7 +384,7 @@ _Used internally to determine upgrade costs and providing initial resources for 
 ### getGameUnits
 
 ```solidity
-function getGameUnits() external view returns (struct IRegistry.GameUnit[] units)
+function getGameUnits() external view returns (struct Config.GameUnit[] units)
 ```
 
 Returns game units
@@ -471,7 +394,7 @@ _Used internally in many places where interaction with units is necessary_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| units | struct IRegistry.GameUnit[] | Game units |
+| units | struct Config.GameUnit[] | Game units |
 
 
 ### getUnitHiringFortHpMultiplier
@@ -685,16 +608,19 @@ _Used for production calculation_
 | ticks | uint256 | Amount of production ticks |
 
 
-### getUnitPriceIncreaseForEachUnit
+### getUnitPriceIncreaseByUnitTypeId
 
 ```solidity
-function getUnitPriceIncreaseForEachUnit() external pure returns (uint256 numerator, uint256 denominator)
+function getUnitPriceIncreaseByUnitTypeId(bytes32 unitTypeId) external pure returns (uint256 numerator, uint256 denominator)
 ```
 
 Returns unit price increase in unit pool for each extra unit to buy (value returned as numerator and denominator)
 
 _Used for determination of unit price_
 
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeId | bytes32 | Unit type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -959,13 +885,13 @@ _Used in validation in region tier increase_
 | maxRegionTier | uint256 | Max region tier |
 
 
-### getInitialCultistsAmountPerRegionTier
+### getInitialCultistsAmountByRegionTier
 
 ```solidity
-function getInitialCultistsAmountPerRegionTier() external pure returns (uint256 initialCultistsAmount)
+function getInitialCultistsAmountByRegionTier(uint256 regionTier) external pure returns (uint256 initialCultistsAmount)
 ```
 
-Returns initial cultists amount per region tier
+Returns initial cultists amount by region tier
 
 _Used in region activation_
 
@@ -975,20 +901,20 @@ _Used in region activation_
 | initialCultistsAmount | uint256 | Initial cultists amount |
 
 
-### getInitialCorruptionIndexAmountPerRegionTier
+### getInitialCorruptionIndexPerCultistMultiplier
 
 ```solidity
-function getInitialCorruptionIndexAmountPerRegionTier() external pure returns (uint256 initialCorruptionIndexAmount)
+function getInitialCorruptionIndexPerCultistMultiplier() external pure returns (uint256 initialCorruptionIndexPerCultistMultiplier)
 ```
 
-Returns initial corruptionIndex amount per region tier
+Returns initial corruptionIndex amount per initial cultist multiplier
 
 _Used in region activation and region tier increase handler_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| initialCorruptionIndexAmount | uint256 | Initial corruptionIndex amount |
+| initialCorruptionIndexPerCultistMultiplier | uint256 | Initial corruptionIndex per cultist multiplier |
 
 
 ### getSettlementPriceMultiplierPerIncreasedRegionTier
@@ -1007,20 +933,36 @@ _Used in calculation of new settlement price_
 | settlementPriceMultiplierPerIncreasedRegionTier | uint256 | Settlement price multiplier per increased region tier |
 
 
-### getStunDurationMultiplierOfCancelledSecretManeuver
+### getStunDurationOfCancelledSecretManeuver
 
 ```solidity
-function getStunDurationMultiplierOfCancelledSecretManeuver() external pure returns (uint256 stunMultiplierOfCancelledSecretManeuver)
+function getStunDurationOfCancelledSecretManeuver() external pure returns (uint256 stunDurationOfCancelledSecretManeuver)
 ```
 
-Returns stun duration multiplier of cancelled secret maneuver
+Returns stun duration of cancelled secret maneuver
 
 _Used in calculation of stun duration during cancelling secret maneuver_
 
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| stunMultiplierOfCancelledSecretManeuver | uint256 | Stun multiplier of cancelled secret maneuver |
+| stunDurationOfCancelledSecretManeuver | uint256 | Stun duration of cancelled secret maneuver |
+
+
+### getDemilitarizationCooldown
+
+```solidity
+function getDemilitarizationCooldown() external pure returns (uint256 demilitarizationCooldown)
+```
+
+Returns demilitarization cooldown
+
+_Used in determining whether army can be demilitarized at this point_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| demilitarizationCooldown | uint256 | Demilitarization cooldown in seconds |
 
 
 ### getMaxAllowedRobberyMultiplierIncreaseValue
@@ -1179,6 +1121,22 @@ _Used to determine if new bid on captured tile is possible_
 | initialCaptureProsperityPerTileValue | uint256 | Initial capture prosperity per tile value |
 
 
+### getCaptureTileInitialDuration
+
+```solidity
+function getCaptureTileInitialDuration() external pure returns (uint256 captureTileInitialDuration)
+```
+
+Returns capture tile initial duration
+
+_Used to determine how long tile capturing will last_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| captureTileInitialDuration | uint256 | Capture tile initial duration |
+
+
 ### getMinimumUserSettlementsCountInNeighboringRegionRequiredToIncludeRegion
 
 ```solidity
@@ -1241,5 +1199,54 @@ _Used to determine new settlement purchase price (in 1e18 precision)_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | newSettlementPriceIncreaseMultiplier | uint256 | New settlement price increase multiplier |
+
+
+### getBuildingActivationPrice
+
+```solidity
+function getBuildingActivationPrice() external view returns (bytes32[] resourcesTypesIds, uint256[] resourcesAmounts)
+```
+
+Returns building activation price
+
+_Determines which and how much resources must be taken from user in order to activate building_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| resourcesTypesIds | bytes32[] | Resources types ids |
+| resourcesAmounts | uint256[] | Resources amounts |
+
+
+### getBuildingCooldownDurationAfterActivation
+
+```solidity
+function getBuildingCooldownDurationAfterActivation() external view returns (uint256 cooldownDuration)
+```
+
+Returns building cooldown duration after building activation
+
+_Determines how long building wont be able to receive upgrades after activation and how long user must wait in order to claim workers for building activation_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| cooldownDuration | uint256 | Cooldown duration |
+
+
+### getWorkersAmountForBuildingActivation
+
+```solidity
+function getWorkersAmountForBuildingActivation() external view returns (uint256 workersAmount)
+```
+
+Returns amount of workers able to be claimed for building activation
+
+_Determines how much workers will be given to the user_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| workersAmount | uint256 | Workers amount |
 
 

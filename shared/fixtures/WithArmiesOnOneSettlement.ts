@@ -4,8 +4,10 @@ import { WithEnoughResources } from "./WithEnoughResources";
 import { MovementHelper } from "../helpers/MovementHelper";
 import { SettlementHelper } from "../helpers/SettlementHelper";
 import { UnitHelper } from "../helpers/UnitHelper";
-import {WorldHelper} from "../helpers/WorldHelper";
+import { WorldHelper } from "../helpers/WorldHelper";
 import { expect } from 'chai';
+import { FortHelper } from '../helpers/FortHelper';
+import BigNumber from 'bignumber.js';
 
 export const WithArmiesOnOneSettlement = deployments.createFixture(
   async () => {
@@ -14,6 +16,8 @@ export const WithArmiesOnOneSettlement = deployments.createFixture(
     const {testUser1, testUser2, testUser3 } = await getNamedAccounts();
 
     const unitQuantity = 2;
+    const assignWorkerQuantity = 2;
+    const fortHealth = 10;
 
     const gameUnits = await WorldHelper.getGameUnits();
     const unitTypes = gameUnits.map(gameUnits => UnitHelper.getUnitTypeByUnitTypeId(gameUnits));
@@ -21,6 +25,10 @@ export const WithArmiesOnOneSettlement = deployments.createFixture(
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
     const userSettlementInstance3 = await UserHelper.getUserSettlementByNumber(testUser3, 1);
+
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, new BigNumber(fortHealth));
+    await FortHelper.repairFort(userSettlementInstance2, assignWorkerQuantity, new BigNumber(fortHealth));
+    await FortHelper.repairFort(userSettlementInstance3, assignWorkerQuantity, new BigNumber(fortHealth));
 
     const army1 = await SettlementHelper.getArmy(userSettlementInstance1);
     const army2 = await SettlementHelper.getArmy(userSettlementInstance2);

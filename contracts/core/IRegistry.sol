@@ -2,30 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "./assets/IWorldAssetFactory.sol";
+import "../libraries/Config.sol";
 
 /// @title Registry interface
 /// @notice Functions related to current game configuration
 interface IRegistry {
-    struct GameResource {
-        string tokenName;
-        string tokenSymbol;
-        bytes32 resourceTypeId;
-    }
-
-    struct GameUnit {
-        string tokenName;
-        string tokenSymbol;
-        bytes32 unitTypeId;
-    }
-
-    struct UnitStats {
-        uint256 offenseStage1;
-        uint256 defenceStage1;
-        uint256 offenseStage2;
-        uint256 defenceStage2;
-        uint256 siegePower;
-        uint256 siegeSupport;
-    }
 
     // State variables
 
@@ -37,32 +18,16 @@ interface IRegistry {
     /// @dev During new world asset creation process registry is asked for factory contract
     function worldAssetFactory() external view returns (IWorldAssetFactory);
 
-    /// @notice Global multiplier
-    /// @dev Immutable, initialized on the registry creation
-    function globalMultiplier() external view returns (uint256);
-
-    /// @notice Settlement starting price
-    /// @dev Immutable, initialized on the registry creation
-    function settlementStartingPrice() external view returns (uint256);
-
     // Errors
 
     /// @notice Thrown when attempting to call action which can only be called by mighty creator
     error OnlyMightyCreator();
 
-    /// @notice Thrown when attempting to call function by providing unknown parameter
-    error UnknownInputParameter();
-
     // Functions
 
     /// @notice Proxy initializer
     /// @dev Called by address which created current instance
-    /// @param globalMultiplier Global multiplier
-    /// @param settlementStartingPrice Settlement starting price
-    function init(
-        uint256 globalMultiplier,
-        uint256 settlementStartingPrice
-    ) external;
+    function init() external;
 
     /// @notice Sets new mighty creator
     /// @dev Even though function is opened, it can be called only by mightyCreator
@@ -79,6 +44,12 @@ interface IRegistry {
     /// @param buildingTypeId Building type id
     /// @return workerCapacityCoefficient Worker capacity coefficient
     function getWorkerCapacityCoefficient(bytes32 buildingTypeId) external pure returns (uint256 workerCapacityCoefficient);
+
+    /// @notice Returns building upgrade cost multiplier by provided building type
+    /// @dev Used for internal calculation of building upgrade cost
+    /// @param buildingTypeId Building type id
+    /// @return buildingUpgradeCostMultiplier Building upgrade cost multiplier
+    function getBuildingUpgradeCostMultiplier(bytes32 buildingTypeId) external pure returns (uint256 buildingUpgradeCostMultiplier);
 
     /// @notice Calculates basic production building coefficient
     /// @dev used for internal calculation of production result
@@ -118,7 +89,7 @@ interface IRegistry {
     /// @dev Used everywhere, where game logic based on unit stats
     /// @param unitTypeId Unit type id
     /// @return unitStats Unit stats
-    function getUnitStats(bytes32 unitTypeId) external pure returns (UnitStats memory unitStats);
+    function getUnitStats(bytes32 unitTypeId) external pure returns (Config.UnitStats memory unitStats);
 
     /// @notice Returns production to treasury percent
     /// @dev Determines how much of buildings production will go to treasury (if not full)
@@ -140,10 +111,10 @@ interface IRegistry {
     /// @return battleDurationWinningArmyStunMultiplier Battle duration winning army stun multiplier
     function getBattleDurationWinningArmyStunMultiplier() external pure returns (uint256 battleDurationWinningArmyStunMultiplier);
 
-    /// @notice Returns maneuver duration stun multiplier
+    /// @notice Returns maneuver stun duration
     /// @dev Used internally to determine how long stun will last after armies' maneuver
-    /// @return maneuverDurationStunMultiplier Maneuver duration stun multiplier
-    function getManeuverDurationStunMultiplier() external pure returns (uint256 maneuverDurationStunMultiplier);
+    /// @return maneuverStunDuration Maneuver stun duration
+    function getManeuverStunDuration() external pure returns (uint256 maneuverStunDuration);
 
     /// @notice Returns game building type ids
     /// @dev Used internally to determine which buildings will be created on placing settlement
@@ -158,12 +129,12 @@ interface IRegistry {
     /// @notice Returns game resources
     /// @dev Used internally to determine upgrade costs and providing initial resources for settlement owner based on his tier
     /// @param resources Game resources
-    function getGameResources() external view returns (GameResource[] memory resources);
+    function getGameResources() external view returns (Config.GameResource[] memory resources);
 
     /// @notice Returns game units
     /// @dev Used internally in many places where interaction with units is necessary
     /// @return units Game units
-    function getGameUnits() external view returns (GameUnit[] memory units);
+    function getGameUnits() external view returns (Config.GameUnit[] memory units);
 
     /// @notice Returns unit hiring fort hp multiplier
     /// @dev Used to determine how much units in army can be presented based on its current fort hp and this parameter
@@ -233,9 +204,10 @@ interface IRegistry {
 
     /// @notice Returns unit price increase in unit pool for each extra unit to buy (value returned as numerator and denominator)
     /// @dev Used for determination of unit price
+    /// @param unitTypeId Unit type id
     /// @return numerator Numerator
     /// @return denominator Denominator
-    function getUnitPriceIncreaseForEachUnit() external pure returns (uint256 numerator, uint256 denominator);
+    function getUnitPriceIncreaseByUnitTypeId(bytes32 unitTypeId) external pure returns (uint256 numerator, uint256 denominator);
 
     /// @notice Returns max allowed units to buy per transaction
     /// @dev Limit specified in order to limit potential price overflows (value is returned in 1e18 precision)
@@ -321,25 +293,30 @@ interface IRegistry {
     /// @return maxRegionTier Max region tier
     function getMaxRegionTier() external pure returns (uint256 maxRegionTier);
 
-    /// @notice Returns initial cultists amount per region tier
+    /// @notice Returns initial cultists amount by region tier
     /// @dev Used in region activation
     /// @return initialCultistsAmount Initial cultists amount
-    function getInitialCultistsAmountPerRegionTier() external pure returns (uint256 initialCultistsAmount);
+    function getInitialCultistsAmountByRegionTier(uint256 regionTier) external pure returns (uint256 initialCultistsAmount);
 
-    /// @notice Returns initial corruptionIndex amount per region tier
+    /// @notice Returns initial corruptionIndex amount per initial cultist multiplier
     /// @dev Used in region activation and region tier increase handler
-    /// @return initialCorruptionIndexAmount Initial corruptionIndex amount
-    function getInitialCorruptionIndexAmountPerRegionTier() external pure returns (uint256 initialCorruptionIndexAmount);
+    /// @return initialCorruptionIndexPerCultistMultiplier Initial corruptionIndex per cultist multiplier
+    function getInitialCorruptionIndexPerCultistMultiplier() external pure returns (uint256 initialCorruptionIndexPerCultistMultiplier);
 
     /// @notice Returns settlement price multiplier per increased region tier
     /// @dev Used in calculation of new settlement price
     /// @return settlementPriceMultiplierPerIncreasedRegionTier Settlement price multiplier per increased region tier
     function getSettlementPriceMultiplierPerIncreasedRegionTier() external pure returns (uint256 settlementPriceMultiplierPerIncreasedRegionTier);
 
-    /// @notice Returns stun duration multiplier of cancelled secret maneuver
+    /// @notice Returns stun duration of cancelled secret maneuver
     /// @dev Used in calculation of stun duration during cancelling secret maneuver
-    /// @return stunMultiplierOfCancelledSecretManeuver Stun multiplier of cancelled secret maneuver
-    function getStunDurationMultiplierOfCancelledSecretManeuver() external pure returns (uint256 stunMultiplierOfCancelledSecretManeuver);
+    /// @return stunDurationOfCancelledSecretManeuver Stun duration of cancelled secret maneuver
+    function getStunDurationOfCancelledSecretManeuver() external pure returns (uint256 stunDurationOfCancelledSecretManeuver);
+
+    /// @notice Returns demilitarization cooldown
+    /// @dev Used in determining whether army can be demilitarized at this point
+    /// @return demilitarizationCooldown Demilitarization cooldown in seconds
+    function getDemilitarizationCooldown() external pure returns (uint256 demilitarizationCooldown);
 
     /// @notice Returns max allowed robbery multiplier increase value
     /// @dev Used in army siege modification
@@ -390,6 +367,11 @@ interface IRegistry {
     /// @return initialCaptureProsperityPerTileValue Initial capture prosperity per tile value
     function getInitialCaptureProsperityPerTileValue() external pure returns (uint256 initialCaptureProsperityPerTileValue);
 
+    /// @notice Returns capture tile initial duration
+    /// @dev Used to determine how long tile capturing will last
+    /// @return captureTileInitialDuration Capture tile initial duration
+    function getCaptureTileInitialDuration() external pure returns (uint256 captureTileInitialDuration);
+
     /// @notice Returns minimum user settlements count in neighboring region required to include region
     /// @dev Used to determine whether region can be included or not
     /// @return minimumUserSettlementsCount Minimum user settlements count
@@ -409,4 +391,20 @@ interface IRegistry {
     /// @dev Used to determine new settlement purchase price (in 1e18 precision)
     /// @return newSettlementPriceIncreaseMultiplier New settlement price increase multiplier
     function getNewSettlementPriceIncreaseMultiplier() external pure returns (uint256 newSettlementPriceIncreaseMultiplier);
+
+    /// @notice Returns building activation price
+    /// @dev Determines which and how much resources must be taken from user in order to activate building
+    /// @return resourcesTypesIds Resources types ids
+    /// @return resourcesAmounts Resources amounts
+    function getBuildingActivationPrice() external view returns (bytes32[] memory resourcesTypesIds, uint256[] memory resourcesAmounts);
+
+    /// @notice Returns building cooldown duration after building activation
+    /// @dev Determines how long building wont be able to receive upgrades after activation and how long user must wait in order to claim workers for building activation
+    /// @return cooldownDuration Cooldown duration
+    function getBuildingCooldownDurationAfterActivation() external view returns (uint256 cooldownDuration);
+
+    /// @notice Returns amount of workers able to be claimed for building activation
+    /// @dev Determines how much workers will be given to the user
+    /// @return workersAmount Workers amount
+    function getWorkersAmountForBuildingActivation() external view returns (uint256 workersAmount);
 }

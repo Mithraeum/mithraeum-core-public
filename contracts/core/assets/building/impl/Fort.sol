@@ -39,6 +39,9 @@ contract Fort is Building, IFort {
         advancedProduction.level = 1;
         advancedProduction.coefficient = 1;
 
+        buildingActivationInfo.activationTime = uint64(block.timestamp);
+        buildingActivationInfo.isWorkersClaimed = true;
+
         _updateProductionInfo(
             block.timestamp,
             0,
@@ -60,13 +63,13 @@ contract Fort is Building, IFort {
 
         productionConfigItems[0] = ProductionConfigItem({
             resourceTypeId: FOOD_TYPE_ID,
-            amountPerTick: uint256(3e18) / (1 days),
+            amountPerTick: uint256(5e18) / (1 days),
             isProducing: false
         });
 
         productionConfigItems[1] = ProductionConfigItem({
             resourceTypeId: WOOD_TYPE_ID,
-            amountPerTick: uint256(2e18) / (1 days),
+            amountPerTick: uint256(3e18) / (1 days),
             isProducing: false
         });
 
@@ -81,7 +84,7 @@ contract Fort is Building, IFort {
 
     /// @inheritdoc IFort
     function getMaxHealthOnLevel(uint256 level) public view override returns (uint256) {
-        return (getBuildingCoefficient(level) ** 3) * 1e18;
+        return (getBuildingCoefficient(level) ** 2) * 4e18;
     }
 
     /// @inheritdoc IBuilding
@@ -92,6 +95,16 @@ contract Fort is Building, IFort {
     /// @inheritdoc IBuilding
     function getMaxTreasuryByLevel(uint256 level) public view override(Building, IBuilding) returns (uint256) {
         return 0;
+    }
+
+    /// @inheritdoc IBuilding
+    function activateBuilding(address resourcesOwner) public override(Building, IBuilding) {
+        revert Disabled();
+    }
+
+    /// @inheritdoc IBuilding
+    function claimWorkersForBuildingActivation() public override(Building, IBuilding) {
+        revert Disabled();
     }
 
     /// @inheritdoc IBuilding
@@ -107,7 +120,9 @@ contract Fort is Building, IFort {
         uint256 maxTreasuryByNextLevel = (getBuildingCoefficient(level + 1) ** 2) * 10 * 1e18;
         uint256 maxTreasuryByLevelWithCoefficient = (maxTreasuryByLevel * 75) / 100;
         uint256 treasuryDifference = maxTreasuryByNextLevel - maxTreasuryByLevelWithCoefficient;
-        return treasuryDifference / 6;
+        uint256 defaultUpgradePrice = treasuryDifference / 6;
+
+        return defaultUpgradePrice * Config.getBuildingUpgradeCostMultiplier(buildingTypeId) / 1e18;
     }
 
     /// @inheritdoc IBuilding
@@ -122,6 +137,7 @@ contract Fort is Building, IFort {
         ProductionResultItem[] memory productionResult = getProductionResult(currentTime);
         _updateProductionInfo(currentTime, 0, 0, 0);
 
+        IEra _era = era();
         for (uint256 i = 0; i < productionResult.length; i++) {
             if (productionResult[i].balanceDelta == 0) {
                 continue;
@@ -150,7 +166,7 @@ contract Fort is Building, IFort {
                 continue;
             }
 
-            era().resources(productionResult[i].resourceTypeId).burn(productionResult[i].balanceDelta);
+            _era.resources(productionResult[i].resourceTypeId).burn(productionResult[i].balanceDelta);
         }
     }
 
@@ -166,12 +182,13 @@ contract Fort is Building, IFort {
             timestamp = block.timestamp;
         }
 
-        uint256 gameBeginTime = world().gameBeginTime();
+        IWorld _world = world();
+        uint256 gameBeginTime = _world.gameBeginTime();
         if (timestamp < gameBeginTime) {
             timestamp = gameBeginTime;
         }
 
-        uint256 gameEndTime = world().gameEndTime();
+        uint256 gameEndTime = _world.gameEndTime();
         if (gameEndTime != 0) {
             timestamp = Math.min(timestamp, gameEndTime);
         }
@@ -264,7 +281,7 @@ contract Fort is Building, IFort {
 
     /// @dev Calculates fort degen income based on current siege power
     function _calculateDegenIncome() internal view returns (uint256) {
-        return relatedSettlement.siege().totalSiegePower() * registry().getGlobalMultiplier();
+        return relatedSettlement.siege().totalSiegePower() * Config.globalMultiplier;
     }
 
     /// @dev Calculates fort production result params

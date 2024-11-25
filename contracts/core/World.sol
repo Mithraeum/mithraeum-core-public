@@ -184,9 +184,9 @@ contract World is IWorld, Initializable {
     function destroyCurrentEra() public override onlyActiveGame {
         IEra currentEra = eras[currentEraNumber];
 
-        uint256 _globalMultiplier = registry.getGlobalMultiplier();
-        uint256 _summonDelay = registry.getCultistsSummonDelay() / _globalMultiplier;
-        uint256 _noDestructionDelay = registry.getCultistsNoDestructionDelay() / _globalMultiplier;
+        uint256 _globalMultiplier = Config.globalMultiplier;
+        uint256 _summonDelay = Config.cultistsSummonDelay / _globalMultiplier;
+        uint256 _noDestructionDelay = Config.cultistsNoDestructionDelay / _globalMultiplier;
 
         uint256 _epochCreationTime = Math.max(currentEra.creationTime(), gameBeginTime);
         if (block.timestamp <= _epochCreationTime) revert CurrentEraCannotBeDestroyedDueToCultistsNoDestructionDelayNotPassed();
@@ -195,16 +195,11 @@ contract World is IWorld, Initializable {
         uint256 _timeInsideCurrentSummonInterval = _timePassedSinceEpochCreationTime % _summonDelay;
         if (_timeInsideCurrentSummonInterval <= _noDestructionDelay) revert CurrentEraCannotBeDestroyedDueToCultistsNoDestructionDelayNotPassed();
 
-        uint256 maxAllowedCultists = geography.getRegionsCount() * registry.getCultistsPerRegionMultiplier();
+        uint256 maxAllowedCultists = geography.getRegionsCount() * Config.cultistsPerRegionMultiplier;
         if (currentEra.totalCultists() <= maxAllowedCultists) revert CurrentEraCannotBeDestroyedDueCultistsLimitNotReached();
 
         uint256 newEraNumber = currentEraNumber + 1;
         _createAndAssignEra(newEraNumber);
-    }
-
-    /// TODO FOR TESTS REMOVE AFTER
-    function destroyCurrentEraWithoutCondition() public onlyActiveGame {
-        _createAndAssignEra(currentEraNumber + 1);
     }
 
     /// @inheritdoc IWorld

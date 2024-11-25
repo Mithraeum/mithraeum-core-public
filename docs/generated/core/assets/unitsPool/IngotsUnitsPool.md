@@ -170,32 +170,6 @@ _Allows caller to be only related region_
 
 
 
-### _ingots
-
-```solidity
-function _ingots() internal view returns (contract IResource)
-```
-
-
-
-_Returns ingots_
-
-
-
-
-### _units
-
-```solidity
-function _units() internal view returns (contract IUnits)
-```
-
-
-
-_Returns units by pool unit type_
-
-
-
-
 ### _getUnitDroppedPrice
 
 ```solidity

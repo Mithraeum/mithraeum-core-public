@@ -1,11 +1,11 @@
 import {DeployFunction} from "hardhat-deploy/types";
 import {HardhatRuntimeEnvironment} from "hardhat/types";
 import {deployBatch, ensureRightImplementation, setupDeployer} from "../scripts/deployer";
-import {_1e18, cmpAddress, sleep} from "../scripts/utils/const";
-import {DeployResult} from "hardhat-deploy/dist/types";
+import {cmpAddress, sleep} from "../scripts/utils/const";
+import {Deployment} from "hardhat-deploy/dist/types";
 import {AbiCoder, ethers} from "ethers";
 import {
-    BannerParts__factory,
+    BannerParts__factory, Banners__factory,
     CrossErasMemory__factory,
     Geography__factory,
     Registry__factory,
@@ -21,7 +21,7 @@ const greenCheckmark = "\u001b[1;32m ✓\x1b[0m";
 interface WorldAssetImplementation {
     groupType: string;
     assetType: string;
-    deployment: DeployResult;
+    deployment: Deployment;
 }
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
@@ -44,7 +44,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         worldProxyDeployment,
         geographyProxyDeployment,
         crossErasMemoryProxyDeployment,
-        rewardPoolProxyDeployment,
+        // rewardPoolProxyDeployment,
     ] = await deployBatch(
         {
             name: "RegistryProxy",
@@ -62,10 +62,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             name: "CrossErasMemoryProxy",
             contract: "SimpleProxy",
         },
-        {
-            name: "RewardPoolProxy",
-            contract: "SimpleProxy",
-        }
+        // {
+        //     name: "RewardPoolProxy",
+        //     contract: "SimpleProxy",
+        // }
     );
 
     // Checks if specified network has predefined resolver address, if it is not -> deploy resolver and assign env var
@@ -78,7 +78,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const [
         registryDeployment,
         worldDeployment,
-        rewardPoolDeployment,
+        // rewardPoolDeployment,
         crossErasMemoryDeployment,
         geographyDeployment,
         eraDeployment,
@@ -114,7 +114,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ] = await deployBatch(
         "Registry",
         "World",
-        "RewardPool",
+        // "RewardPool",
         "CrossErasMemory",
         "Geography",
         "Era",
@@ -144,7 +144,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             args: [
                 "Banners",
                 "BNR",
-                `https://mit-flags-node.s3.eu-central-1.amazonaws.com/${mithraeumConfig.FLAG_JSON_CONFIG}/${network.chainId}/json/`,
+                `https://mit-flags-node.s3.eu-central-1.amazonaws.com/${mithraeumConfig.ENVIRONMENT_NAME}/${network.chainId}/json/`,
                 mithraeumConfig.MAXIMUM_AMOUNT_OF_MINTED_BANNERS_PER_ADDRESS,
             ],
         },
@@ -163,6 +163,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     });
 
     console.log("contracts deployment done");
+
+    const bannersInstance = Banners__factory.connect(bannersDeployment.address, worldSigner);
+    const currentMaxAmountOfBannersForAdmin = await bannersInstance.overriddenMaxAmountOfBannersByAddress(worldSigner.address);
+    if (currentMaxAmountOfBannersForAdmin !== ethers.MaxUint256) {
+        await bannersInstance.setMaxAmountOfBannersByAddress(worldSigner.address, ethers.MaxUint256).then(tx => tx.wait());
+        console.log("Increased max amount of banners for admin");
+    } else {
+        console.log("Max amount of banners for admin already max");
+    }
 
     const updateFreeParts = async (ids: number[]) => {
         const bannerPartsInstance = BannerParts__factory.connect(bannerPartsDeployment.address, worldSigner);
@@ -281,7 +290,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     if (!cmpAddress(mightyCreator, worldDeployer)) {
         await registryProxyInstance
-            .init(mithraeumConfig.GLOBAL_MULTIPLIER, mithraeumConfig.SETTLEMENT_STARTING_PRICE)
+            .init()
             .then((tx) => tx.wait());
         console.log(`${greenCheckmark} Registry initialized`);
     } else {
@@ -289,29 +298,29 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     // Reward pool
-    const isRewardPoolImplementationChanged = await ensureRightImplementation(
-        rewardPoolProxyDeployment,
-        rewardPoolDeployment,
-        worldSigner
-    );
+    // const isRewardPoolImplementationChanged = await ensureRightImplementation(
+    //     rewardPoolProxyDeployment,
+    //     rewardPoolDeployment,
+    //     worldSigner
+    // );
+    //
+    // if (isRewardPoolImplementationChanged) {
+    //     console.log(`${greenCheckmark} Reward pool implementation updated`);
+    // } else {
+    //     console.log(`Reward pool implementation not changed, no need to update proxy`);
+    // }
+    //
+    // const rewardPoolProxyInstance = RewardPool__factory.connect(rewardPoolProxyDeployment.address, worldSigner);
+    // const worldAddressInRewardPool = await rewardPoolProxyInstance.world();
+    //
+    // if (!cmpAddress(worldAddressInRewardPool, worldProxyDeployment.address)) {
+    //     await rewardPoolProxyInstance.init(worldProxyDeployment.address).then((tx) => tx.wait());
+    //     console.log(`${greenCheckmark} Reward pool initialized`);
+    // } else {
+    //     console.log(`Reward pool is already initialized`);
+    // }
 
-    if (isRewardPoolImplementationChanged) {
-        console.log(`${greenCheckmark} Reward pool implementation updated`);
-    } else {
-        console.log(`Reward pool implementation not changed, no need to update proxy`);
-    }
-
-    const rewardPoolProxyInstance = RewardPool__factory.connect(rewardPoolProxyDeployment.address, worldSigner);
-    const worldAddressInRewardPool = await rewardPoolProxyInstance.world();
-
-    if (!cmpAddress(worldAddressInRewardPool, worldProxyDeployment.address)) {
-        await rewardPoolProxyInstance.init(worldProxyDeployment.address).then((tx) => tx.wait());
-        console.log(`${greenCheckmark} Reward pool initialized`);
-    } else {
-        console.log(`Reward pool is already initialized`);
-    }
-
-    const updateWorldAssetFactory = async (worldAssetFactoryDeployment: DeployResult): Promise<void> => {
+    const updateWorldAssetFactory = async (worldAssetFactoryDeployment: Deployment): Promise<void> => {
         const registryInstance = Registry__factory.connect(registryProxyDeployment.address, worldSigner);
 
         const factoryAddressFromRegistry = await registryInstance.worldAssetFactory();
@@ -382,6 +391,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         return ethers.toUtf8String(bytes28);
     }
 
+    const rewardPoolAddress = worldSigner.address;//SETTLEMENT COST RECEIVER GOES HERE
+
     if (!isWorldInitialized) {
         const assetIds = worldAssetImplementations.map((worldAssetImplementation) => {
             return getAssetIdString(worldAssetImplementation);
@@ -404,7 +415,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 mithraeumConfig.ERC20_FOR_REGION_INCLUSION_ADDRESS!,
                 regionOwnershipTokenDeployment.address,
                 distributionsDeployment.address,
-                rewardPoolProxyDeployment.address,
+                rewardPoolAddress,
             ]
         );
 
@@ -512,7 +523,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             throw new Error("DISTRIBUTIONS TOKEN IS NOT SAME AS IN WORLD, NEW DEPLOYMENT REQUIRED");
         }
 
-        if (!cmpAddress(rewardPoolAddressInWorld, rewardPoolProxyDeployment.address)) {
+        if (!cmpAddress(rewardPoolAddressInWorld, rewardPoolAddress)) {
             throw new Error("REWARD POOL IS NOT SAME AS IN WORLD, NEW DEPLOYMENT REQUIRED");
         }
     }
@@ -520,9 +531,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     console.log(`Empty world created`);
 
     const resolverInstance = Resolver__factory.connect(mithraeumConfig.RESOLVER_ADDRESS!, worldSigner);
-    const worldAddressInResolver = await resolverInstance.world();
+    const worldAddressInResolver = await resolverInstance.worlds(worldDeployer, mithraeumConfig.ENVIRONMENT_NAME);
     if (!cmpAddress(worldAddressInResolver, worldProxyDeployment.address)) {
-        await resolverInstance.setWorldAddress(worldProxyDeployment.address).then((tx) => tx.wait());
+        await resolverInstance.setWorldAddress(
+            mithraeumConfig.ENVIRONMENT_NAME,
+            worldProxyDeployment.address
+        ).then((tx) => tx.wait());
         console.log(`${greenCheckmark} World address updated`);
     } else {
         console.log(`World address already updated`);

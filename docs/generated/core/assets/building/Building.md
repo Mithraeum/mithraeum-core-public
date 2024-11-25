@@ -134,6 +134,19 @@ _Updated when #distributeToSingleHolder or #distributeToAllShareholders is calle
 
 
 
+### buildingActivationInfo
+
+```solidity
+struct IBuilding.BuildingActivationInfo buildingActivationInfo
+```
+
+Building activation info
+
+_Updated when #activateBuilding or #claimWorkersForBuildingActivation is called_
+
+
+
+
 ### onlyDistributions
 
 ```solidity
@@ -412,26 +425,6 @@ _Return value based on #getConfig_
 | [0] | bool |  |
 
 
-### removeResourcesAndWorkers
-
-```solidity
-function removeResourcesAndWorkers(address workersReceiverAddress, uint256 workersAmount, address resourcesReceiverAddress, bytes32[] resourceTypeIds, uint256[] resourcesAmounts) public
-```
-
-Transfers game resources and workers from building to provided addresses
-
-_Removes resources+workers from building in single transaction_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| workersReceiverAddress | address | Workers receiver address (building or settlement) |
-| workersAmount | uint256 | Workers amount (in 1e18 precision) |
-| resourcesReceiverAddress | address | Resources receiver address |
-| resourceTypeIds | bytes32[] | Resource type ids |
-| resourcesAmounts | uint256[] | Resources amounts |
-
-
-
 ### getUpgradePrice
 
 ```solidity
@@ -481,6 +474,37 @@ _Same as workers.balanceOf(buildingAddress)_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | uint256 |  |
+
+
+### activateBuilding
+
+```solidity
+function activateBuilding(address resourcesOwner) public virtual
+```
+
+Activates building
+
+_Necessary resources for activation will be taken either from msg.sender or resourcesOwner (if resource.allowance allows it)
+If resourcesOwner == address(0) -> resources will be taken from msg.sender
+If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= upgradePrice -> resources will be taken from resourcesOwner_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| resourcesOwner | address | Resources owner |
+
+
+
+### claimWorkersForBuildingActivation
+
+```solidity
+function claimWorkersForBuildingActivation() public virtual
+```
+
+Claims workers for building activation
+
+_Workers can be claimed only once and after building cooldown duration after activation has passed_
+
+
 
 
 ### upgradeBasicProduction
@@ -901,45 +925,6 @@ function _isBuildingTokenRecallAllowed() internal returns (bool)
 
 
 _Calculates is building token recall allowed according to building token transfer threshold_
-
-
-
-
-### _batchTransferResources
-
-```solidity
-function _batchTransferResources(bytes32[] resourceTypeIds, address to, uint256[] amounts) internal
-```
-
-
-
-_Batch transfer resources from building to specified address_
-
-
-
-
-### _transferWorkers
-
-```solidity
-function _transferWorkers(address to, uint256 amount) internal
-```
-
-
-
-_Transfers workers from building to specified address_
-
-
-
-
-### _transferResources
-
-```solidity
-function _transferResources(bytes32 resourceTypeId, address to, uint256 amount) internal
-```
-
-
-
-_Transfers resources from building to specified address_
 
 
 

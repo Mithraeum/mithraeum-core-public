@@ -64,14 +64,18 @@ abstract contract WorldAsset is IWorldAsset, WorldAssetStorageAccessorWithPush0,
 
     /// @dev Allows caller to be only world or world asset
     function _onlyWorldAssetFromSameEra() internal view {
-        if (msg.sender != address(world()) &&
-            world().worldAssets(WorldAssetStorageAccessorWithPush0.eraNumber(), msg.sender) == bytes32(0)) revert OnlyWorldAssetFromSameEra();
+        IWorld _world = world();
+
+        if (msg.sender != address(_world) &&
+            _world.worldAssets(WorldAssetStorageAccessorWithPush0.eraNumber(), msg.sender) == bytes32(0)) revert OnlyWorldAssetFromSameEra();
     }
 
     /// @dev Allows function to be callable only while game is active
     function _onlyActiveGame() internal view {
-        uint256 _gameBeginTime = world().gameBeginTime();
-        uint256 _gameEndTime = world().gameEndTime();
+        IWorld _world = world();
+
+        uint256 _gameBeginTime = _world.gameBeginTime();
+        uint256 _gameEndTime = _world.gameEndTime();
         if (_gameBeginTime == 0 || block.timestamp < _gameBeginTime) revert OnlyActiveGame();
         if (_gameEndTime != 0 && block.timestamp >= _gameEndTime) revert OnlyActiveGame();
     }

@@ -44,7 +44,7 @@ contract Siege is WorldAsset, ISiege {
 
         if (!canLiquidateArmyBesiegingUnits(armyAddress)) revert SiegeCannotLiquidateArmy();
 
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
         bool[] memory toAddIndication = new bool[](unitTypeIds.length);
         uint256[] memory unitsToLiquidate = new uint256[](unitTypeIds.length);
 
@@ -77,6 +77,7 @@ contract Siege is WorldAsset, ISiege {
         _updateArmySiegeProgress(armyAddress);
 
         uint256 oldArmyTotalSiegePower = calculateArmyTotalSiegePower(armyAddress);
+        IEra _era = era();
 
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
             uint256 unitsAmount = unitsAmounts[i];
@@ -86,15 +87,12 @@ contract Siege is WorldAsset, ISiege {
 
             if (!MathExtension.isIntegerWithPrecision(unitsAmount, 1e18)) revert SiegeCannotBeModifiedDueToInvalidUnitsAmountSpecified();
 
-            bytes32 unitTypeId = unitTypeIds[i];
-            IUnits units = era().units(unitTypeId);
-
             if (toAddIndication[i]) {
-                besiegingArmyUnitsByType[armyAddress][unitTypeId] += unitsAmount;
-                units.transferFrom(armyAddress, address(this), unitsAmount);
+                besiegingArmyUnitsByType[armyAddress][unitTypeIds[i]] += unitsAmount;
+                _era.units(unitTypeIds[i]).transferFrom(armyAddress, address(this), unitsAmount);
             } else {
-                besiegingArmyUnitsByType[armyAddress][unitTypeId] -= unitsAmount;
-                units.transferFrom(address(this), armyAddress, unitsAmount);
+                besiegingArmyUnitsByType[armyAddress][unitTypeIds[i]] -= unitsAmount;
+                _era.units(unitTypeIds[i]).transferFrom(address(this), armyAddress, unitsAmount);
             }
         }
 
@@ -131,7 +129,7 @@ contract Siege is WorldAsset, ISiege {
 
     /// @inheritdoc ISiege
     function calculateArmyUnitsSiegePower(address armyAddress) public view override returns (uint256) {
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         uint256 armyUnitsSiegePower = 0;
 
@@ -142,7 +140,7 @@ contract Siege is WorldAsset, ISiege {
                 continue;
             }
 
-            IRegistry.UnitStats memory unitStats = registry().getUnitStats(unitTypeId);
+            Config.UnitStats memory unitStats = Config.getUnitStats(unitTypeId);
 
             armyUnitsSiegePower += (besiegingUnitsAmount * unitStats.siegePower) / 1e18;
         }
@@ -213,7 +211,7 @@ contract Siege is WorldAsset, ISiege {
 
         if (address(relatedSettlement) != address(producingResourceBuilding.relatedSettlement())) revert RobberyPointsSwapNotAllowedDueToSpecifiedBuildingAddressDoesNotBelongToSettlementOfThisSiege();
 
-        uint256 robberyPointsToResourceMultiplier = registry().getRobberyPointsToResourceMultiplier(
+        uint256 robberyPointsToResourceMultiplier = Config.getRobberyPointsToResourceMultiplier(
             producingResourceBuilding.getProducingResourceTypeId()
         );
         uint256 amountOfResourcesToStealAndBurn = (maxPointsToSpend * robberyPointsToResourceMultiplier) / 1e18;
@@ -241,7 +239,7 @@ contract Siege is WorldAsset, ISiege {
 
     /// @inheritdoc ISiege
     function getArmyBesiegingUnitsAmounts(address armyAddress) public view override returns (uint256[] memory) {
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
         uint256[] memory unitsAmounts = new uint256[](unitTypeIds.length);
 
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
@@ -274,7 +272,7 @@ contract Siege is WorldAsset, ISiege {
             return 0;
         }
 
-        return ((damage * registry().getRobberyPointsPerDamageMultiplier()) / 1e18) / siegePower;
+        return ((damage * Config.robberyPointsPerDamageMultiplier) / 1e18) / siegePower;
     }
 
     /// @dev Calculates army total siege power by armySiegePower from units and robberyMultiplier

@@ -228,25 +228,21 @@ _In case if someone accidentally transfers game resource to the settlement_
 
 
 
-### assignResourcesAndWorkersToBuilding
+### modifyBuildingsProduction
 
 ```solidity
-function assignResourcesAndWorkersToBuilding(address resourcesOwner, address buildingAddress, uint256 workersAmount, bytes32[] resourceTypeIds, uint256[] resourcesAmounts) public
+function modifyBuildingsProduction(struct ISettlement.BuildingProductionModificationParam[] params) public
 ```
 
-Transfers game resources from msg.sender and workers from settlement to building
+Transfers game resources and workers from/to building depending on specified params
 
-_Assigns resources+workers to building in single transaction
-If resourcesOwner == address(0) -> resources will be taken from msg.sender
-If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resourcesOwner_
+_Assigns resources and workers to building in single transaction
+In case of transferring resources to building if resource.resourcesOwnerOrResourcesReceiver == address(0) -> resources will be taken from msg.sender
+In case of transferring resources to building if resource.resourcesOwnerOrResourcesReceiver != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resource.resourcesOwnerOrResourcesReceiver_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| resourcesOwner | address |  |
-| buildingAddress | address | Building address |
-| workersAmount | uint256 | Workers amount (in 1e18 precision) |
-| resourceTypeIds | bytes32[] | Resource type ids |
-| resourcesAmounts | uint256[] | Resources amounts |
+| params | struct ISettlement.BuildingProductionModificationParam[] | An array of BuildingProductionModificationParam struct |
 
 
 
@@ -498,6 +494,58 @@ Only settlement in active era can decrease its corruptionIndex_
 
 
 
+### _transferWorkersFromBuilding
+
+```solidity
+function _transferWorkersFromBuilding(contract IEra era, address buildingAddress, uint256 workersAmount) internal
+```
+
+
+
+_Transfers workers from building to this settlement_
+
+
+
+
+### _transferWorkersToBuilding
+
+```solidity
+function _transferWorkersToBuilding(contract IEra era, address buildingAddress, uint256 workersAmount) internal
+```
+
+
+
+_Transfers workers to specified building address_
+
+
+
+
+### _transferResourcesFromBuilding
+
+```solidity
+function _transferResourcesFromBuilding(contract IEra era, address buildingAddress, bytes32 resourceTypeId, address resourcesReceiver, uint256 resourcesAmount) internal
+```
+
+
+
+_Transfers resources from specified building to specified address_
+
+
+
+
+### _transferResourcesToBuilding
+
+```solidity
+function _transferResourcesToBuilding(contract IEra era, address buildingAddress, bytes32 resourceTypeId, address resourcesOwnerOrResourcesReceiver, uint256 resourcesAmount) internal
+```
+
+
+
+_Transfers resources from specified address (or msg.sender) to specified building_
+
+
+
+
 ### _onlySettlementOwner
 
 ```solidity
@@ -520,84 +568,6 @@ function _onlyRulerOrWorldAsset() internal view
 
 
 _Allows caller to be settlement ruler or world asset_
-
-
-
-
-### _transferWorkers
-
-```solidity
-function _transferWorkers(address buildingAddress, uint256 workersAmount) internal
-```
-
-
-
-_Transfers workers to specified building address_
-
-
-
-
-### _mintInitialWorkers
-
-```solidity
-function _mintInitialWorkers() internal
-```
-
-
-
-_Mints initial settlement workers_
-
-
-
-
-### _createBuildings
-
-```solidity
-function _createBuildings() internal
-```
-
-
-
-_Creates settlements buildings_
-
-
-
-
-### _createArmy
-
-```solidity
-function _createArmy() internal
-```
-
-
-
-_Creates settlements army_
-
-
-
-
-### _createBuilding
-
-```solidity
-function _createBuilding(bytes32 buildingTypeId) internal
-```
-
-
-
-_Creates building_
-
-
-
-
-### _createSiege
-
-```solidity
-function _createSiege() internal
-```
-
-
-
-_Creates new siege_
 
 
 

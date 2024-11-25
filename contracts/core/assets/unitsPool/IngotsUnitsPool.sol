@@ -36,12 +36,12 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
         relatedRegion = IRegion(_regionAddress);
         unitTypeId = _unitTypeId;
         lastPurchaseTime = block.timestamp;
-        unitPrice = 10e18;
+        unitPrice = Config.getUnitStartingPrice(_unitTypeId);
     }
 
     /// @inheritdoc IUnitsPool
     function calculateTokensForExactUnits(uint256 unitsToBuy) public view override returns (uint256, uint256) {
-        (uint256 numerator, uint256 denominator) = registry().getUnitPriceIncreaseForEachUnit();
+        (uint256 numerator, uint256 denominator) = Config.getUnitPriceIncreaseByUnitTypeId(unitTypeId);
         int128 priceIncreasePerUnit64 = ABDKMath64x64.divu(numerator, denominator);
         return _calculatePriceShiftForUnits(unitsToBuy, priceIncreasePerUnit64);
     }
@@ -72,25 +72,17 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
         if (msg.sender != address(relatedRegion)) revert OnlyRelatedRegion();
     }
 
-    /// @dev Returns ingots
-    function _ingots() internal view returns (IResource) {
-        return era().resources(INGOT_TYPE_ID);
-    }
-
-    /// @dev Returns units by pool unit type
-    function _units() internal view returns (IUnits) {
-        return era().units(unitTypeId);
-    }
-
     /// @dev Calculates dropped price of unit after last purchase time
     function _getUnitDroppedPrice() internal view returns (int128) {
+        IWorld _world = world();
+
         uint256 timestamp = block.timestamp;
-        uint256 gameBeginTime = world().gameBeginTime();
+        uint256 gameBeginTime = _world.gameBeginTime();
         if (timestamp < gameBeginTime) {
             timestamp = gameBeginTime;
         }
 
-        uint256 gameEndTime = world().gameEndTime();
+        uint256 gameEndTime = _world.gameEndTime();
         if (gameEndTime != 0) {
             timestamp = Math.min(timestamp, gameEndTime);
         }
@@ -108,7 +100,7 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
 
         uint256 secondsPassed = timestamp - _lastPurchaseTime;
 
-        (uint256 numerator, uint256 denominator) = registry().getUnitPriceDropByUnitTypeId(unitTypeId);
+        (uint256 numerator, uint256 denominator) = Config.getUnitPriceDropByUnitTypeId(unitTypeId);
         int128 priceDropPerSecond64 = ABDKMath64x64.divu(numerator, denominator);
         int128 priceDrop64 = ABDKMath64x64.pow(priceDropPerSecond64, secondsPassed);
         return ABDKMath64x64.mul(unitPrice64, priceDrop64);
@@ -120,23 +112,21 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
         int128 priceShiftPerUnit64
     ) internal view returns (uint256, uint256) {
         int128 droppedPrice = _getUnitDroppedPrice();
-        int128 lastUnitPriceShift64 = ABDKMath64x64.pow(
-            priceShiftPerUnit64,
-            amountOfUnits
+
+        int128 ingotsForAmountOfUnits64 = ABDKMath64x64.mul(
+            ABDKMath64x64.divu(amountOfUnits, 2),
+            ABDKMath64x64.add(
+                ABDKMath64x64.mul(droppedPrice, ABDKMath64x64.fromUInt(2)),
+                ABDKMath64x64.mul(priceShiftPerUnit64, ABDKMath64x64.fromUInt(amountOfUnits - 1))
+            )
         );
 
-        int128 sumOfPriceShifts64 = ABDKMath64x64.div(
-            ABDKMath64x64.sub(
-                lastUnitPriceShift64,
-                ABDKMath64x64.fromUInt(1)
-            ),
-            ABDKMath64x64.ln(priceShiftPerUnit64)
+        int128 newUnitPrice64 = ABDKMath64x64.add(
+            droppedPrice,
+            ABDKMath64x64.mul(priceShiftPerUnit64, ABDKMath64x64.fromUInt(amountOfUnits - 1))
         );
 
-        int128 ingotsForPriceShift64 = ABDKMath64x64.mul(droppedPrice, sumOfPriceShifts64);
-        int128 newUnitPrice64 = ABDKMath64x64.mul(droppedPrice, lastUnitPriceShift64);
-
-        uint256 ingotsForPriceShift = uint256(ABDKMath64x64.muli(ingotsForPriceShift64, 1e18));
+        uint256 ingotsForPriceShift = uint256(ABDKMath64x64.muli(ingotsForAmountOfUnits64, 1e18));
         uint256 newUnitPrice = uint256(ABDKMath64x64.muli(newUnitPrice64, 1e18));
 
         return (ingotsForPriceShift, newUnitPrice);
@@ -161,7 +151,7 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
         if (unitsToBuy == 0 || !MathExtension.isIntegerWithPrecision(unitsToBuy, 1e18)) revert CannotHireUnitsInvalidUnitsToBuySpecified();
         if (address(settlement.relatedRegion()) != address(relatedRegion)) revert CannotHireUnitsForArmyWhichSettlementDoesNotBelongToRelatedRegion();
         if (unitsToBuy > _getMaxAllowedToBuy(settlement, army)) revert CannotHireUnitsExceedingArmyUnitsLimit();
-        if (unitsToBuy > registry().getMaxAllowedUnitsToBuyPerTransaction()) revert CannotHireUnitsExceedingTransactionLimit();
+        if (unitsToBuy > Config.maxAllowedUnitsToBuyPerTransaction) revert CannotHireUnitsExceedingTransactionLimit();
 
         (uint256 ingotsToSell, uint256 newUnitPrice) = calculateTokensForExactUnits(unitsToBuy / 1e18);
 
@@ -170,7 +160,8 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
         (, uint64 stunEndTime) = army.stunInfo();
         if (stunEndTime != 0) revert CannotHireUnitsWhileArmyIsStunned();
 
-        IResource ingots = _ingots();
+        IEra _era = era();
+        IResource ingots = _era.resources(INGOT_TYPE_ID);
         if (resourcesOwner == address(0)) {
             ingots.burnFrom(msgSender, ingotsToSell);
         } else {
@@ -180,10 +171,10 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
 
         relatedRegion.decreaseCorruptionIndex(
             settlementAddress,
-            registry().getCorruptionIndexByResource(INGOT_TYPE_ID) * ingotsToSell / 1e18
+            Config.getCorruptionIndexByResource(INGOT_TYPE_ID) * ingotsToSell / 1e18
         );
 
-        _units().mint(address(army), unitsToBuy);
+        _era.units(unitTypeId).mint(address(army), unitsToBuy);
 
         unitPrice = newUnitPrice;
         lastPurchaseTime = block.timestamp;
@@ -207,11 +198,12 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
 
     /// @dev Calculates army total units
     function _getArmyTotalUnits(IArmy army) internal view returns (uint256) {
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
+        IEra _era = era();
 
         uint256 totalUnits = 0;
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
-            totalUnits += era().units(unitTypeIds[i]).balanceOf(address(army));
+            totalUnits += _era.units(unitTypeIds[i]).balanceOf(address(army));
         }
 
         return totalUnits;
@@ -223,7 +215,7 @@ contract IngotsUnitsPool is WorldAsset, IUnitsPool {
         uint256 currentUnits = _getArmyTotalUnits(army);
 
         uint256 maxAllowedUnits = MathExtension.roundDownWithPrecision(
-            (health * registry().getUnitHiringFortHpMultiplier() / 1e18) / fortLevelCoefficient,
+            (health * Config.unitHiringFortHpMultiplier / 1e18) / fortLevelCoefficient,
             1e18
         );
 

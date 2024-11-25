@@ -33,6 +33,9 @@ interface ICrossErasMemory {
     /// @notice Emitted when #placeSettlementOnMap or #removeUserSettlement is called
     event SettlementOnPositionUpdated(uint64 position, address settlementAddress);
 
+    /// @notice Emitted when #addUserSettlement or #removeUserSettlement is called
+    event SettlementByBannerIdUpdated(uint256 bannerId, address settlementAddress);
+
     // Errors
 
     /// @notice Thrown when attempting to call action which can only be called by active era

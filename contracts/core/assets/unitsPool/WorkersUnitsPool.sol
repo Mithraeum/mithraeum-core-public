@@ -82,16 +82,6 @@ contract WorkersUnitsPool is WorldAsset, IUnitsPool {
         if (!ISettlement(settlementAddress).isRuler(msgSender) && world().worldAssets(eraNumber(), msgSender) == bytes32(0)) revert OnlyRulerOrWorldAsset();
     }
 
-    /// @dev Returns workers
-    function _workers() internal view returns (IWorkers) {
-        return era().workers();
-    }
-
-    /// @dev Returns units by pool unit type
-    function _units() internal view returns (IUnits) {
-        return era().units(unitTypeId);
-    }
-
     /// @dev Core logic related to swapping ingots for exact units
     function _swapWorkersForExactUnits(
         address resourcesOwner,
@@ -111,7 +101,7 @@ contract WorkersUnitsPool is WorldAsset, IUnitsPool {
         if (unitsToBuy == 0 || !MathExtension.isIntegerWithPrecision(unitsToBuy, 1e18)) revert CannotHireUnitsInvalidUnitsToBuySpecified();
         if (address(settlement.relatedRegion()) != address(relatedRegion)) revert CannotHireUnitsForArmyWhichSettlementDoesNotBelongToRelatedRegion();
         if (unitsToBuy > _getMaxAllowedToBuy(settlement, army)) revert CannotHireUnitsExceedingArmyUnitsLimit();
-        if (unitsToBuy > registry().getMaxAllowedUnitsToBuyPerTransaction()) revert CannotHireUnitsExceedingTransactionLimit();
+        if (unitsToBuy > Config.maxAllowedUnitsToBuyPerTransaction) revert CannotHireUnitsExceedingTransactionLimit();
 
         (uint256 workersToSell, uint256 newUnitPrice) = calculateTokensForExactUnits(unitsToBuy / 1e18);
 
@@ -120,10 +110,10 @@ contract WorkersUnitsPool is WorldAsset, IUnitsPool {
         (, uint64 stunEndTime) = army.stunInfo();
         if (stunEndTime != 0) revert CannotHireUnitsWhileArmyIsStunned();
 
-        IWorkers workers = _workers();
-        workers.burnFrom(settlementAddress, workersToSell);
+        IEra _era = era();
 
-        _units().mint(address(army), unitsToBuy);
+        _era.workers().burnFrom(settlementAddress, workersToSell);
+        _era.units(unitTypeId).mint(address(army), unitsToBuy);
 
         unitPrice = newUnitPrice;
         lastPurchaseTime = block.timestamp;
@@ -147,11 +137,12 @@ contract WorkersUnitsPool is WorldAsset, IUnitsPool {
 
     /// @dev Calculates army total units
     function _getArmyTotalUnits(IArmy army) internal view returns (uint256) {
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
+        IEra _era = era();
 
         uint256 totalUnits = 0;
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
-            totalUnits += era().units(unitTypeIds[i]).balanceOf(address(army));
+            totalUnits += _era.units(unitTypeIds[i]).balanceOf(address(army));
         }
 
         return totalUnits;
@@ -163,7 +154,7 @@ contract WorkersUnitsPool is WorldAsset, IUnitsPool {
         uint256 currentUnits = _getArmyTotalUnits(army);
 
         uint256 maxAllowedUnits = MathExtension.roundDownWithPrecision(
-            (health * registry().getUnitHiringFortHpMultiplier() / 1e18) / fortLevelCoefficient,
+            (health * Config.unitHiringFortHpMultiplier / 1e18) / fortLevelCoefficient,
             1e18
         );
 

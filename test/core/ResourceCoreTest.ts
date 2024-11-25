@@ -70,13 +70,31 @@ export class ResourceCoreTest {
         );
 
         //resource investment
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-            ethers.ZeroAddress,
-            await buildingInstance.getAddress(),
-            transferableFromLowBN(new BigNumber(0)),
-            spendingResourceConfigs.map((value) => value.resourceTypeId),
-            spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
         ).then((tx) => tx.wait());
+
+        // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+        //     ethers.ZeroAddress,
+        //     await buildingInstance.getAddress(),
+        //     transferableFromLowBN(new BigNumber(0)),
+        //     spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //     spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        // ).then((tx) => tx.wait());
 
         const productionRateWithPenaltyMultiplier = await ProductionHelper.getProductionRateWithPenaltyMultiplierByRegion(regionInstance);
 
@@ -142,13 +160,31 @@ export class ResourceCoreTest {
         }
 
         //resource investment
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-          testUser2,
-          await buildingInstance.getAddress(),
-          transferableFromLowBN(new BigNumber(0)),
-          spendingResourceConfigs.map((value) => value.resourceTypeId),
-          spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                            resourcesOwnerOrResourcesReceiver: testUser2,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
         ).then((tx) => tx.wait());
+
+        // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+        //   testUser2,
+        //   await buildingInstance.getAddress(),
+        //   transferableFromLowBN(new BigNumber(0)),
+        //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        // ).then((tx) => tx.wait());
 
         const productionRateWithPenaltyMultiplier = await ProductionHelper.getProductionRateWithPenaltyMultiplierByRegion(regionInstance);
 
@@ -188,13 +224,31 @@ export class ResourceCoreTest {
         const spendingResourceConfigs = productionConfig.filter(config => !config.isProducing);
 
         await expect(
-          userSettlementInstance.assignResourcesAndWorkersToBuilding(
-            testUser2,
-            await buildingInstance.getAddress(),
-            transferableFromLowBN(new BigNumber(0)),
-            spendingResourceConfigs.map((value) => value.resourceTypeId),
-            spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
-          ).then((tx) => tx.wait())
+            userSettlementInstance.modifyBuildingsProduction(
+                [
+                    {
+                        buildingTypeId: await buildingInstance.buildingTypeId(),
+                        workersAmount: transferableFromLowBN(new BigNumber(0)),
+                        isTransferringWorkersFromBuilding: false,
+                        resources: spendingResourceConfigs.map(value => {
+                            return {
+                                resourceTypeId: value.resourceTypeId,
+                                resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                                resourcesOwnerOrResourcesReceiver: testUser2,
+                                isTransferringResourcesFromBuilding: false
+                            }
+                        })
+                    }
+                ]
+            ).then((tx) => tx.wait())
+
+          // userSettlementInstance.assignResourcesAndWorkersToBuilding(
+          //   testUser2,
+          //   await buildingInstance.getAddress(),
+          //   transferableFromLowBN(new BigNumber(0)),
+          //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+          //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+          // ).then((tx) => tx.wait())
         ).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'ERC20: insufficient allowance'");
     }
 
@@ -209,13 +263,31 @@ export class ResourceCoreTest {
         const buildingInstance = await BuildingHelper.getSettlementBuildingInstanceByType(userSettlementInstance, buildingType);
 
         await expect(
-            userSettlementInstance.assignResourcesAndWorkersToBuilding(
-                ethers.ZeroAddress,
-                await buildingInstance.getAddress(),
-                transferableFromLowBN(new BigNumber(0)),
-                [notAcceptableResourceTypeId],
-                [transferableFromLowBN(new BigNumber(investQuantity))]
+            userSettlementInstance.modifyBuildingsProduction(
+                [
+                    {
+                        buildingTypeId: await buildingInstance.buildingTypeId(),
+                        workersAmount: transferableFromLowBN(new BigNumber(0)),
+                        isTransferringWorkersFromBuilding: false,
+                        resources: [
+                            {
+                                resourceTypeId: notAcceptableResourceTypeId,
+                                resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                                isTransferringResourcesFromBuilding: false
+                            }
+                        ]
+                    }
+                ]
             ).then((tx) => tx.wait())
+
+            // userSettlementInstance.assignResourcesAndWorkersToBuilding(
+            //     ethers.ZeroAddress,
+            //     await buildingInstance.getAddress(),
+            //     transferableFromLowBN(new BigNumber(0)),
+            //     [notAcceptableResourceTypeId],
+            //     [transferableFromLowBN(new BigNumber(investQuantity))]
+            // ).then((tx) => tx.wait())
         ).to.be.revertedWith("ResourceNotAcceptable()");
     }
 
@@ -243,13 +315,31 @@ export class ResourceCoreTest {
 
         const timeBefore = await EvmUtils.getCurrentTime();
 
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-            ethers.ZeroAddress,
-            await buildingInstance.getAddress(),
-            transferableFromLowBN(new BigNumber(0)),
-            [producingResourceTypeId],
-            [transferableFromLowBN(new BigNumber(investQuantity))]
-        ).then((tx) => tx.wait());
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: [
+                        {
+                            resourceTypeId: producingResourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    ]
+                }
+            ]
+        ).then((tx) => tx.wait())
+
+        // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+        //     ethers.ZeroAddress,
+        //     await buildingInstance.getAddress(),
+        //     transferableFromLowBN(new BigNumber(0)),
+        //     [producingResourceTypeId],
+        //     [transferableFromLowBN(new BigNumber(investQuantity))]
+        // ).then((tx) => tx.wait());
 
         const timeAfter = await EvmUtils.getCurrentTime();
         const passedTime = timeAfter - timeBefore;
@@ -287,13 +377,31 @@ export class ResourceCoreTest {
         const maxQuantityBetweenResources = BigNumber.max(...Object.values(resourcesBefore) as BigNumber[]);
 
         await expect(
-            userSettlementInstance.assignResourcesAndWorkersToBuilding(
-                ethers.ZeroAddress,
-                await buildingInstance.getAddress(),
-                transferableFromLowBN(new BigNumber(0)),
-                spendingResourceConfigs.map((value) => value.resourceTypeId),
-                spendingResourceConfigs.map((_) => transferableFromLowBN(maxQuantityBetweenResources.plus(1)))
+            userSettlementInstance.modifyBuildingsProduction(
+                [
+                    {
+                        buildingTypeId: await buildingInstance.buildingTypeId(),
+                        workersAmount: transferableFromLowBN(new BigNumber(0)),
+                        isTransferringWorkersFromBuilding: false,
+                        resources: spendingResourceConfigs.map(value => {
+                            return {
+                                resourceTypeId: value.resourceTypeId,
+                                resourcesAmount: transferableFromLowBN(maxQuantityBetweenResources.plus(1)),
+                                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                                isTransferringResourcesFromBuilding: false
+                            }
+                        })
+                    }
+                ]
             ).then((tx) => tx.wait())
+
+            // userSettlementInstance.assignResourcesAndWorkersToBuilding(
+            //     ethers.ZeroAddress,
+            //     await buildingInstance.getAddress(),
+            //     transferableFromLowBN(new BigNumber(0)),
+            //     spendingResourceConfigs.map((value) => value.resourceTypeId),
+            //     spendingResourceConfigs.map((_) => transferableFromLowBN(maxQuantityBetweenResources.plus(1)))
+            // ).then((tx) => tx.wait())
         ).to.be.revertedWith("VM Exception while processing transaction: reverted with reason string 'ERC20: transfer amount exceeds balance'");
     }
 
@@ -318,13 +426,30 @@ export class ResourceCoreTest {
             totalResourceCorruptionIndex = totalResourceCorruptionIndex.plus(resourceCorruptionIndex.multipliedBy(investQuantity));
         }
 
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-            ethers.ZeroAddress,
-            await buildingInstance.getAddress(),
-            transferableFromLowBN(new BigNumber(0)),
-            spendingResourceConfigs.map((value) => value.resourceTypeId),
-            spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
-        ).then((tx) => tx.wait());
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+        //     ethers.ZeroAddress,
+        //     await buildingInstance.getAddress(),
+        //     transferableFromLowBN(new BigNumber(0)),
+        //     spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //     spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        // ).then((tx) => tx.wait());
 
         const regionCorruptionIndexBefore = toLowBN(await regionInstance.corruptionIndex());
         const resourcesBefore = await ResourceHelper.getResourcesQuantity(
@@ -337,13 +462,31 @@ export class ResourceCoreTest {
         );
 
         //withdraw resources
-        await buildingInstance.removeResourcesAndWorkers(
-          await userSettlementInstance.getAddress(),
-          transferableFromLowBN(new BigNumber(0)),
-          testUser1,
-          spendingResourceConfigs.map((value) => value.resourceTypeId),
-          spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
-        ).then((tx) => tx.wait());
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                            resourcesOwnerOrResourcesReceiver: testUser1,
+                            isTransferringResourcesFromBuilding: true
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+
+        // await buildingInstance.removeResourcesAndWorkers(
+        //   await userSettlementInstance.getAddress(),
+        //   transferableFromLowBN(new BigNumber(0)),
+        //   testUser1,
+        //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        // ).then((tx) => tx.wait());
 
         const productionRateWithPenaltyMultiplier = await ProductionHelper.getProductionRateWithPenaltyMultiplierByRegion(regionInstance);
 
@@ -386,13 +529,31 @@ export class ResourceCoreTest {
         const spendingResourceConfigs = productionConfig.filter((config) => !config.isProducing);
 
         //resource investment
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-            ethers.ZeroAddress,
-            await buildingInstance.getAddress(),
-            transferableFromLowBN(new BigNumber(0)),
-            spendingResourceConfigs.map((value) => value.resourceTypeId),
-            spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
-        ).then((tx) => tx.wait());
+
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+        //     ethers.ZeroAddress,
+        //     await buildingInstance.getAddress(),
+        //     transferableFromLowBN(new BigNumber(0)),
+        //     spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //     spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        // ).then((tx) => tx.wait());
 
         const resourcesBefore = await ResourceHelper.getResourcesQuantity(
           testUser1,
@@ -403,13 +564,30 @@ export class ResourceCoreTest {
           spendingResourceConfigs.map((value) => ResourceHelper.getResourceTypeByResourceTypeId(value.resourceTypeId))
         );
 
-        await buildingInstance.removeResourcesAndWorkers(
-          await userSettlementInstance.getAddress(),
-          transferableFromLowBN(new BigNumber(0)),
-          testUser1,
-          spendingResourceConfigs.map((value) => value.resourceTypeId),
-          spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity).plus(1)))
-        ).then((tx) => tx.wait());
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity).plus(1)),
+                            resourcesOwnerOrResourcesReceiver: testUser1,
+                            isTransferringResourcesFromBuilding: true
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await buildingInstance.removeResourcesAndWorkers(
+        //   await userSettlementInstance.getAddress(),
+        //   transferableFromLowBN(new BigNumber(0)),
+        //   testUser1,
+        //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity).plus(1)))
+        // ).then((tx) => tx.wait());
 
         const productionRateWithPenaltyMultiplier = await ProductionHelper.getProductionRateWithPenaltyMultiplierByRegion(regionInstance);
 
@@ -437,7 +615,7 @@ export class ResourceCoreTest {
     public static async resourceAssignAfterBattleVersusCultistsTest(buildingType: BuildingType) {
         const {testUser1} = await getNamedAccounts();
 
-        const unitQuantity = 2;
+        const unitQuantity = 1;
         const corruptionIndexAmount = 1000;
         const investQuantity = 100;
 
@@ -485,13 +663,31 @@ export class ResourceCoreTest {
         );
 
         //first resource investment
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-            ethers.ZeroAddress,
-            await buildingInstance.getAddress(),
-            transferableFromLowBN(new BigNumber(0)),
-            spendingResourceConfigs.map((value) => value.resourceTypeId),
-            spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
-        ).then((tx) => tx.wait());
+
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+        //     ethers.ZeroAddress,
+        //     await buildingInstance.getAddress(),
+        //     transferableFromLowBN(new BigNumber(0)),
+        //     spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //     spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        // ).then((tx) => tx.wait());
 
         const resourcesAfterFirstInvestment = await ResourceHelper.getResourcesQuantity(
             testUser1,
@@ -538,13 +734,31 @@ export class ResourceCoreTest {
         );
 
         //second resource investment
-        await userSettlementInstance.assignResourcesAndWorkersToBuilding(
-            ethers.ZeroAddress,
-            await buildingInstance.getAddress(),
-            transferableFromLowBN(new BigNumber(0)),
-            spendingResourceConfigs.map((value) => value.resourceTypeId),
-            spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
-        ).then((tx) => tx.wait());
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(new BigNumber(0)),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(investQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+
+        // await userSettlementInstance.assignResourcesAndWorkersToBuilding(
+        //     ethers.ZeroAddress,
+        //     await buildingInstance.getAddress(),
+        //     transferableFromLowBN(new BigNumber(0)),
+        //     spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //     spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(investQuantity)))
+        // ).then((tx) => tx.wait());
 
         const productionRateWithPenaltyMultiplierAfter = await ProductionHelper.getProductionRateWithPenaltyMultiplierByRegion(regionInstance);
         expect(productionRateWithPenaltyMultiplierAfter)

@@ -33,32 +33,6 @@ _During new world asset creation process registry is asked for factory contract_
 
 
 
-### globalMultiplier
-
-```solidity
-uint256 globalMultiplier
-```
-
-Global multiplier
-
-_Immutable, initialized on the registry creation_
-
-
-
-
-### settlementStartingPrice
-
-```solidity
-uint256 settlementStartingPrice
-```
-
-Settlement starting price
-
-_Immutable, initialized on the registry creation_
-
-
-
-
 ### onlyMightyCreator
 
 ```solidity
@@ -76,17 +50,13 @@ Modifier is calling internal function in order to reduce contract size_
 ### init
 
 ```solidity
-function init(uint256 _globalMultiplier, uint256 _settlementStartingPrice) public
+function init() public
 ```
 
 Proxy initializer
 
 _Called by address which created current instance_
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _globalMultiplier | uint256 |  |
-| _settlementStartingPrice | uint256 |  |
 
 
 
@@ -141,7 +111,7 @@ _Used everywhere, where time is involved. Essentially determines game speed_
 ### getUnitStats
 
 ```solidity
-function getUnitStats(bytes32 unitTypeId) public pure returns (struct IRegistry.UnitStats)
+function getUnitStats(bytes32 unitTypeId) public pure returns (struct Config.UnitStats)
 ```
 
 Returns unit stats by provided unit type
@@ -154,7 +124,7 @@ _Used everywhere, where game logic based on unit stats_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | struct IRegistry.UnitStats |  |
+| [0] | struct Config.UnitStats |  |
 
 
 ### getRobberyPointsPerDamageMultiplier
@@ -201,6 +171,25 @@ function getWorkerCapacityCoefficient(bytes32 buildingTypeId) public pure return
 Calculates worker capacity coefficient for provided building type id
 
 _Used for internal calculation of max workers for each building_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| buildingTypeId | bytes32 | Building type id |
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 |  |
+
+
+### getBuildingUpgradeCostMultiplier
+
+```solidity
+function getBuildingUpgradeCostMultiplier(bytes32 buildingTypeId) public pure returns (uint256)
+```
+
+Returns building upgrade cost multiplier by provided building type
+
+_Used for internal calculation of building upgrade cost_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -331,13 +320,13 @@ _Used internally to determine how long stun will last after army won the battle_
 | [0] | uint256 |  |
 
 
-### getManeuverDurationStunMultiplier
+### getManeuverStunDuration
 
 ```solidity
-function getManeuverDurationStunMultiplier() public pure returns (uint256)
+function getManeuverStunDuration() public pure returns (uint256)
 ```
 
-Returns maneuver duration stun multiplier
+Returns maneuver stun duration
 
 _Used internally to determine how long stun will last after armies' maneuver_
 
@@ -366,7 +355,7 @@ _Used internally to determine which buildings will be created on placing settlem
 ### getGameResources
 
 ```solidity
-function getGameResources() public pure returns (struct IRegistry.GameResource[])
+function getGameResources() public pure returns (struct Config.GameResource[])
 ```
 
 Returns game resources
@@ -381,7 +370,7 @@ _Used internally to determine upgrade costs and providing initial resources for 
 ### getGameUnits
 
 ```solidity
-function getGameUnits() public pure returns (struct IRegistry.GameUnit[])
+function getGameUnits() public pure returns (struct Config.GameUnit[])
 ```
 
 Returns game units
@@ -391,7 +380,7 @@ _Used internally in many places where interaction with units is necessary_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| [0] | struct IRegistry.GameUnit[] |  |
+| [0] | struct Config.GameUnit[] |  |
 
 
 ### getUnitTypeIds
@@ -621,16 +610,19 @@ _Used for production calculation_
 | [0] | uint256 |  |
 
 
-### getUnitPriceIncreaseForEachUnit
+### getUnitPriceIncreaseByUnitTypeId
 
 ```solidity
-function getUnitPriceIncreaseForEachUnit() public pure returns (uint256, uint256)
+function getUnitPriceIncreaseByUnitTypeId(bytes32 unitTypeId) public pure returns (uint256, uint256)
 ```
 
 Returns unit price increase in unit pool for each extra unit to buy (value returned as numerator and denominator)
 
 _Used for determination of unit price_
 
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| unitTypeId | bytes32 | Unit type id |
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -895,13 +887,13 @@ _Used in validation in region tier increase_
 | [0] | uint256 |  |
 
 
-### getInitialCultistsAmountPerRegionTier
+### getInitialCultistsAmountByRegionTier
 
 ```solidity
-function getInitialCultistsAmountPerRegionTier() public pure returns (uint256)
+function getInitialCultistsAmountByRegionTier(uint256 regionTier) public pure returns (uint256)
 ```
 
-Returns initial cultists amount per region tier
+Returns initial cultists amount by region tier
 
 _Used in region activation_
 
@@ -911,13 +903,13 @@ _Used in region activation_
 | [0] | uint256 |  |
 
 
-### getInitialCorruptionIndexAmountPerRegionTier
+### getInitialCorruptionIndexPerCultistMultiplier
 
 ```solidity
-function getInitialCorruptionIndexAmountPerRegionTier() public pure returns (uint256)
+function getInitialCorruptionIndexPerCultistMultiplier() public pure returns (uint256)
 ```
 
-Returns initial corruptionIndex amount per region tier
+Returns initial corruptionIndex amount per initial cultist multiplier
 
 _Used in region activation and region tier increase handler_
 
@@ -943,15 +935,31 @@ _Used in calculation of new settlement price_
 | [0] | uint256 |  |
 
 
-### getStunDurationMultiplierOfCancelledSecretManeuver
+### getStunDurationOfCancelledSecretManeuver
 
 ```solidity
-function getStunDurationMultiplierOfCancelledSecretManeuver() public pure returns (uint256)
+function getStunDurationOfCancelledSecretManeuver() public pure returns (uint256)
 ```
 
-Returns stun duration multiplier of cancelled secret maneuver
+Returns stun duration of cancelled secret maneuver
 
 _Used in calculation of stun duration during cancelling secret maneuver_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 |  |
+
+
+### getDemilitarizationCooldown
+
+```solidity
+function getDemilitarizationCooldown() public pure returns (uint256)
+```
+
+Returns demilitarization cooldown
+
+_Used in determining whether army can be demilitarized at this point_
 
 
 | Name | Type | Description |
@@ -1115,6 +1123,22 @@ _Used to determine if new bid on captured tile is possible_
 | [0] | uint256 |  |
 
 
+### getCaptureTileInitialDuration
+
+```solidity
+function getCaptureTileInitialDuration() public pure returns (uint256)
+```
+
+Returns capture tile initial duration
+
+_Used to determine how long tile capturing will last_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 |  |
+
+
 ### getMinimumUserSettlementsCountInNeighboringRegionRequiredToIncludeRegion
 
 ```solidity
@@ -1172,6 +1196,55 @@ function getNewSettlementPriceIncreaseMultiplier() public pure returns (uint256)
 Returns new settlement price increase multiplier
 
 _Used to determine new settlement purchase price (in 1e18 precision)_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 |  |
+
+
+### getBuildingActivationPrice
+
+```solidity
+function getBuildingActivationPrice() public pure returns (bytes32[], uint256[])
+```
+
+Returns building activation price
+
+_Determines which and how much resources must be taken from user in order to activate building_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | bytes32[] |  |
+| [1] | uint256[] |  |
+
+
+### getBuildingCooldownDurationAfterActivation
+
+```solidity
+function getBuildingCooldownDurationAfterActivation() public pure returns (uint256)
+```
+
+Returns building cooldown duration after building activation
+
+_Determines how long building wont be able to receive upgrades after activation and how long user must wait in order to claim workers for building activation_
+
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | uint256 |  |
+
+
+### getWorkersAmountForBuildingActivation
+
+```solidity
+function getWorkersAmountForBuildingActivation() public pure returns (uint256)
+```
+
+Returns amount of workers able to be claimed for building activation
+
+_Determines how much workers will be given to the user_
 
 
 | Name | Type | Description |

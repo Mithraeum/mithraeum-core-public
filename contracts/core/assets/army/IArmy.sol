@@ -55,6 +55,10 @@ interface IArmy {
     /// @dev Updated when #increaseUnitBattleMultiplier or #decreaseUnitBattleMultiplier is called
     function additionalUnitsBattleMultipliers(bytes32 unitTypeId) external view returns (uint256);
 
+    /// @notice Last demilitarization time
+    /// @dev Updated when #demilitarize is called
+    function lastDemilitarizationTime() external view returns (uint64);
+
     // Events
 
     /// @notice Emitted when #updatePosition is called (even though event can be emitted only on the next action related to the current army, de-facto army will update position based on 'maneuverInfo.endTime'
@@ -193,6 +197,9 @@ interface IArmy {
 
     /// @notice Thrown when attempting to use accelerate maneuver from cultists settlement with non zero cultists
     error ArmyCannotAccelerateManeuverFromCultistsSettlementWithNonZeroCultistsArmy();
+
+    /// @notice Thrown when attempting to demilitarize army during cooldown
+    error ArmyCannotBeDemilitarizedDueToCooldown();
 
     // Functions
 

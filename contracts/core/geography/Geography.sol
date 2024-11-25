@@ -50,7 +50,10 @@ contract Geography is IGeography, WorldInitializable, ProxyReentrancyGuard {
         uint64 newRegionPosition,
         uint64 neighborRegionPosition
     ) public payable override nonReentrant {
-        if (regionsCount == 0 && msg.sender != world.registry().mightyCreator()) {
+        IWorld _world = world;
+        address mightyCreator = _world.registry().mightyCreator();
+
+        if (regionsCount == 0 && msg.sender != mightyCreator) {
             revert FirstRegionCanOnlyBeIncludedByMightyCreator();
         }
 
@@ -66,8 +69,8 @@ contract Geography is IGeography, WorldInitializable, ProxyReentrancyGuard {
             if (!isRegionIncluded(neighborRegionId)) revert CannotIncludeRegionWithInvalidRegionInclusionProofProvided();
             if (!_areNeighbors(newRegionPosition, neighborRegionPosition)) revert CannotIncludeRegionWithInvalidRegionInclusionProofProvided();
 
-            if (msg.sender != world.registry().mightyCreator()) {
-                if (world.crossErasMemory().regionUserSettlementsCount(neighborRegionId) < registry().getMinimumUserSettlementsCountInNeighboringRegionRequiredToIncludeRegion()) revert CannotIncludeRegionDueToInsufficientUserSettlementsCountInNeighboringRegion();
+            if (msg.sender != mightyCreator) {
+                if (_world.crossErasMemory().regionUserSettlementsCount(neighborRegionId) < Config.minimumUserSettlementsCountInNeighboringRegionRequiredToIncludeRegion) revert CannotIncludeRegionDueToInsufficientUserSettlementsCountInNeighboringRegion();
             }
         }
 
@@ -75,9 +78,9 @@ contract Geography is IGeography, WorldInitializable, ProxyReentrancyGuard {
             uint256 regionTier = _generateRegionTier(newRegionId);
             regionTiers[newRegionId] = regionTier;
 
-            uint256 regionInclusionPrice = world.registry().getRegionInclusionPrice(regionTier);
+            uint256 regionInclusionPrice = Config.getRegionInclusionPrice(regionTier);
 
-            IERC20 erc20ForRegionInclusion = world.erc20ForRegionInclusion();
+            IERC20 erc20ForRegionInclusion = _world.erc20ForRegionInclusion();
             if (address(erc20ForRegionInclusion) == address(0)) {
                 if (msg.value < regionInclusionPrice) revert CannotIncludeRegionDueToInsufficientValueSent();
 
@@ -86,22 +89,22 @@ contract Geography is IGeography, WorldInitializable, ProxyReentrancyGuard {
                     Address.sendValue(payable(msg.sender), valueToSendBack);
                 }
 
-                Address.sendValue(payable(address(world.registry().mightyCreator())), regionInclusionPrice);
+                Address.sendValue(payable(mightyCreator), regionInclusionPrice);
             } else {
                 SafeERC20.safeTransferFrom(
                     erc20ForRegionInclusion,
                     msg.sender,
-                    address(world.registry().mightyCreator()),
+                    mightyCreator,
                     regionInclusionPrice
                 );
             }
         } else {
-            regionTiers[newRegionId] = registry().getMaxRegionTier();
+            regionTiers[newRegionId] = Config.maxRegionTier;
         }
 
         regionsCount++;
         includedRegions[newRegionId] = regionsCount;
-        world.regionOwnershipToken().mint(msg.sender, newRegionId);
+        _world.regionOwnershipToken().mint(msg.sender, newRegionId);
 
         emit RegionIncluded(newRegionId);
     }
@@ -274,7 +277,7 @@ contract Geography is IGeography, WorldInitializable, ProxyReentrancyGuard {
     function _generateRegionTier(uint64 regionId) internal view returns (uint256) {
         bytes32 randomHash = keccak256(abi.encodePacked(regionId, world.getRegionTierSeed()));
         uint256 randomValue = uint256(randomHash) % 1e18;
-        uint256 regionTier = ((randomValue * (registry().getMaxRegionTier())) / 1e18) + 1;
+        uint256 regionTier = ((randomValue * (Config.maxRegionTier)) / 1e18) + 1;
 
         return regionTier;
     }

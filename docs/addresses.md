@@ -4,12 +4,11 @@ All related addresses to the current version of the game can be fetched from Wor
 
 | Name                          | Address                                     |
 |-------------------------------|---------------------------------------------|
-| World                         | 0x020D98a7597C8F1C9345d2a6d60965f11AcE0248  |
-| Registry                      | 0x936d43d898408139cDd3CdB89829dfFeD0715dd4  |
-| ERC20 for settlement purchase | 0x0000000000000000000000000000000000000000  |
-| ERC20 for region inclusion    | 0xbEEAdE497814f9440ebF017589639Db0064D8B9e  |
-| Cross era memory              | 0x3e7b8bcDDD81D809BF781C9aA70a51B5900eBb96  |
-| Geography                     | 0x167a840Db7Fc8a348567d6bCa69A504d4597681c  |
-| Banners                       | 0x5f7391659E4D435d4db8F93FbC8cfc8C60590b27  |
-| Distributions                 | 0xA69c29b0932E76010E4B280555a18905aFeBd3A1  |
-| Reward pool                   | 0x35F673874c1658CC4b1Bac34A4B828Ab77038D4A  |
+| World                         | 0xf5344A6dc5a11E4c51cEC45dcCD53b665936F5F1  |
+| Registry                      | 0x6417E1aea8c4f0262Fc8B80adfaeb7D8063CbfB8  |
+| ERC20 for settlement purchase | 0xc5A6B8D69d7526d272EE0F91b68d259A25cCDf81  |
+| ERC20 for region inclusion    | 0xc5A6B8D69d7526d272EE0F91b68d259A25cCDf81  |
+| Cross era memory              | 0xD4d65e294e7C5809f029BB79C3f90Cbc45de6537  |
+| Geography                     | 0x036F78cEcE1037Fb1671c8d1d7A19C4F5FC9c5c9  |
+| Banners                       | 0xaE38224a996d9Cf9D4CC0b7e36B3b3e94B75EA4A  |
+| Distributions                 | 0xD5DF04f1085A74c37063E26628F5114E12030527  |

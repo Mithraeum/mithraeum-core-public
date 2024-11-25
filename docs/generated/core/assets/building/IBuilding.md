@@ -59,6 +59,22 @@ struct ProductionInfo {
 }
 ```
 
+### BuildingActivationInfo
+
+
+
+
+
+
+
+
+```solidity
+struct BuildingActivationInfo {
+  uint64 activationTime;
+  bool isWorkersClaimed;
+}
+```
+
 ### ProductionResultItem
 
 
@@ -232,6 +248,19 @@ _Updated when #distributeToSingleHolder or #distributeToAllShareholders is calle
 
 
 
+### buildingActivationInfo
+
+```solidity
+function buildingActivationInfo() external view returns (uint64 activationTime, bool isWorkersClaimed)
+```
+
+Building activation info
+
+_Updated when #activateBuilding or #claimWorkersForBuildingActivation is called_
+
+
+
+
 ### BasicProductionUpgraded
 
 ```solidity
@@ -345,6 +374,18 @@ Emitted when producedResourceDebt updated for distributionNftHolder
 
 
 
+### WorkersClaimed
+
+```solidity
+event WorkersClaimed()
+```
+
+Emitted when #claimWorkersForBuildingActivation is called
+
+
+
+
+
 ### OnlyDistributions
 
 ```solidity
@@ -393,6 +434,18 @@ Thrown when attempting to reset distribution of building tokens when its not all
 
 
 
+### BuildingCannotBeUpgradedWhileItsNotActivated
+
+```solidity
+error BuildingCannotBeUpgradedWhileItsNotActivated()
+```
+
+Thrown when attempting to upgrade building when its not activated
+
+
+
+
+
 ### BuildingCannotBeUpgradedWhileUpgradeIsOnCooldown
 
 ```solidity
@@ -405,13 +458,37 @@ Thrown when attempting to upgrade building when upgrades are on cooldown
 
 
 
-### CannotTransferProducingResourceFromBuilding
+### BuildingCannotBeActivatedMoreThanOnce
 
 ```solidity
-error CannotTransferProducingResourceFromBuilding()
+error BuildingCannotBeActivatedMoreThanOnce()
 ```
 
-Thrown when attempting to transfer producing resource from building
+Thrown when attempting to activate building more than once in its lifetime
+
+
+
+
+
+### BuildingCannotGiveWorkersBeforeActivationCooldownFinished
+
+```solidity
+error BuildingCannotGiveWorkersBeforeActivationCooldownFinished()
+```
+
+Thrown when attempting to claim workers before activation cooldown finished
+
+
+
+
+
+### BuildingCannotGiveWorkersMoreThanOnce
+
+```solidity
+error BuildingCannotGiveWorkersMoreThanOnce()
+```
+
+Thrown when attempting to claim workers more than once
 
 
 
@@ -634,6 +711,37 @@ _If level=1 then returned value will be duration which is taken for upgrading fr
 | upgradeCooldownDuration | uint256 | Upgrade cooldown duration |
 
 
+### activateBuilding
+
+```solidity
+function activateBuilding(address resourcesOwner) external
+```
+
+Activates building
+
+_Necessary resources for activation will be taken either from msg.sender or resourcesOwner (if resource.allowance allows it)
+If resourcesOwner == address(0) -> resources will be taken from msg.sender
+If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= upgradePrice -> resources will be taken from resourcesOwner_
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| resourcesOwner | address | Resources owner |
+
+
+
+### claimWorkersForBuildingActivation
+
+```solidity
+function claimWorkersForBuildingActivation() external
+```
+
+Claims workers for building activation
+
+_Workers can be claimed only once and after building cooldown duration after activation has passed_
+
+
+
+
 ### upgradeBasicProduction
 
 ```solidity
@@ -701,26 +809,6 @@ ProductionConfigItem.amountPerTick is value how much of resource is spend/produc
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | productionConfigItems | struct IBuilding.ProductionConfigItem[] | Production config for current building |
-
-
-### removeResourcesAndWorkers
-
-```solidity
-function removeResourcesAndWorkers(address workersReceiverAddress, uint256 workersAmount, address resourcesReceiverAddress, bytes32[] resourceTypeIds, uint256[] resourcesAmounts) external
-```
-
-Transfers game resources and workers from building to provided addresses
-
-_Removes resources+workers from building in single transaction_
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| workersReceiverAddress | address | Workers receiver address (building or settlement) |
-| workersAmount | uint256 | Workers amount (in 1e18 precision) |
-| resourcesReceiverAddress | address | Resources receiver address |
-| resourceTypeIds | bytes32[] | Resource type ids |
-| resourcesAmounts | uint256[] | Resources amounts |
-
 
 
 ### getMaxTreasuryByLevel

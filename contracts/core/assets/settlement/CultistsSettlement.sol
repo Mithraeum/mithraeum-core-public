@@ -28,7 +28,17 @@ contract CultistsSettlement is WorldAsset, ISettlement {
         relatedRegion = IRegion(regionAddress);
         position = settlementPosition;
 
-        _createArmy();
+        // 1. Army
+        address armyAddress = worldAssetFactory().create(
+            address(world()),
+            eraNumber(),
+            ARMY_GROUP_TYPE_ID,
+            BASIC_TYPE_ID,
+            abi.encode(address(this))
+        );
+
+        army = IArmy(armyAddress);
+        emit ArmyCreated(armyAddress, position);
     }
 
     /// @notice For cultists settlement any provided address is not ruler
@@ -115,12 +125,8 @@ contract CultistsSettlement is WorldAsset, ISettlement {
 
     /// @notice For cultists settlement this function is disabled
     /// @inheritdoc ISettlement
-    function assignResourcesAndWorkersToBuilding(
-        address resourcesOwner,
-        address buildingAddress,
-        uint256 workersAmount,
-        bytes32[] memory resourceTypeIds,
-        uint256[] memory resourcesAmounts
+    function modifyBuildingsProduction(
+        BuildingProductionModificationParam[] memory params
     ) public override {
         revert Disabled();
     }
@@ -205,20 +211,5 @@ contract CultistsSettlement is WorldAsset, ISettlement {
     /// @inheritdoc ISettlement
     function payToDecreaseCorruptionIndex(uint256 tokensAmount) public payable override {
         revert Disabled();
-    }
-
-    /// @dev Creates settlements army
-    function _createArmy() internal {
-        address armyAddress = worldAssetFactory().create(
-            address(world()),
-            eraNumber(),
-            ARMY_GROUP_TYPE_ID,
-            BASIC_TYPE_ID,
-            abi.encode(address(this))
-        );
-
-        army = IArmy(armyAddress);
-
-        emit ArmyCreated(armyAddress, position);
     }
 }

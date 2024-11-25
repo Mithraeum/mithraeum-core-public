@@ -236,11 +236,19 @@ export class MovementCoreTest {
     const unitQuantity = 8;
     const siegeUnitQuantity = unitQuantity / 2;
     const unitTypes = [UnitType.WARRIOR];
+    const assignWorkerQuantity = 2;
+    const fortLevel = 3;
     const speedUpPercentage = 100;
     const robberyMultiplier = 1;
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
+
+    const fort1 = await SettlementHelper.getFort(userSettlementInstance1);
+    await BuildingHelper.upgradeBuildingToSpecifiedLevel(fort1, fortLevel, true);
+
+    const fortMaxHealth = toLowBN(await fort1.getMaxHealthOnLevel(fortLevel));
+    await FortHelper.repairFort(userSettlementInstance1, assignWorkerQuantity, fortMaxHealth);
 
     const army1 = await SettlementHelper.getArmy(userSettlementInstance1);
     const army2 = await SettlementHelper.getArmy(userSettlementInstance2);
@@ -265,15 +273,15 @@ export class MovementCoreTest {
         transferableFromLowBN(new BigNumber(robberyMultiplier))
     ).then((tx) => tx.wait());
 
-    const fort = await SettlementHelper.getFort(userSettlementInstance2);
+    const fort2 = await SettlementHelper.getFort(userSettlementInstance2);
 
     const armyStunDuration = await ArmyHelper.getStunDuration(army1);
     const fortDestructionTime = await FortHelper.getSettlementFortDestructionTime(userSettlementInstance2);
     await EvmUtils.increaseTime(fortDestructionTime);
 
-    await fort.updateState().then((tx) => tx.wait());
+    await fort2.updateState().then((tx) => tx.wait());
 
-    const fortHealth = toLowBN(await fort.health());
+    const fortHealth = toLowBN(await fort2.health());
     expect(fortHealth).eql(new BigNumber(0), 'Fort health is not correct');
 
     await farm.updateState().then((tx) => tx.wait());
@@ -390,12 +398,16 @@ export class MovementCoreTest {
     const unitQuantity1 = 1;
     const unitQuantity2 = 2;
     const speedUpFoodQuantity = 5;
+    const assignWorkerQuantity = 2;
+    const fortHealth = 6;
 
     const gameUnits = await WorldHelper.getGameUnits();
     const unitTypes = gameUnits.map(gameUnits => UnitHelper.getUnitTypeByUnitTypeId(gameUnits));
 
     const userSettlementInstance1 = await UserHelper.getUserSettlementByNumber(testUser1, 1);
     const userSettlementInstance2 = await UserHelper.getUserSettlementByNumber(testUser2, 1);
+
+    await FortHelper.repairFort(userSettlementInstance2, assignWorkerQuantity, new BigNumber(fortHealth));
 
     const army1 = await SettlementHelper.getArmy(userSettlementInstance1);
     const army2 = await SettlementHelper.getArmy(userSettlementInstance2);
@@ -917,7 +929,7 @@ export class MovementCoreTest {
     const minHiddenManeuverDuration = MovementHelper.getManeuverDurationByDistance(Math.sqrt(distanceBetweenPositions));
 
     const timeBefore = await EvmUtils.getCurrentTime();
-    await EvmUtils.increaseTime(minHiddenManeuverDuration);
+    await EvmUtils.increaseTime(minHiddenManeuverDuration * 1.2); //0.2 to get enough treasury
 
     const resourceAmountForSpeedUp = await MovementHelper.getResourceAmountForSpeedUp(
         army,
@@ -986,7 +998,7 @@ export class MovementCoreTest {
     expect(await ArmyHelper.isArmyInHiddenManeuver(army)).to.be.true;
 
     const minHiddenManeuverDuration = MovementHelper.getManeuverDurationByDistance(Math.sqrt(distanceBetweenPositions));
-    await EvmUtils.increaseTime(minHiddenManeuverDuration / 2);
+    await EvmUtils.increaseTime(minHiddenManeuverDuration * 0.9);
 
     const resourceAmountForSpeedUp = await MovementHelper.getResourceAmountForSpeedUp(
         army,
@@ -1545,10 +1557,9 @@ export class MovementCoreTest {
     const actualManeuverDurationWithSpeedUp = await ArmyHelper.getManeuverDuration(army);
 
     const buildingTreasuryAmountAfter = await ResourceHelper.getBuildingTreasuryAmount(buildingInstance);
-    expect(buildingTreasuryAmountAfter).eql(buildingTreasuryAmountBefore, 'Building treasury amount is not correct');
 
-    const actualManeuverDuration = await ArmyHelper.getManeuverDuration(army);
-    expect(actualManeuverDuration).lt(maneuverDuration, 'Maneuver duration is not correct');
+    expect(buildingTreasuryAmountAfter).eql(buildingTreasuryAmountBefore, 'Building treasury amount is not correct');
+    expect(actualManeuverDurationWithSpeedUp).lt(maneuverDuration, 'Maneuver duration is not correct');
     expect(new BigNumber(actualManeuverDurationWithSpeedUp))
         .isInCloseRangeWith(new BigNumber(maneuverDurationWithMaxSpeedUp)
             .integerValue(BigNumber.ROUND_CEIL), 'Maneuver duration is not correct');
@@ -1556,7 +1567,7 @@ export class MovementCoreTest {
     const timeAfter = await EvmUtils.getCurrentTime();
     const passedTime = timeAfter - timeBefore;
 
-    await EvmUtils.increaseTime(actualManeuverDuration - passedTime);
+    await EvmUtils.increaseTime(actualManeuverDurationWithSpeedUp - passedTime);
 
     const actualArmyPosition = await army.getCurrentPosition();
     expect(actualArmyPosition).eql(positionBefore, 'Army position is not correct');

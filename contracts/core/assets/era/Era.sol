@@ -38,14 +38,20 @@ contract Era is WorldAsset, IEra {
             uint256 eraNumber
         ) = abi.decode(initParams, (uint256));
 
-        // 1. create new resources
-        IRegistry.GameResource[] memory gameResources = registry().getGameResources();
-        for (uint256 i = 0; i < gameResources.length; i++) {
-            IRegistry.GameResource memory gameResource = gameResources[i];
+        address worldAddress = address(world());
+        IWorldAssetFactory factory = worldAssetFactory();
 
-            address resourceAddress = _createNewResource(
-                gameResource,
-                eraNumber
+        // 1. create new resources
+        Config.GameResource[] memory gameResources = Config.getGameResources();
+        for (uint256 i = 0; i < gameResources.length; i++) {
+            Config.GameResource memory gameResource = gameResources[i];
+
+            address resourceAddress = factory.create(
+                worldAddress,
+                eraNumber,
+                RESOURCE_GROUP_TYPE_ID,
+                BASIC_TYPE_ID,
+                abi.encode(gameResource.tokenName, gameResource.tokenSymbol, gameResource.resourceTypeId)
             );
 
             resources[gameResource.resourceTypeId] = IResource(resourceAddress);
@@ -53,13 +59,16 @@ contract Era is WorldAsset, IEra {
         }
 
         // 2. create new units
-        IRegistry.GameUnit[] memory gameUnits = registry().getGameUnits();
+        Config.GameUnit[] memory gameUnits = Config.getGameUnits();
         for (uint256 i = 0; i < gameUnits.length; i++) {
-            IRegistry.GameUnit memory gameUnit = gameUnits[i];
+            Config.GameUnit memory gameUnit = gameUnits[i];
 
-            address unitsAddress = _createNewUnits(
-                gameUnit,
-                eraNumber
+            address unitsAddress = factory.create(
+                worldAddress,
+                eraNumber,
+                UNITS_GROUP_TYPE_ID,
+                BASIC_TYPE_ID,
+                abi.encode(gameUnit.tokenName, gameUnit.tokenSymbol, gameUnit.unitTypeId)
             );
 
             units[gameUnit.unitTypeId] = IUnits(unitsAddress);
@@ -67,29 +76,52 @@ contract Era is WorldAsset, IEra {
         }
 
         // 3. create new workers
-        address workersAddress = _createNewWorkers(eraNumber);
+        address workersAddress = factory.create(
+            worldAddress,
+            eraNumber,
+            WORKERS_GROUP_TYPE_ID,
+            BASIC_TYPE_ID,
+            abi.encode()
+        );
+
         workers = IWorkers(workersAddress);
         emit WorkersCreated(workersAddress);
 
         // 4. create new prosperity
-        address prosperityAddress = _createNewProsperity(eraNumber);
+        address prosperityAddress = factory.create(
+            worldAddress,
+            eraNumber,
+            PROSPERITY_GROUP_TYPE_ID,
+            BASIC_TYPE_ID,
+            abi.encode()
+        );
+
         prosperity = IProsperity(prosperityAddress);
         emit ProsperityCreated(prosperityAddress);
 
         // 5. create new tile capturing system
-        address tileCapturingSystemAddress = _createNewTileCapturingSystem(eraNumber);
+        address tileCapturingSystemAddress = factory.create(
+            worldAddress,
+            eraNumber,
+            TILE_CAPTURING_SYSTEM_GROUP_TYPE_ID,
+            BASIC_TYPE_ID,
+            abi.encode()
+        );
+
         tileCapturingSystem = ITileCapturingSystem(tileCapturingSystemAddress);
         emit TileCapturingSystemCreated(tileCapturingSystemAddress);
     }
 
     /// @inheritdoc IEra
     function activateRegion(uint64 regionId) public override {
+        IWorld _world = world();
+
         if (address(regions[regionId]) != address(0)) revert EraCannotActivateRegionMoreThanOnce();
-        if (!world().geography().isRegionIncluded(regionId)) revert EraCannotActivateNotIncludedRegion();
+        if (!_world.geography().isRegionIncluded(regionId)) revert EraCannotActivateNotIncludedRegion();
 
         //1. create region
         address regionAddress = worldAssetFactory().create(
-            address(world()),
+            address(_world),
             eraNumber(),
             REGION_GROUP_TYPE_ID,
             BASIC_TYPE_ID,
@@ -108,16 +140,18 @@ contract Era is WorldAsset, IEra {
     function restoreUserSettlement(
         uint64 position
     ) public override onlyActiveGame {
-        if (eraNumber() != world().currentEraNumber()) revert UserSettlementCannotBeRestoredFromInactiveEra();
+        IWorld _world = world();
 
-        ICrossErasMemory crossErasMemory = world().crossErasMemory();
+        if (eraNumber() != _world.currentEraNumber()) revert UserSettlementCannotBeRestoredFromInactiveEra();
+
+        ICrossErasMemory crossErasMemory = _world.crossErasMemory();
 
         ISettlement settlement = crossErasMemory.settlementByPosition(position);
         if (settlement.isRottenSettlement()) revert UserSettlementCannotBeRestoredIfItsRotten();
 
         uint256 bannerIdByPosition = settlement.bannerId();
 
-        (uint64 regionId, bool isPositionExist) = world().geography().getRegionIdByPosition(position);
+        (uint64 regionId, bool isPositionExist) = _world.geography().getRegionIdByPosition(position);
 
         address settlementAddress = this.createSettlementByType(
             bannerIdByPosition,
@@ -137,14 +171,15 @@ contract Era is WorldAsset, IEra {
         uint64 regionId,
         uint256 bannerId
     ) public override onlyWorldAssetFromSameEra returns (address) {
-        IGeography geography = world().geography();
-        ICrossErasMemory crossErasMemory = world().crossErasMemory();
+        IWorld _world = world();
+        IGeography geography = _world.geography();
+        ICrossErasMemory crossErasMemory = _world.crossErasMemory();
 
         if (address(crossErasMemory.settlementByPosition(position)) != address(0)) revert UserSettlementCannotBeCreatedOnPositionWithAnotherSettlement();
         if (_hasSettlementInRadius(geography, crossErasMemory, position, 2)) revert UserSettlementCannotBeCreatedOnPositionWhichIsToCloseToAnotherSettlement();
         if (address(crossErasMemory.settlementByBannerId(bannerId)) != address(0)) revert UserSettlementCannotBeCreatedIfBannerNftIdIsAlreadyTakenByAnotherSettlement();
-        if (eraNumber() != world().currentEraNumber()) revert UserSettlementCannotBeCreatedInInactiveEra();
-        if (crossErasMemory.regionUserSettlementsCount(regionId) == registry().getMaxSettlementsPerRegion()) revert UserSettlementCannotBeCreatedInRegionWithMaximumAllowedSettlements();
+        if (eraNumber() != _world.currentEraNumber()) revert UserSettlementCannotBeCreatedInInactiveEra();
+        if (crossErasMemory.regionUserSettlementsCount(regionId) == Config.maxSettlementsPerRegion) revert UserSettlementCannotBeCreatedInRegionWithMaximumAllowedSettlements();
         if (!_hasSettlementInRingRadius(geography, crossErasMemory, position, 3)) revert UserSettlementCannotBeCreatedOnPositionWhichIsNotConnectedToAnotherSettlement();
 
         address settlementAddress = this.createSettlementByType(
@@ -166,17 +201,19 @@ contract Era is WorldAsset, IEra {
         uint64 regionId,
         bytes32 assetTypeId
     ) public override onlyWorldAssetFromSameEra returns (address) {
+        IWorld _world = world();
+
         address regionAddress = address(regions[regionId]);
 
         address settlementAddress = worldAssetFactory().create(
-            address(world()),
+            address(_world),
             eraNumber(),
             SETTLEMENT_GROUP_TYPE_ID,
             assetTypeId,
             abi.encode(bannerId, regionAddress, position)
         );
 
-        ICrossErasMemory crossErasMemory = world().crossErasMemory();
+        ICrossErasMemory crossErasMemory = _world.crossErasMemory();
         _placeSettlementOnMap(crossErasMemory, settlementAddress);
 
         tileCapturingSystem.handleSettlementCreatedOnPosition(position);
@@ -200,67 +237,6 @@ contract Era is WorldAsset, IEra {
     ) public override onlyWorldAssetFromSameEra {
         totalCultists -= value;
         emit TotalCultistsChanged(totalCultists);
-    }
-
-    /// @dev Creates tile capturing system instance
-    function _createNewTileCapturingSystem(uint256 eraNumber) internal returns (address) {
-        return worldAssetFactory().create(
-            address(world()),
-            eraNumber,
-            TILE_CAPTURING_SYSTEM_GROUP_TYPE_ID,
-            BASIC_TYPE_ID,
-            abi.encode()
-        );
-    }
-
-    /// @dev Creates new prosperity instance
-    function _createNewProsperity(uint256 eraNumber) internal returns (address) {
-        return worldAssetFactory().create(
-            address(world()),
-            eraNumber,
-            PROSPERITY_GROUP_TYPE_ID,
-            BASIC_TYPE_ID,
-            abi.encode()
-        );
-    }
-
-    /// @dev Creates new workers instance
-    function _createNewWorkers(uint256 eraNumber) internal returns (address) {
-        return worldAssetFactory().create(
-            address(world()),
-            eraNumber,
-            WORKERS_GROUP_TYPE_ID,
-            BASIC_TYPE_ID,
-            abi.encode()
-        );
-    }
-
-    /// @dev Creates new resource instance
-    function _createNewResource(
-        IRegistry.GameResource memory gameResource,
-        uint256 eraNumber
-    ) internal returns (address) {
-        return worldAssetFactory().create(
-            address(world()),
-            eraNumber,
-            RESOURCE_GROUP_TYPE_ID,
-            BASIC_TYPE_ID,
-            abi.encode(gameResource.tokenName, gameResource.tokenSymbol, gameResource.resourceTypeId)
-        );
-    }
-
-    /// @dev Creates new units instance
-    function _createNewUnits(
-        IRegistry.GameUnit memory gameUnit,
-        uint256 eraNumber
-    ) internal returns (address) {
-        return worldAssetFactory().create(
-            address(world()),
-            eraNumber,
-            UNITS_GROUP_TYPE_ID,
-            BASIC_TYPE_ID,
-            abi.encode(gameUnit.tokenName, gameUnit.tokenSymbol, gameUnit.unitTypeId)
-        );
     }
 
     /// @dev Calculates does any settlement exists in provided radius
@@ -303,10 +279,11 @@ contract Era is WorldAsset, IEra {
         bool isNewSettlement
     ) internal {
         ISettlement settlement = ISettlement(settlementAddress);
+
         uint256 bannerId = settlement.bannerId();
         uint64 regionId = settlement.relatedRegion().regionId();
 
-        settlementByBannerId[bannerId] = ISettlement(settlementAddress);
+        settlementByBannerId[bannerId] = settlement;
         crossErasMemory.addUserSettlement(
             bannerId,
             regionId,

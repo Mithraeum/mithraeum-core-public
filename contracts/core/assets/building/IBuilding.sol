@@ -26,6 +26,11 @@ interface IBuilding {
         uint256 totalDebt;
     }
 
+    struct BuildingActivationInfo {
+        uint64 activationTime;
+        bool isWorkersClaimed;
+    }
+
     struct ProductionResultItem {
         bytes32 resourceTypeId;
         uint256 balanceDelta;
@@ -104,6 +109,10 @@ interface IBuilding {
     /// @dev Updated when #distributeToSingleHolder or #distributeToAllShareholders is called
     function producedResourceDebt(address holder) external view returns (uint256);
 
+    /// @notice Building activation info
+    /// @dev Updated when #activateBuilding or #claimWorkersForBuildingActivation is called
+    function buildingActivationInfo() external view returns (uint64 activationTime, bool isWorkersClaimed);
+
     // Events
 
     /// @notice Emitted when #doBasicProductionUpgrade is called
@@ -148,6 +157,9 @@ interface IBuilding {
         uint256 newDebt
     );
 
+    /// @notice Emitted when #claimWorkersForBuildingActivation is called
+    event WorkersClaimed();
+
     // Errors
 
     /// @notice Thrown when attempting to call action which can be called only by Distributions
@@ -162,11 +174,20 @@ interface IBuilding {
     /// @notice Thrown when attempting to reset distribution of building tokens when its not allowed
     error DistributionResetNotAllowedWhenTreasuryThresholdNotMet();
 
+    /// @notice Thrown when attempting to upgrade building when its not activated
+    error BuildingCannotBeUpgradedWhileItsNotActivated();
+
     /// @notice Thrown when attempting to upgrade building when upgrades are on cooldown
     error BuildingCannotBeUpgradedWhileUpgradeIsOnCooldown();
 
-    /// @notice Thrown when attempting to transfer producing resource from building
-    error CannotTransferProducingResourceFromBuilding();
+    /// @notice Thrown when attempting to activate building more than once in its lifetime
+    error BuildingCannotBeActivatedMoreThanOnce();
+
+    /// @notice Thrown when attempting to claim workers before activation cooldown finished
+    error BuildingCannotGiveWorkersBeforeActivationCooldownFinished();
+
+    /// @notice Thrown when attempting to claim workers more than once
+    error BuildingCannotGiveWorkersMoreThanOnce();
 
     // Functions
 
@@ -244,6 +265,17 @@ interface IBuilding {
     /// @return upgradeCooldownDuration Upgrade cooldown duration
     function getAdvancedUpgradeCooldownDuration(uint256 level) external view returns (uint256 upgradeCooldownDuration);
 
+    /// @notice Activates building
+    /// @dev Necessary resources for activation will be taken either from msg.sender or resourcesOwner (if resource.allowance allows it)
+    /// @dev If resourcesOwner == address(0) -> resources will be taken from msg.sender
+    /// @dev If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= upgradePrice -> resources will be taken from resourcesOwner
+    /// @param resourcesOwner Resources owner
+    function activateBuilding(address resourcesOwner) external;
+
+    /// @notice Claims workers for building activation
+    /// @dev Workers can be claimed only once and after building cooldown duration after activation has passed
+    function claimWorkersForBuildingActivation() external;
+
     /// @notice Upgrades basic production
     /// @dev Necessary resources for upgrade will be taken either from msg.sender or resourcesOwner (if resource.allowance allows it)
     /// @dev If resourcesOwner == address(0) -> resources will be taken from msg.sender
@@ -268,21 +300,6 @@ interface IBuilding {
     /// @dev ProductionConfigItem.amountPerTick is value how much of resource is spend/produced by 1 worker in 1 tick of production
     /// @return productionConfigItems Production config for current building
     function getConfig() external view returns (ProductionConfigItem[] memory productionConfigItems);
-
-    /// @notice Transfers game resources and workers from building to provided addresses
-    /// @dev Removes resources+workers from building in single transaction
-    /// @param workersReceiverAddress Workers receiver address (building or settlement)
-    /// @param workersAmount Workers amount (in 1e18 precision)
-    /// @param resourcesReceiverAddress Resources receiver address
-    /// @param resourceTypeIds Resource type ids
-    /// @param resourcesAmounts Resources amounts
-    function removeResourcesAndWorkers(
-        address workersReceiverAddress,
-        uint256 workersAmount,
-        address resourcesReceiverAddress,
-        bytes32[] calldata resourceTypeIds,
-        uint256[] calldata resourcesAmounts
-    ) external;
 
     /// @notice Calculates maximum amount of treasury by provided level
     /// @dev Can be used to determine maximum amount of treasury by any level

@@ -25,23 +25,57 @@ export class ProductionHelper {
     const productionConfig = await buildingInstance.getConfig();
     const spendingResourceConfigs = productionConfig.filter((config) => !config.isProducing);
 
-    await settlementInstance.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await buildingInstance.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await settlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await settlementInstance.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await buildingInstance.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     await EvmUtils.increaseTime(productionTime);
 
-    await buildingInstance.removeResourcesAndWorkers(
-      await settlementInstance.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      HardhatHelper.getRunnerAddress(settlementInstance.runner),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await settlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: true,
+            resources: spendingResourceConfigs.map((value) => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: HardhatHelper.getRunnerAddress(settlementInstance.runner),
+                isTransferringResourcesFromBuilding: true
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await buildingInstance.removeResourcesAndWorkers(
+    //   await settlementInstance.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   HardhatHelper.getRunnerAddress(settlementInstance.runner),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     await buildingInstance.distributeToAllShareholders().then((tx) => tx.wait());
   }
@@ -193,26 +227,60 @@ export class ProductionHelper {
     const productionConfig = await buildingInstance.getConfig();
     const spendingResourceConfigs = productionConfig.filter((config) => !config.isProducing);
 
-    await settlementInstance.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await buildingInstance.getAddress(),
-      transferableFromLowBN(workersCap),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await settlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance.buildingTypeId(),
+            workersAmount: transferableFromLowBN(workersCap),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await settlementInstance.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await buildingInstance.getAddress(),
+    //   transferableFromLowBN(workersCap),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     const buildingLastUpdateStateTimeBefore = toBN((await buildingInstance.productionInfo()).lastUpdateStateTime);
     const buildingLastUpdateStateRegionTimeBefore = toBN((await buildingInstance.productionInfo()).lastUpdateStateRegionTime);
 
     await EvmUtils.increaseTime(productionTime);
 
-    await buildingInstance.removeResourcesAndWorkers(
-      await settlementInstance.getAddress(),
-      transferableFromLowBN(workersCap),
-      HardhatHelper.getRunnerAddress(settlementInstance.runner),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    await settlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await buildingInstance.buildingTypeId(),
+            workersAmount: transferableFromLowBN(workersCap),
+            isTransferringWorkersFromBuilding: true,
+            resources: spendingResourceConfigs.map((value) => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                resourcesOwnerOrResourcesReceiver: HardhatHelper.getRunnerAddress(settlementInstance.runner),
+                isTransferringResourcesFromBuilding: true
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await buildingInstance.removeResourcesAndWorkers(
+    //   await settlementInstance.getAddress(),
+    //   transferableFromLowBN(workersCap),
+    //   HardhatHelper.getRunnerAddress(settlementInstance.runner),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+    // ).then((tx) => tx.wait());
 
     await buildingInstance.updateState().then((tx) => tx.wait());
 

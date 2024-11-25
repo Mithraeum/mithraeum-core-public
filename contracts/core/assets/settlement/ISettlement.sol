@@ -9,6 +9,19 @@ import "../region/IRegion.sol";
 /// @title Settlement interface
 /// @notice Functions to read state/modify state in order to get current settlement parameters and/or interact with it
 interface ISettlement {
+    struct ResourcesModificationParam {
+        bool isTransferringResourcesFromBuilding;
+        address resourcesOwnerOrResourcesReceiver;
+        bytes32 resourceTypeId;
+        uint256 resourcesAmount;
+    }
+
+    struct BuildingProductionModificationParam {
+        bytes32 buildingTypeId;
+        bool isTransferringWorkersFromBuilding;
+        uint256 workersAmount;
+        ResourcesModificationParam[] resources;
+    }
 
     // State variables
 
@@ -111,6 +124,9 @@ interface ISettlement {
     /// @notice Thrown when attempting to specify 'tokensAmount' parameter anything but zero whenever world.erc20ForSettlementPurchase is zero address
     error SettlementCannotDecreaseCorruptionIndexViaPaymentWrongParamProvided();
 
+    /// @notice Thrown when attempting to transfer producing resource from building
+    error CannotTransferProducingResourceFromBuilding();
+
     // Functions
 
     /// @notice Withdraws resources from settlement to specified address
@@ -124,20 +140,13 @@ interface ISettlement {
         uint256 amount
     ) external;
 
-    /// @notice Transfers game resources from msg.sender and workers from settlement to building
-    /// @dev Assigns resources+workers to building in single transaction
-    /// @dev If resourcesOwner == address(0) -> resources will be taken from msg.sender
-    /// @dev If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resourcesOwner
-    /// @param buildingAddress Building address
-    /// @param workersAmount Workers amount (in 1e18 precision)
-    /// @param resourceTypeIds Resource type ids
-    /// @param resourcesAmounts Resources amounts
-    function assignResourcesAndWorkersToBuilding(
-        address resourcesOwner,
-        address buildingAddress,
-        uint256 workersAmount,
-        bytes32[] memory resourceTypeIds,
-        uint256[] memory resourcesAmounts
+    /// @notice Transfers game resources and workers from/to building depending on specified params
+    /// @dev Assigns resources and workers to building in single transaction
+    /// @dev In case of transferring resources to building if resource.resourcesOwnerOrResourcesReceiver == address(0) -> resources will be taken from msg.sender
+    /// @dev In case of transferring resources to building if resource.resourcesOwnerOrResourcesReceiver != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resource.resourcesOwnerOrResourcesReceiver
+    /// @param params An array of BuildingProductionModificationParam struct
+    function modifyBuildingsProduction(
+        BuildingProductionModificationParam[] memory params
     ) external;
 
     /// @notice Updates settlement health to current block

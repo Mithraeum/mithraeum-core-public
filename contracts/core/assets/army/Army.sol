@@ -28,6 +28,8 @@ contract Army is WorldAsset, IArmy {
     StunInfo public override stunInfo;
     /// @inheritdoc IArmy
     mapping(bytes32 => uint256) public override additionalUnitsBattleMultipliers;
+    /// @inheritdoc IArmy
+    uint64 public override lastDemilitarizationTime;
 
     /// @dev Only ruler or world or world asset from same era modifier
     /// @dev Modifier is calling internal function in order to reduce contract size
@@ -46,9 +48,7 @@ contract Army is WorldAsset, IArmy {
 
     /// @inheritdoc IArmy
     function updateState() public override {
-        IRegistry _registry = registry();
-
-        if (address(battle) != address(0)) {
+        if (_isInBattle()) {
             if (!battle.isEndedBattle() && battle.canEndBattle()) {
                 battle.endBattle();
             }
@@ -60,14 +60,14 @@ contract Army is WorldAsset, IArmy {
 
                 // It is important to call 'setBattle' after 'burnUnits' because
                 // burnUnits will trigger region.updateState and region.updateState rely on army.battle in order to properly save its time
-                this.burnUnits(_registry.getUnitTypeIds(), unitsAmounts);
+                this.burnUnits(Config.getUnitTypeIds(), unitsAmounts);
                 battle = IBattle(address(0));
 
                 (uint64 battleBeginTime, uint64 battleDuration,) = oldBattle.battleTimeInfo();
                 uint64 stunBeginTime = battleBeginTime + battleDuration;
                 uint256 battleStunMultiplier = isArmyWon
-                    ? _registry.getBattleDurationWinningArmyStunMultiplier()
-                    : _registry.getBattleDurationLosingArmyStunMultiplier();
+                    ? Config.battleDurationWinningArmyStunMultiplier
+                    : Config.battleDurationLosingArmyStunMultiplier;
 
                 uint256 stunDuration = battleDuration * battleStunMultiplier / 1e18;
                 _applyStun(stunBeginTime, stunDuration);
@@ -79,7 +79,7 @@ contract Army is WorldAsset, IArmy {
         if (_isManeuveringOpenly() && _hasComeToDestinationPosition()) {
             uint64 maneuverDuration = maneuverInfo.endTime - maneuverInfo.beginTime;
             uint64 stunBeginTime = maneuverInfo.endTime;
-            uint256 stunDuration = maneuverDuration * _registry.getManeuverDurationStunMultiplier() / 1e18;
+            uint256 stunDuration = Config.maneuverStunDuration / Config.globalMultiplier;
 
             currentPosition = maneuverInfo.destinationPosition;
 
@@ -96,7 +96,7 @@ contract Army is WorldAsset, IArmy {
             emit UpdatedPosition(address(era().settlementByPosition(currentPosition)), currentPosition);
         }
 
-        if (stunInfo.endTime != 0) {
+        if (_isStunned()) {
             uint256 _gameEndTime = world().gameEndTime();
             uint256 currentTimestamp = _gameEndTime == 0 ? block.timestamp : Math.min(block.timestamp, _gameEndTime);
 
@@ -146,15 +146,16 @@ contract Army is WorldAsset, IArmy {
         // If liquidation occurs not at cultists position -> we give prosperity (and/or workers) for each liquidated unit to the settlement where army stands
         ISettlement settlementOnPosition = _getSettlementOnCurrentPosition();
         ISettlement cultistsSettlementOnThisRegion = settlementOnPosition.relatedRegion().cultistsSettlement();
-        IRegistry _registry = registry();
         IEra _era = era();
 
         if (address(cultistsSettlementOnThisRegion) != address(settlementOnPosition)) {
             uint256 prosperityForLiquidatedUnits = 0;
             uint256 workersForLiquidatedUnits = 0;
             for (uint256 i = 0; i < unitTypeIds.length; i++) {
-                prosperityForLiquidatedUnits += (unitsAmounts[i] / 1e18) * _registry.getProsperityForUnitLiquidation(unitTypeIds[i]);
-                workersForLiquidatedUnits += (unitsAmounts[i] / 1e18) * _registry.getWorkersForUnitLiquidation(unitTypeIds[i]);
+                uint256 integerUnitsAmount = unitsAmounts[i] / 1e18;
+
+                prosperityForLiquidatedUnits += integerUnitsAmount * Config.getProsperityForUnitLiquidation(unitTypeIds[i]);
+                workersForLiquidatedUnits += integerUnitsAmount * Config.getWorkersForUnitLiquidation(unitTypeIds[i]);
             }
 
             if (prosperityForLiquidatedUnits > 0) {
@@ -179,9 +180,9 @@ contract Army is WorldAsset, IArmy {
     {
         updateState();
 
-        if (stunInfo.endTime != 0) revert ArmyIsStunned();
+        if (_isStunned()) revert ArmyIsStunned();
         if (isManeuvering()) revert ArmyIsManeuvering();
-        if (address(battle) != address(0)) revert ArmyIsInBattle();
+        if (_isInBattle()) revert ArmyIsInBattle();
         if (_isBesieging()) revert ArmyIsInSiege();
         if (currentPosition == position) revert ArmyCannotManeuverToSamePosition();
 
@@ -217,9 +218,12 @@ contract Army is WorldAsset, IArmy {
             maneuverDuration -= maneuverDurationReduction;
         }
 
+        uint64 maneuverBeginTime = uint64(block.timestamp);
+        uint64 maneuverEndTime = uint64(block.timestamp + maneuverDuration);
+
         maneuverInfo = ManeuverInfo({
-            beginTime: uint64(block.timestamp),
-            endTime: uint64(block.timestamp + maneuverDuration),
+            beginTime: maneuverBeginTime,
+            endTime: maneuverEndTime,
             destinationPosition: position,
             secretDestinationRegionId: 0,
             secretDestinationPosition: bytes32(0)
@@ -229,8 +233,8 @@ contract Army is WorldAsset, IArmy {
             position,
             0,
             bytes32(0),
-            maneuverInfo.beginTime,
-            maneuverInfo.endTime,
+            maneuverBeginTime,
+            maneuverEndTime,
             foodToSpendOnAcceleration
         );
     }
@@ -247,13 +251,15 @@ contract Army is WorldAsset, IArmy {
     {
         updateState();
 
-        if (stunInfo.endTime != 0) revert ArmyIsStunned();
+        if (_isStunned()) revert ArmyIsStunned();
         if (isManeuvering()) revert ArmyIsManeuvering();
-        if (address(battle) != address(0)) revert ArmyIsInBattle();
+        if (_isInBattle()) revert ArmyIsInBattle();
         if (_isBesieging()) revert ArmyIsInSiege();
         if (_getArmyTotalUnitsAmount(address(this)) == 0) revert ArmyWithoutUnitsCannotBeginSecretManeuver();
 
-        maneuverInfo.beginTime = uint64(block.timestamp);
+        uint64 maneuverInfoBeginTime = uint64(block.timestamp);
+
+        maneuverInfo.beginTime = maneuverInfoBeginTime;
         maneuverInfo.secretDestinationRegionId = secretDestinationRegionId;
         maneuverInfo.secretDestinationPosition = secretDestinationPosition;
 
@@ -261,7 +267,7 @@ contract Army is WorldAsset, IArmy {
             0,
             secretDestinationRegionId,
             secretDestinationPosition,
-            maneuverInfo.beginTime,
+            maneuverInfoBeginTime,
             0,
             0
         );
@@ -275,36 +281,38 @@ contract Army is WorldAsset, IArmy {
     {
         updateState();
 
+        ManeuverInfo memory _maneuverInfo = maneuverInfo;
+
         if (!_isManeuveringSecretly()) revert ArmyIsNotManeuveringSecretly();
-        if (keccak256(abi.encodePacked(destinationPosition, revealKey)) != maneuverInfo.secretDestinationPosition) revert WrongSecretManeuverRevealInfo();
+        if (keccak256(abi.encodePacked(destinationPosition, revealKey)) != _maneuverInfo.secretDestinationPosition) revert WrongSecretManeuverRevealInfo();
 
         uint64 distanceBetweenPositions = world().geography().getDistanceBetweenPositions(currentPosition, destinationPosition);
         uint256 defaultManeuverDuration = _calculateDefaultManeuverDuration(distanceBetweenPositions);
-        uint256 maneuverEndTimeWithoutAcceleration = maneuverInfo.beginTime + defaultManeuverDuration;
+        uint256 maneuverEndTimeWithoutAcceleration = _maneuverInfo.beginTime + defaultManeuverDuration;
 
         if (woodToSpendOnAcceleration > 0) {
-            if (stunInfo.endTime != 0) revert ArmyIsStunned();
-            if (address(battle) != address(0)) revert ArmyIsInBattle();
+            if (_isStunned()) revert ArmyIsStunned();
+            if (_isInBattle()) revert ArmyIsInBattle();
 
             uint256 maxDecreasedManeuverDuration = _calculateMaxDecreasedManeuverDuration(distanceBetweenPositions);
 
-            uint256 minAllowedRevealTime = maneuverInfo.beginTime + maxDecreasedManeuverDuration;
-            uint256 maxAllowedRevealTime = maneuverInfo.beginTime + defaultManeuverDuration;
+            uint256 minAllowedRevealTime = _maneuverInfo.beginTime + maxDecreasedManeuverDuration;
+            uint256 maxAllowedRevealTime = _maneuverInfo.beginTime + defaultManeuverDuration;
 
             if (block.timestamp < minAllowedRevealTime || block.timestamp >= maxAllowedRevealTime) revert SecretManeuverRevealNotPossibleAtThisTime();
         } else {
-            if (address(battle) != address(0)) {
+            if (_isInBattle()) {
                 (uint64 battleBeginTime, uint64 battleDuration,) = battle.battleTimeInfo();
                 uint256 projectedBattleEndTime = uint256(battleBeginTime + battleDuration);
 
                 if (projectedBattleEndTime >= maneuverEndTimeWithoutAcceleration) revert SecretManeuverRevealNotPossibleAtThisTime();
 
-                uint256 minAllowedRevealTime = maneuverInfo.beginTime;
+                uint256 minAllowedRevealTime = _maneuverInfo.beginTime;
                 uint256 maxAllowedRevealTime = maneuverEndTimeWithoutAcceleration;
 
                 if (block.timestamp < minAllowedRevealTime || block.timestamp >= maxAllowedRevealTime) revert SecretManeuverRevealNotPossibleAtThisTime();
             } else {
-                uint256 minAllowedRevealTime = maneuverInfo.beginTime;
+                uint256 minAllowedRevealTime = _maneuverInfo.beginTime;
                 uint256 maxAllowedRevealTime = maneuverEndTimeWithoutAcceleration;
 
                 if (block.timestamp < minAllowedRevealTime || block.timestamp >= maxAllowedRevealTime) revert SecretManeuverRevealNotPossibleAtThisTime();
@@ -316,7 +324,7 @@ contract Army is WorldAsset, IArmy {
         if (destinationPosition == currentPosition) revert ArmyCannotManeuverToSamePosition();
 
         uint64 regionIdOfDestinationPosition = destinationSettlement.relatedRegion().regionId();
-        if (maneuverInfo.secretDestinationRegionId != regionIdOfDestinationPosition) revert SecretManeuverRevealNotPossibleToNotSpecifiedRegion();
+        if (_maneuverInfo.secretDestinationRegionId != regionIdOfDestinationPosition) revert SecretManeuverRevealNotPossibleToNotSpecifiedRegion();
 
         uint256 maneuverDuration = defaultManeuverDuration;
         if (woodToSpendOnAcceleration > 0) {
@@ -331,21 +339,22 @@ contract Army is WorldAsset, IArmy {
             maneuverDuration -= maneuverDurationReduction;
         }
 
-        maneuverInfo.endTime = maneuverInfo.beginTime + uint64(maneuverDuration);
+        uint64 maneuverEndTime = _maneuverInfo.beginTime + uint64(maneuverDuration);
 
-        // Event is emitted before updating maneuverInfo because it is important to know secret maneuver info at the moment of event emission
-        emit ManeuveringBegan(
-            destinationPosition,
-            maneuverInfo.secretDestinationRegionId,
-            maneuverInfo.secretDestinationPosition,
-            maneuverInfo.beginTime,
-            maneuverInfo.endTime,
-            woodToSpendOnAcceleration
-        );
-
+        maneuverInfo.endTime = maneuverEndTime;
         maneuverInfo.destinationPosition = destinationPosition;
         maneuverInfo.secretDestinationRegionId = 0;
         maneuverInfo.secretDestinationPosition = bytes32(0);
+
+        // Event is emitted with old maneuverInfo because it is important to know old secret maneuver info at the moment of event emission
+        emit ManeuveringBegan(
+            destinationPosition,
+            _maneuverInfo.secretDestinationRegionId,
+            _maneuverInfo.secretDestinationPosition,
+            _maneuverInfo.beginTime,
+            maneuverEndTime,
+            woodToSpendOnAcceleration
+        );
     }
 
     /// @inheritdoc IArmy
@@ -358,14 +367,12 @@ contract Army is WorldAsset, IArmy {
         updateState();
 
         if (!_isManeuveringSecretly()) revert ArmyIsNotManeuveringSecretly();
-        if (stunInfo.endTime != 0) revert ArmyIsStunned();
-        if (address(battle) != address(0)) revert ArmyIsInBattle();
+        if (_isStunned()) revert ArmyIsStunned();
+        if (_isInBattle()) revert ArmyIsInBattle();
 
-        IRegistry _registry = registry();
         IEra _era = era();
 
-        uint256 stunDurationMultiplierOfCancelledSecretManeuver = _registry.getStunDurationMultiplierOfCancelledSecretManeuver();
-        uint256 stunDuration = ((block.timestamp - maneuverInfo.beginTime) * stunDurationMultiplierOfCancelledSecretManeuver) / 1e18;
+        uint256 stunDuration = Config.stunDurationOfCancelledSecretManeuver / Config.globalMultiplier;
 
         _applyStun(uint64(block.timestamp), stunDuration);
 
@@ -373,7 +380,7 @@ contract Army is WorldAsset, IArmy {
         maneuverInfo.secretDestinationRegionId = 0;
         maneuverInfo.secretDestinationPosition = bytes32(0);
 
-        bytes32[] memory unitTypeIds = _registry.getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
         uint256[] memory unitsAmounts = new uint256[](unitTypeIds.length);
 
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
@@ -394,8 +401,9 @@ contract Army is WorldAsset, IArmy {
     {
         updateState();
 
-        if (stunInfo.endTime != 0) revert ArmyIsStunned();
-        if (address(battle) != address(0)) revert ArmyIsInBattle();
+        if (_isDemilitarizeOnCooldown()) revert ArmyCannotBeDemilitarizedDueToCooldown();
+        if (_isStunned()) revert ArmyIsStunned();
+        if (_isInBattle()) revert ArmyIsInBattle();
 
         IEra _era = era();
 
@@ -408,6 +416,8 @@ contract Army is WorldAsset, IArmy {
         }
 
         this.liquidateUnits(unitTypeIds, unitsAmounts);
+
+        lastDemilitarizationTime = uint64(block.timestamp);
 
         emit UnitsDemilitarized(unitTypeIds, unitsAmounts);
     }
@@ -438,20 +448,20 @@ contract Army is WorldAsset, IArmy {
         updateState();
         IArmy targetArmy = IArmy(targetArmyAddress);
 
-        //only target army position is updated because in order to attack, new position is required
-        //but in case target army is still in battle then army will exit battle whenever 'joinBattle' is called below
         targetArmy.updateState();
-        uint64 targetArmyPosition = targetArmy.getCurrentPosition();
 
-        if (world().worldAssets(eraNumber(), targetArmyAddress) != ARMY_GROUP_TYPE_ID) revert ArmyCannotAttackNotCurrentEraArmy();
+        IWorld _world = world();
+        uint256 _eraNumber = eraNumber();
+
+        if (_world.worldAssets(_eraNumber, targetArmyAddress) != ARMY_GROUP_TYPE_ID) revert ArmyCannotAttackNotCurrentEraArmy();
         if (address(this) == targetArmyAddress) revert ArmyCannotAttackItself();
-        if (stunInfo.endTime != 0) revert ArmyIsStunned();
+        if (_isStunned()) revert ArmyIsStunned();
         if (isManeuvering()) revert ArmyIsManeuvering();
-        if (currentPosition != targetArmyPosition) revert ArmyCannotAttackAnotherArmyIfTheyAreNotOnSamePosition();
+        if (currentPosition != targetArmy.getCurrentPosition()) revert ArmyCannotAttackAnotherArmyIfTheyAreNotOnSamePosition();
 
         address newBattleAddress = worldAssetFactory().create(
-            address(world()),
-            eraNumber(),
+            address(_world),
+            _eraNumber,
             BATTLE_GROUP_TYPE_ID,
             BASIC_TYPE_ID,
             abi.encode(address(this), targetArmyAddress, maxUnitTypeIdsToAttack, maxUnitsToAttack)
@@ -474,10 +484,10 @@ contract Army is WorldAsset, IArmy {
         // If caller not the battle itself -> army cannot join if its maneuvering or stunned
         if (msg.sender != battleAddress) {
             if (isManeuvering()) revert ArmyIsManeuvering();
-            if (stunInfo.endTime != 0) revert ArmyIsStunned();
+            if (_isStunned()) revert ArmyIsStunned();
         }
 
-        if (address(battle) != address(0)) revert ArmyIsInBattle();
+        if (_isInBattle()) revert ArmyIsInBattle();
         if (_getArmyTotalUnitsAmount(address(this)) == 0) revert ArmyWithoutUnitsCannotJoinBattle();
         if (side != 1 && side != 2) revert WrongJoinSide();
 
@@ -492,11 +502,8 @@ contract Army is WorldAsset, IArmy {
 
         battleToJoinTo.acceptArmyInBattle(address(this), side);
 
-        IRegistry _registry = registry();
-
         if (isAttackingSide && !isFirstArmyInSide) {
-            uint256 stunDuration = _registry.getArmyStunDurationByJoiningBattleAtAttackingSide();
-            stunDuration /= _registry.getGlobalMultiplier();
+            uint256 stunDuration = Config.armyStunDurationByJoiningBattleAtAttackingSide / Config.globalMultiplier;
             _applyStun(uint64(block.timestamp), stunDuration);
         }
 
@@ -512,7 +519,7 @@ contract Army is WorldAsset, IArmy {
     ) public override onlyActiveGame onlyRulerOrWorldAssetFromSameEra {
         updateState();
 
-        if (stunInfo.endTime != 0) revert ArmyIsStunned();
+        if (_isStunned()) revert ArmyIsStunned();
         if (isManeuvering()) revert ArmyIsManeuvering();
 
         ISettlement settlementOnArmyPosition = _getSettlementOnCurrentPosition();
@@ -537,17 +544,15 @@ contract Army is WorldAsset, IArmy {
                 }
             }
 
-            if (hasUnitsToAdd && address(battle) != address(0)) revert ArmyIsInBattle();
+            if (hasUnitsToAdd && _isInBattle()) revert ArmyIsInBattle();
         }
 
         ISiege siege = settlementOnArmyPosition.siege();
         (uint256 oldRobberyMultiplier, , ) = siege.armyInfo(address(this));
 
-        IRegistry _registry = registry();
-
         uint256 maxAllowedRobberyMultiplier = hasUnitsToModify
-            ? _registry.getMaxAllowedRobberyMultiplierIncreaseValue()
-            : oldRobberyMultiplier + _registry.getMaxAllowedRobberyMultiplierIncreaseValue();
+            ? Config.maxAllowedRobberyMultiplierIncreaseValue
+            : oldRobberyMultiplier + Config.maxAllowedRobberyMultiplierIncreaseValue;
 
         if (newRobberyMultiplier > maxAllowedRobberyMultiplier) revert WrongRobberyMultiplierSpecified();
         if (!hasUnitsToModify && newRobberyMultiplier <= oldRobberyMultiplier) revert WrongRobberyMultiplierSpecified();
@@ -564,8 +569,7 @@ contract Army is WorldAsset, IArmy {
             ? newRobberyMultiplier
             : newRobberyMultiplier - oldRobberyMultiplier;
 
-        uint256 stunDuration = _registry.getArmyStunDurationPerRobberyMultiplier() * robberyMultiplierPunishingValue / 1e18;
-        stunDuration /= _registry.getGlobalMultiplier();
+        uint256 stunDuration = (Config.armyStunDurationPerRobberyMultiplier * robberyMultiplierPunishingValue / 1e18) / Config.globalMultiplier;
         _applyStun(uint64(block.timestamp), stunDuration);
 
         if (siege.canLiquidateArmyBesiegingUnits(address(this))) revert ArmyCannotModifySiegeUnitsToLiquidatableState();
@@ -580,27 +584,26 @@ contract Army is WorldAsset, IArmy {
     {
         updateState();
 
-        if (stunInfo.endTime != 0) revert ArmyIsStunned();
+        if (_isStunned()) revert ArmyIsStunned();
 
         _getSettlementOnCurrentPosition().siege().swapRobberyPointsForResourceFromBuildingTreasury(buildingAddress, pointsToSpend);
     }
 
     /// @inheritdoc IArmy
     function getTotalSiegeSupport() public view override returns (uint256) {
-        IRegistry _registry = registry();
         IEra _era = era();
 
-        bytes32[] memory unitTypeIds = _registry.getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
         uint256[] memory casualties = new uint256[](unitTypeIds.length);
 
-        if (address(battle) != address(0) && battle.canEndBattle()) {
+        if (_isInBattle() && battle.canEndBattle()) {
             (, casualties) = battle.calculateArmyCasualties(address(this));
         }
 
         uint256 totalSiegeSupport = 0;
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
             bytes32 unitTypeId = unitTypeIds[i];
-            IRegistry.UnitStats memory unitStats = _registry.getUnitStats(unitTypeId);
+            Config.UnitStats memory unitStats = Config.getUnitStats(unitTypeId);
 
             totalSiegeSupport +=
                 ((_era.units(unitTypeId).balanceOf(address(this)) - casualties[i]) * unitStats.siegeSupport) /
@@ -659,8 +662,8 @@ contract Army is WorldAsset, IArmy {
         IWorld _world = world();
 
         if (!relatedSettlement.isRuler(msg.sender) &&
-        msg.sender != address(_world) &&
-        _world.worldAssets(eraNumber(), msg.sender) == bytes32(0)
+            msg.sender != address(_world) &&
+            _world.worldAssets(eraNumber(), msg.sender) == bytes32(0)
         ) {
             revert OnlyRulerOrWorldAssetFromSameEra();
         }
@@ -668,27 +671,26 @@ contract Army is WorldAsset, IArmy {
 
     /// @dev Calculates amount of needed resource per one second of decreased maneuver duration
     function _calculateResourceAmountPer1SecondOfDecreasedManeuverDuration() internal view returns (uint256) {
-        IRegistry _registry = registry();
         IEra _era = era();
 
-        bytes32[] memory unitTypeIds = _registry.getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
         uint256 resourceAmountPer1SecondOfDecreasedManeuverDuration = 0;
 
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
             uint256 unitsAmount = _era.units(unitTypeIds[i]).balanceOf(address(this));
 
             resourceAmountPer1SecondOfDecreasedManeuverDuration +=
-                (unitsAmount / 1e18) * _registry.getUnitResourceUsagePer1SecondOfDecreasedManeuverDuration(unitTypeIds[i]);
+                (unitsAmount / 1e18) * Config.getUnitResourceUsagePer1SecondOfDecreasedManeuverDuration(unitTypeIds[i]);
         }
 
-        return resourceAmountPer1SecondOfDecreasedManeuverDuration * _registry.globalMultiplier();
+        return resourceAmountPer1SecondOfDecreasedManeuverDuration * Config.globalMultiplier;
     }
 
     /// @dev Calculates total units amount
     function _getArmyTotalUnitsAmount(address armyAddress) internal view returns (uint256) {
         IEra _era = era();
 
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
         uint256 totalUnitsAmount = 0;
 
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
@@ -700,12 +702,12 @@ contract Army is WorldAsset, IArmy {
 
     /// @dev Calculates default maneuver duration
     function _calculateDefaultManeuverDuration(uint64 distanceBetweenPositions) internal view returns (uint256) {
-        return (5 hours * distanceBetweenPositions) / registry().getGlobalMultiplier();
+        return (5 hours * distanceBetweenPositions) / Config.globalMultiplier;
     }
 
     /// @dev Calculates max default maneuver duration
     function _calculateMaxDecreasedManeuverDuration(uint64 distanceBetweenPositions) internal view returns (uint256) {
-        return ((5 hours * MathExtension.sqrt(distanceBetweenPositions * 1e8)) / 1e4) / registry().getGlobalMultiplier();
+        return ((5 hours * MathExtension.sqrt(distanceBetweenPositions * 1e8)) / 1e4) / Config.globalMultiplier;
     }
 
     /// @dev Updates building's treasury, burns resource specified for acceleration and returns maneuver duration duration reduction
@@ -753,6 +755,21 @@ contract Army is WorldAsset, IArmy {
         }
 
         return resourceToSpendOnAcceleration / resourceAmountPer1SecondOfDecreasedManeuverDuration;
+    }
+
+    /// @dev Checks if army is in battle
+    function _isInBattle() internal view returns (bool) {
+        return address(battle) != address(0);
+    }
+
+    /// @dev Checks if army is stunned
+    function _isStunned() internal view returns (bool) {
+        return stunInfo.endTime != 0;
+    }
+
+    /// @dev Check if demilitarize is on cooldown
+    function _isDemilitarizeOnCooldown() internal view returns (bool) {
+        return uint64(block.timestamp) < lastDemilitarizationTime + uint64(Config.demilitarizationCooldown / Config.globalMultiplier);
     }
 
     /// @dev Checks if army is maneuvering openly
@@ -822,12 +839,10 @@ contract Army is WorldAsset, IArmy {
 
     /// @dev Calculates if battle has units at provided side
     function _hasUnitsInBattleAtProvidedSide(IBattle battle, uint256 side) internal view returns (bool) {
-        bytes32[] memory unitTypeIds = registry().getUnitTypeIds();
+        bytes32[] memory unitTypeIds = Config.getUnitTypeIds();
 
         for (uint256 i = 0; i < unitTypeIds.length; i++) {
-            bytes32 unitTypeId = unitTypeIds[i];
-
-            if (battle.sideUnitsAmount(side, unitTypeId) > 0) {
+            if (battle.sideUnitsAmount(side, unitTypeIds[i]) > 0) {
                 return true;
             }
         }

@@ -40,13 +40,13 @@ contract TileCapturingSystem is WorldAsset, ITileCapturingSystem {
         (uint64 regionId, bool isPositionExist) = world().geography().getRegionIdByPosition(position);
         if (!isPositionExist) revert CannotBeginTileCaptureDueToNonExistentPositionSpecified();
 
-        IGeography.TileBonus memory tileBonus = _getTileBonus(regionId, position);
+        IGeography.TileBonusType tileBonusType = _getTileBonus(regionId, position).tileBonusType;
 
         if (address(era().regions(regionId)) == address(0)) revert CannotBeginTileCaptureOnNotActivatedRegion();
         if (address(world().crossErasMemory().settlementByPosition(position)) != address(0)) revert CannotBeginTileCaptureOnPositionWithSettlement();
         if (settlementCapturingTile[settlementAddress] != 0) revert CannotBeginTileCaptureBySettlementWhichIsAlreadyCapturingTile();
-        if (settlementCapturedTiles[settlementAddress][tileBonus.tileBonusType].length() == registry().getMaxCapturedTilesForSettlement(uint8(tileBonus.tileBonusType))) revert CannotBeginTileCaptureBySettlementAlreadyHavingMaximumCapturedTilesWithSameBonus();
-        if (tileBonus.tileBonusType == IGeography.TileBonusType.NO_BONUS) revert CannotBeginTileCaptureOfPositionWithoutBonus();
+        if (settlementCapturedTiles[settlementAddress][tileBonusType].length() == Config.getMaxCapturedTilesForSettlement(uint8(tileBonusType))) revert CannotBeginTileCaptureBySettlementAlreadyHavingMaximumCapturedTilesWithSameBonus();
+        if (tileBonusType == IGeography.TileBonusType.NO_BONUS) revert CannotBeginTileCaptureOfPositionWithoutBonus();
         if (era().prosperity().balanceOf(settlementAddress) < prosperityStake) revert CannotBeginTileCaptureDueToNotHavingSpecifiedProsperity();
 
         TileInfo storage tileInfo = tilesInfo[position];
@@ -69,15 +69,15 @@ contract TileCapturingSystem is WorldAsset, ITileCapturingSystem {
             // Update usurper settlement prosperity
             ISettlement(previousUsurperSettlementAddress).updateProsperityAmount();
 
-            // And remove 25% prosperity of old stake
+            // And remove N% prosperity of old stake
             era().prosperity().spend(
                 previousUsurperSettlementAddress,
-                previousUsurperProsperityStake * registry().getTileCaptureCancellationFee() / 1e18
+                previousUsurperProsperityStake * Config.tileCaptureCancellationFee / 1e18
             );
         }
 
         uint64 captureBeginTime = uint64(block.timestamp);
-        uint64 captureEndTime = uint64(block.timestamp + distanceBetweenSettlementAndTile * registry().getCaptureTileDurationPerTile() / registry().getGlobalMultiplier());
+        uint64 captureEndTime = uint64(block.timestamp + (Config.captureTileInitialDuration + distanceBetweenSettlementAndTile * Config.captureTileDurationPerTile) / Config.globalMultiplier);
 
         tileInfo.usurperProsperityStake = prosperityStake;
         tileInfo.usurperSettlementAddress = settlementAddress;
@@ -111,9 +111,10 @@ contract TileCapturingSystem is WorldAsset, ITileCapturingSystem {
             // Update callers' settlement prosperity
             ISettlement(settlementAddress).updateProsperityAmount();
 
+            // And remove N% prosperity of old stake
             era().prosperity().spend(
                 settlementAddress,
-                tileInfo.usurperProsperityStake * registry().getTileCaptureCancellationFee() / 1e18
+                tileInfo.usurperProsperityStake * Config.tileCaptureCancellationFee / 1e18
             );
         }
 
@@ -169,7 +170,7 @@ contract TileCapturingSystem is WorldAsset, ITileCapturingSystem {
 
         uint256 usurperProsperityStake = tileInfo.usurperProsperityStake;
 
-        uint256 necessaryProsperityForClaiming = usurperProsperityStake * registry().getNecessaryProsperityPercentForClaimingTileCapture() / 1e18;
+        uint256 necessaryProsperityForClaiming = usurperProsperityStake * Config.necessaryProsperityPercentForClaimingTileCapture / 1e18;
         if (era().prosperity().balanceOf(settlementAddress) < necessaryProsperityForClaiming) revert ClaimTileCaptureCannotBeDoneWithoutNecessaryProsperity();
 
         address previousSettlementOwnerAddress = tileInfo.ownerSettlementAddress;
@@ -240,12 +241,13 @@ contract TileCapturingSystem is WorldAsset, ITileCapturingSystem {
         uint64 position
     ) internal view returns (IGeography.TileBonus memory) {
         IWorld _world = world();
-        IGeography geography = _world.geography();
-        uint256 regionTier = geography.getRegionTier(regionId);
-        uint256 chanceForTileWithBonus = registry().getChanceForTileWithBonusByRegionTier(regionTier);
+        IGeography _geography = _world.geography();
+
+        uint256 regionTier = _geography.getRegionTier(regionId);
+        uint256 chanceForTileWithBonus = Config.getChanceForTileWithBonusByRegionTier(regionTier);
         bytes32 tileBonusesSeed = _world.getTileBonusesSeed();
 
-        return geography.getTileBonus(tileBonusesSeed, chanceForTileWithBonus, position);
+        return _geography.getTileBonus(tileBonusesSeed, chanceForTileWithBonus, position);
     }
 
     /// @dev Calculates next min prosperity stake
@@ -254,12 +256,12 @@ contract TileCapturingSystem is WorldAsset, ITileCapturingSystem {
         uint256 distanceBetweenSettlementAndTile
     ) internal view returns (uint256) {
         if (previousUsurperProsperityStake == 0) {
-            return registry().getInitialCaptureProsperityBasicValue() +
-                distanceBetweenSettlementAndTile * registry().getInitialCaptureProsperityPerTileValue();
+            return Config.initialCaptureProsperityBasicValue +
+                distanceBetweenSettlementAndTile * Config.initialCaptureProsperityPerTileValue;
         }
 
-        uint256 nextCaptureProsperityThreshold = registry().getNextCaptureProsperityBasicThreshold() +
-            distanceBetweenSettlementAndTile * registry().getNextCaptureProsperityPerTileThreshold();
+        uint256 nextCaptureProsperityThreshold = Config.nextCaptureProsperityBasicThreshold +
+            distanceBetweenSettlementAndTile * Config.nextCaptureProsperityPerTileThreshold;
 
         uint256 nextMinProsperityStake = previousUsurperProsperityStake * nextCaptureProsperityThreshold / 1e18;
         return nextMinProsperityStake;
@@ -270,17 +272,15 @@ contract TileCapturingSystem is WorldAsset, ITileCapturingSystem {
         IGeography.TileBonus memory tileBonus,
         address settlementAddress
     ) internal {
-        ISettlement settlement = ISettlement(settlementAddress);
-
         if (tileBonus.tileBonusType == IGeography.TileBonusType.ADVANCED_PRODUCTION) {
-            (bytes32 buildingTypeId, uint256 capacityAmount) = registry().getAdvancedProductionTileBonusByVariation(tileBonus.tileBonusVariation);
-            settlement.buildings(buildingTypeId).increaseAdditionalWorkersCapacityMultiplier(capacityAmount);
+            (bytes32 buildingTypeId, uint256 capacityAmount) = Config.getAdvancedProductionTileBonusByVariation(tileBonus.tileBonusVariation);
+            ISettlement(settlementAddress).buildings(buildingTypeId).increaseAdditionalWorkersCapacityMultiplier(capacityAmount);
             return;
         }
 
         if (tileBonus.tileBonusType == IGeography.TileBonusType.ARMY_BATTLE_STATS) {
-            (bytes32 unitTypeId, uint256 unitBattleMultiplier) = registry().getUnitBattleMultiplierTileBonusByVariation(tileBonus.tileBonusVariation);
-            settlement.army().increaseUnitBattleMultiplier(unitTypeId, unitBattleMultiplier);
+            (bytes32 unitTypeId, uint256 unitBattleMultiplier) = Config.getUnitBattleMultiplierTileBonusByVariation(tileBonus.tileBonusVariation);
+            ISettlement(settlementAddress).army().increaseUnitBattleMultiplier(unitTypeId, unitBattleMultiplier);
             return;
         }
 
@@ -292,17 +292,15 @@ contract TileCapturingSystem is WorldAsset, ITileCapturingSystem {
         IGeography.TileBonus memory tileBonus,
         address settlementAddress
     ) internal {
-        ISettlement settlement = ISettlement(settlementAddress);
-
         if (tileBonus.tileBonusType == IGeography.TileBonusType.ADVANCED_PRODUCTION) {
-            (bytes32 buildingTypeId, uint256 capacityAmount) = registry().getAdvancedProductionTileBonusByVariation(tileBonus.tileBonusVariation);
-            settlement.buildings(buildingTypeId).decreaseAdditionalWorkersCapacityMultiplier(capacityAmount);
+            (bytes32 buildingTypeId, uint256 capacityAmount) = Config.getAdvancedProductionTileBonusByVariation(tileBonus.tileBonusVariation);
+            ISettlement(settlementAddress).buildings(buildingTypeId).decreaseAdditionalWorkersCapacityMultiplier(capacityAmount);
             return;
         }
 
         if (tileBonus.tileBonusType == IGeography.TileBonusType.ARMY_BATTLE_STATS) {
-            (bytes32 unitTypeId, uint256 unitBattleMultiplier) = registry().getUnitBattleMultiplierTileBonusByVariation(tileBonus.tileBonusVariation);
-            settlement.army().decreaseUnitBattleMultiplier(unitTypeId, unitBattleMultiplier);
+            (bytes32 unitTypeId, uint256 unitBattleMultiplier) = Config.getUnitBattleMultiplierTileBonusByVariation(tileBonus.tileBonusVariation);
+            ISettlement(settlementAddress).army().decreaseUnitBattleMultiplier(unitTypeId, unitBattleMultiplier);
             return;
         }
 

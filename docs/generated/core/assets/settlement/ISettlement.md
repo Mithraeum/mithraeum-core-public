@@ -7,6 +7,42 @@ Functions to read state/modify state in order to get current settlement paramete
 
 
 
+### ResourcesModificationParam
+
+
+
+
+
+
+
+
+```solidity
+struct ResourcesModificationParam {
+  bool isTransferringResourcesFromBuilding;
+  address resourcesOwnerOrResourcesReceiver;
+  bytes32 resourceTypeId;
+  uint256 resourcesAmount;
+}
+```
+
+### BuildingProductionModificationParam
+
+
+
+
+
+
+
+
+```solidity
+struct BuildingProductionModificationParam {
+  bytes32 buildingTypeId;
+  bool isTransferringWorkersFromBuilding;
+  uint256 workersAmount;
+  struct ISettlement.ResourcesModificationParam[] resources;
+}
+```
+
 ### relatedRegion
 
 ```solidity
@@ -337,6 +373,18 @@ Thrown when attempting to specify 'tokensAmount' parameter anything but zero whe
 
 
 
+### CannotTransferProducingResourceFromBuilding
+
+```solidity
+error CannotTransferProducingResourceFromBuilding()
+```
+
+Thrown when attempting to transfer producing resource from building
+
+
+
+
+
 ### withdrawResources
 
 ```solidity
@@ -355,25 +403,21 @@ _In case if someone accidentally transfers game resource to the settlement_
 
 
 
-### assignResourcesAndWorkersToBuilding
+### modifyBuildingsProduction
 
 ```solidity
-function assignResourcesAndWorkersToBuilding(address resourcesOwner, address buildingAddress, uint256 workersAmount, bytes32[] resourceTypeIds, uint256[] resourcesAmounts) external
+function modifyBuildingsProduction(struct ISettlement.BuildingProductionModificationParam[] params) external
 ```
 
-Transfers game resources from msg.sender and workers from settlement to building
+Transfers game resources and workers from/to building depending on specified params
 
-_Assigns resources+workers to building in single transaction
-If resourcesOwner == address(0) -> resources will be taken from msg.sender
-If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resourcesOwner_
+_Assigns resources and workers to building in single transaction
+In case of transferring resources to building if resource.resourcesOwnerOrResourcesReceiver == address(0) -> resources will be taken from msg.sender
+In case of transferring resources to building if resource.resourcesOwnerOrResourcesReceiver != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resource.resourcesOwnerOrResourcesReceiver_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| resourcesOwner | address |  |
-| buildingAddress | address | Building address |
-| workersAmount | uint256 | Workers amount (in 1e18 precision) |
-| resourceTypeIds | bytes32[] | Resource type ids |
-| resourcesAmounts | uint256[] | Resources amounts |
+| params | struct ISettlement.BuildingProductionModificationParam[] | An array of BuildingProductionModificationParam struct |
 
 
 

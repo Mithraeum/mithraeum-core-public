@@ -89,7 +89,7 @@ describe("Shares Test", async function () {
     await runWithSavingGasUsage(this.test!.title, async () => await SharesCoreTest.impossibleReturnSharesDueHighTreasuryAmountTest(BuildingType.SMITHY, 40));
   });
 
-  it(`testUser1 can assign resources into building by share. /userSharesBalance, userResources, userBuildingResources/, `, async function () {
+  it(`testUser1 can assign resources into building by share. /userSharesBalance, userResources, userBuildingResources/`, async function () {
     this.timeout(1_000_000);
     await runWithSavingGasUsage(this.test!.title, async () => await SharesCoreTest.resourceAssignByShareTest());
   });

@@ -93,7 +93,8 @@ contract RewardPool is IRewardPool, WorldInitializable, ProxyReentrancyGuard {
 
         uint256 minimumAmountOfIngotsRequiredForSpecificTokensToBeReceived = _getIngotsAmountIn(tokensToBeReceived, tokenPrecision, currentPrice);
 
-        IResource ingots = world.eras(world.currentEraNumber()).resources(INGOT_TYPE_ID);
+        IWorld _world = world;
+        IResource ingots = _world.eras(_world.currentEraNumber()).resources(INGOT_TYPE_ID);
 
         if (resourcesOwner == address(0)) {
             ingots.transferFrom(msg.sender, address(this), minimumAmountOfIngotsRequiredForSpecificTokensToBeReceived);
@@ -104,8 +105,8 @@ contract RewardPool is IRewardPool, WorldInitializable, ProxyReentrancyGuard {
 
         _sendTokens(msg.sender, tokensToBeReceived);
 
-        if (_getRewardPoolBalance() == 0 && world.gameEndTime() == 0) {
-            world.setGameEndTime(block.timestamp);
+        if (_getRewardPoolBalance() == 0 && _world.gameEndTime() == 0) {
+            _world.setGameEndTime(block.timestamp);
         }
     }
 
@@ -124,13 +125,15 @@ contract RewardPool is IRewardPool, WorldInitializable, ProxyReentrancyGuard {
 
     /// @inheritdoc IRewardPool
     function getCurrentPrice() public view override returns (uint256) {
-        uint256 currentEraNumber = world.currentEraNumber();
-        IEra currentEra = world.eras(currentEraNumber);
+        IWorld _world = world;
+
+        uint256 currentEraNumber = _world.currentEraNumber();
+        IEra currentEra = _world.eras(currentEraNumber);
         address ingotsAddress = address(currentEra.resources(INGOT_TYPE_ID));
 
         uint256 ingotPrecision = 10 ** IERC20Metadata(ingotsAddress).decimals();
 
-        int128 currentPrice64 = _getCurrentPrice64(currentEraNumber, currentEra.creationTime(), world.gameBeginTime());
+        int128 currentPrice64 = _getCurrentPrice64(currentEraNumber, currentEra.creationTime(), _world.gameBeginTime());
         return ABDKMath64x64.mulu(currentPrice64, ingotPrecision);
     }
 

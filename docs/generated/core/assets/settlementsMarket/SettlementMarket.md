@@ -116,6 +116,19 @@ _Calculates cost of placing new settlement in tokens_
 | [0] | uint256 |  |
 
 
+### _getSettlementPriceDropMultiplier64
+
+```solidity
+function _getSettlementPriceDropMultiplier64(uint256 priceDecayBeginTime, uint256 priceDecayEndTime, uint256 userSettlementsCount) internal pure returns (int128)
+```
+
+
+
+_Calculates settlement price drop multiplier_
+
+
+
+
 ### _getPriceDecayBeginTime
 
 ```solidity

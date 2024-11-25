@@ -36,23 +36,57 @@ export class FortHelper {
     const maxResourceAmount = BigNumber.max(...spendingResourceConfigs.map(value =>
         fortRepairmentTime.multipliedBy(toLowBN(value.amountPerTick).multipliedBy(assignWorkerQuantity))));
 
-    await settlementInstance.assignResourcesAndWorkersToBuilding(
-      ethers.ZeroAddress,
-      await fort.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(maxResourceAmount.dividedBy(productionRateWithPenaltyMultiplier)))
+    await settlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: false,
+            resources: spendingResourceConfigs.map(value => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(maxResourceAmount.dividedBy(productionRateWithPenaltyMultiplier)),
+                resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                isTransferringResourcesFromBuilding: false
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await settlementInstance.assignResourcesAndWorkersToBuilding(
+    //   ethers.ZeroAddress,
+    //   await fort.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(maxResourceAmount.dividedBy(productionRateWithPenaltyMultiplier)))
+    // ).then((tx) => tx.wait());
 
     await EvmUtils.increaseTime(fortRepairmentTime.toNumber());
 
-    await fort.removeResourcesAndWorkers(
-      await settlementInstance.getAddress(),
-      transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
-      HardhatHelper.getRunnerAddress(settlementInstance.runner),
-      spendingResourceConfigs.map((value) => value.resourceTypeId),
-      spendingResourceConfigs.map((_) => transferableFromLowBN(maxResourceAmount.dividedBy(productionRateWithPenaltyMultiplier)))
+    await settlementInstance.modifyBuildingsProduction(
+        [
+          {
+            buildingTypeId: await fort.buildingTypeId(),
+            workersAmount: transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+            isTransferringWorkersFromBuilding: true,
+            resources: spendingResourceConfigs.map((value) => {
+              return {
+                resourceTypeId: value.resourceTypeId,
+                resourcesAmount: transferableFromLowBN(maxResourceAmount.dividedBy(productionRateWithPenaltyMultiplier)),
+                resourcesOwnerOrResourcesReceiver: HardhatHelper.getRunnerAddress(settlementInstance.runner),
+                isTransferringResourcesFromBuilding: true
+              }
+            })
+          }
+        ]
     ).then((tx) => tx.wait());
+    // await fort.removeResourcesAndWorkers(
+    //   await settlementInstance.getAddress(),
+    //   transferableFromLowBN(new BigNumber(assignWorkerQuantity)),
+    //   HardhatHelper.getRunnerAddress(settlementInstance.runner),
+    //   spendingResourceConfigs.map((value) => value.resourceTypeId),
+    //   spendingResourceConfigs.map((_) => transferableFromLowBN(maxResourceAmount.dividedBy(productionRateWithPenaltyMultiplier)))
+    // ).then((tx) => tx.wait());
 
     await fort.updateState().then((tx) => tx.wait());
   }

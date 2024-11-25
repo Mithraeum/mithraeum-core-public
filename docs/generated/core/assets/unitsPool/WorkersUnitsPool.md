@@ -197,32 +197,6 @@ _Allows caller to be settlement ruler or world asset_
 
 
 
-### _workers
-
-```solidity
-function _workers() internal view returns (contract IWorkers)
-```
-
-
-
-_Returns workers_
-
-
-
-
-### _units
-
-```solidity
-function _units() internal view returns (contract IUnits)
-```
-
-
-
-_Returns units by pool unit type_
-
-
-
-
 ### _swapWorkersForExactUnits
 
 ```solidity

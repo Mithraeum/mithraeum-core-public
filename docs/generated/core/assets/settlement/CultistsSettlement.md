@@ -262,25 +262,21 @@ _Used for determination amount of real prosperity this settlement has_
 
 
 
-### assignResourcesAndWorkersToBuilding
+### modifyBuildingsProduction
 
 ```solidity
-function assignResourcesAndWorkersToBuilding(address resourcesOwner, address buildingAddress, uint256 workersAmount, bytes32[] resourceTypeIds, uint256[] resourcesAmounts) public
+function modifyBuildingsProduction(struct ISettlement.BuildingProductionModificationParam[] params) public
 ```
 
 For cultists settlement this function is disabled
 
-_Assigns resources+workers to building in single transaction
-If resourcesOwner == address(0) -> resources will be taken from msg.sender
-If resourcesOwner != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resourcesOwner_
+_Assigns resources and workers to building in single transaction
+In case of transferring resources to building if resource.resourcesOwnerOrResourcesReceiver == address(0) -> resources will be taken from msg.sender
+In case of transferring resources to building if resource.resourcesOwnerOrResourcesReceiver != address(0) and resourcesOwner has given allowance to msg.sender >= resourcesAmount -> resources will be taken from resource.resourcesOwnerOrResourcesReceiver_
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| resourcesOwner | address |  |
-| buildingAddress | address | Building address |
-| workersAmount | uint256 | Workers amount (in 1e18 precision) |
-| resourceTypeIds | bytes32[] | Resource type ids |
-| resourcesAmounts | uint256[] | Resources amounts |
+| params | struct ISettlement.BuildingProductionModificationParam[] | An array of BuildingProductionModificationParam struct |
 
 
 
@@ -479,19 +475,6 @@ Only settlement in active era can decrease its corruptionIndex_
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | tokensAmount | uint256 | Amount of tokens will be taken from sender (if world.erc20ForSettlementPurchase is not address zero) |
-
-
-
-### _createArmy
-
-```solidity
-function _createArmy() internal
-```
-
-
-
-_Creates settlements army_
-
 
 
 

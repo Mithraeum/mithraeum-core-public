@@ -19,18 +19,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {worldDeployer} = await getNamedAccounts();
     const signer = await ethers.getSigner(worldDeployer);
 
-    const deployment = await deploy("StubERC20ForRegionInclusion", {
-        contract: "StubERC20",
-        from: worldDeployer,
-        args: ["Stub Token", "SZI"],
-        log: true,
-    });
+    let deployment = await deployments.getOrNull("StubERC20ForRegionInclusion");
+    if (!deployment) {
+        deployment = await deploy("StubERC20ForRegionInclusion", {
+            contract: "StubERC20",
+            from: worldDeployer,
+            args: ["Stub Token", "SZI"],
+            log: true,
+        });
+    }
 
-    mithraeumConfig.ERC20_FOR_REGION_INCLUSION_ADDRESS = deployment.address;
+    mithraeumConfig.ERC20_FOR_REGION_INCLUSION_ADDRESS = deployment!.address;
 
     console.log(`ERC20_FOR_REGION_INCLUSION_ADDRESS defined`);
 
-    const regionInclusionToken = StubERC20__factory.connect(deployment.address, signer);
+    const regionInclusionToken = StubERC20__factory.connect(deployment!.address, signer);
     const currentWorldDeployerBalance = await regionInclusionToken.balanceOf(worldDeployer);
     const amountToMint = BigInt(800_000_000) * BigInt(1e18);
     if (currentWorldDeployerBalance < amountToMint) {

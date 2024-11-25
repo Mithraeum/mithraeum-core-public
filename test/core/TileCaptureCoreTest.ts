@@ -63,15 +63,32 @@ export class TileCaptureCoreTest {
             prosperityStake
         );
 
-        await userSettlementInstance
-            .assignResourcesAndWorkersToBuilding(
-                ethers.ZeroAddress,
-                await buildingInstance.getAddress(),
-                transferableFromLowBN(actualWorkersCap),
-                spendingResourceConfigs.map((value) => value.resourceTypeId),
-                spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
-            )
-            .then((tx) => tx.wait());
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(actualWorkersCap),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait());
+        // await userSettlementInstance
+        //     .assignResourcesAndWorkersToBuilding(
+        //         ethers.ZeroAddress,
+        //         await buildingInstance.getAddress(),
+        //         transferableFromLowBN(actualWorkersCap),
+        //         spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //         spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+        //     )
+        //     .then((tx) => tx.wait());
 
         const productionPerSecond = await ProductionHelper.getProductionPerSecond(
             userSettlementInstance,
@@ -103,15 +120,26 @@ export class TileCaptureCoreTest {
         );
 
         await expect(
-            userSettlementInstance
-                .assignResourcesAndWorkersToBuilding(
-                    ethers.ZeroAddress,
-                    await buildingInstance.getAddress(),
-                    transferableFromLowBN(actualWorkersCap.minus(assignedWorkersAfter)),
-                    [],
-                    []
-                )
-                .then((tx) => tx.wait())
+            userSettlementInstance.modifyBuildingsProduction(
+                [
+                    {
+                        buildingTypeId: await buildingInstance.buildingTypeId(),
+                        workersAmount: transferableFromLowBN(actualWorkersCap.minus(assignedWorkersAfter)),
+                        isTransferringWorkersFromBuilding: false,
+                        resources: []
+                    }
+                ]
+            ).then((tx) => tx.wait())
+
+            // userSettlementInstance
+            //     .assignResourcesAndWorkersToBuilding(
+            //         ethers.ZeroAddress,
+            //         await buildingInstance.getAddress(),
+            //         transferableFromLowBN(actualWorkersCap.minus(assignedWorkersAfter)),
+            //         [],
+            //         []
+            //     )
+            //     .then((tx) => tx.wait())
         ).to.be.revertedWith(
             "SettlementCannotSendWorkersToBuildingOverMaximumAllowedCapacity()"
         );
@@ -181,28 +209,62 @@ export class TileCaptureCoreTest {
         const destructionTime = await FortHelper.getSettlementFortDestructionTime(userSettlementInstance2);
         await EvmUtils.increaseTime(destructionTime);
 
-        await userSettlementInstance2
-            .assignResourcesAndWorkersToBuilding(
-                ethers.ZeroAddress,
-                await fort.getAddress(),
-                transferableFromLowBN(actualWorkersCap),
-                spendingResourceConfigs.map((value) => value.resourceTypeId),
-                spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
-            )
-            .then((tx) => tx.wait());
+        await userSettlementInstance2.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await fort.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(actualWorkersCap),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await userSettlementInstance2
+        //     .assignResourcesAndWorkersToBuilding(
+        //         ethers.ZeroAddress,
+        //         await fort.getAddress(),
+        //         transferableFromLowBN(actualWorkersCap),
+        //         spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //         spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+        //     )
+        //     .then((tx) => tx.wait());
 
         const regenerationPerSecond = await FortHelper.getFortRegenerationPerSecond(fort, regenerationTime);
         const assignedWorkersBefore = toLowBN(await fort.getAssignedWorkers());
 
-        await fort
-            .removeResourcesAndWorkers(
-                await userSettlementInstance2.getAddress(),
-                transferableFromLowBN(actualWorkersCap),
-                testUser1,
-                spendingResourceConfigs.map((value) => value.resourceTypeId),
-                spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
-            )
-            .then((tx) => tx.wait());
+        await userSettlementInstance2.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await fort.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(actualWorkersCap),
+                    isTransferringWorkersFromBuilding: true,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                            resourcesOwnerOrResourcesReceiver: testUser1,
+                            isTransferringResourcesFromBuilding: true
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await fort
+        //     .removeResourcesAndWorkers(
+        //         await userSettlementInstance2.getAddress(),
+        //         transferableFromLowBN(actualWorkersCap),
+        //         testUser1,
+        //         spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //         spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+        //     )
+        //     .then((tx) => tx.wait());
 
         const prosperityBalance = await ProsperityHelper.getProsperityBalance(userSettlementInstance2);
         expect(prosperityBalance).gte(new BigNumber(prosperityStake), 'Prosperity balance is not correct');
@@ -215,15 +277,32 @@ export class TileCaptureCoreTest {
                 .multipliedBy(prosperityStake), 'Prosperity balance is not correct'
         );
 
-        await userSettlementInstance2
-            .assignResourcesAndWorkersToBuilding(
-                ethers.ZeroAddress,
-                await fort.getAddress(),
-                transferableFromLowBN(actualWorkersCap),
-                spendingResourceConfigs.map((value) => value.resourceTypeId),
-                spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
-            )
-            .then((tx) => tx.wait());
+        await userSettlementInstance2.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await fort.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(actualWorkersCap),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: spendingResourceConfigs.map(value => {
+                        return {
+                            resourceTypeId: value.resourceTypeId,
+                            resourcesAmount: transferableFromLowBN(new BigNumber(assignResourceQuantity)),
+                            resourcesOwnerOrResourcesReceiver: ethers.ZeroAddress,
+                            isTransferringResourcesFromBuilding: false
+                        }
+                    })
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await userSettlementInstance2
+        //     .assignResourcesAndWorkersToBuilding(
+        //         ethers.ZeroAddress,
+        //         await fort.getAddress(),
+        //         transferableFromLowBN(actualWorkersCap),
+        //         spendingResourceConfigs.map((value) => value.resourceTypeId),
+        //         spendingResourceConfigs.map((_) => transferableFromLowBN(new BigNumber(assignResourceQuantity)))
+        //     )
+        //     .then((tx) => tx.wait());
 
         await userSettlementInstance2.claimCapturedTile(tilePosition).then((tx) => tx.wait());
 
@@ -237,15 +316,26 @@ export class TileCaptureCoreTest {
         );
 
         await expect(
-            userSettlementInstance2
-                .assignResourcesAndWorkersToBuilding(
-                    ethers.ZeroAddress,
-                    await fort.getAddress(),
-                    transferableFromLowBN(actualWorkersCap.minus(assignedWorkersAfter)),
-                    [],
-                    []
-                )
-                .then((tx) => tx.wait())
+            userSettlementInstance2.modifyBuildingsProduction(
+                [
+                    {
+                        buildingTypeId: await fort.buildingTypeId(),
+                        workersAmount: transferableFromLowBN(actualWorkersCap.minus(assignedWorkersAfter)),
+                        isTransferringWorkersFromBuilding: false,
+                        resources: []
+                    }
+                ]
+            ).then((tx) => tx.wait())
+
+            // userSettlementInstance2
+            //     .assignResourcesAndWorkersToBuilding(
+            //         ethers.ZeroAddress,
+            //         await fort.getAddress(),
+            //         transferableFromLowBN(actualWorkersCap.minus(assignedWorkersAfter)),
+            //         [],
+            //         []
+            //     )
+            //     .then((tx) => tx.wait())
         ).to.be.revertedWith(
             "SettlementCannotSendWorkersToBuildingOverMaximumAllowedCapacity()"
         );
@@ -436,7 +526,7 @@ export class TileCaptureCoreTest {
 
         const regionNumber = 1;
         const prosperityStake = 60;
-        const hireWorkerQuantity = 12;
+        const hireWorkerQuantity = 6;
 
         const userSettlementInstance = await UserHelper.getUserSettlementByNumber(testUser1, 1);
 
@@ -651,15 +741,25 @@ export class TileCaptureCoreTest {
             prosperityStake
         );
 
-        await userSettlementInstance
-            .assignResourcesAndWorkersToBuilding(
-                ethers.ZeroAddress,
-                await buildingInstance.getAddress(),
-                transferableFromLowBN(actualWorkersCap),
-                [],
-                []
-            )
-            .then((tx) => tx.wait());
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(actualWorkersCap),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: []
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await userSettlementInstance
+        //     .assignResourcesAndWorkersToBuilding(
+        //         ethers.ZeroAddress,
+        //         await buildingInstance.getAddress(),
+        //         transferableFromLowBN(actualWorkersCap),
+        //         [],
+        //         []
+        //     )
+        //     .then((tx) => tx.wait());
 
         const prosperityBalance = await ProsperityHelper.getProsperityBalance(userSettlementInstance);
         expect(prosperityBalance).gte(new BigNumber(prosperityStake), 'Prosperity balance is not correct');
@@ -816,7 +916,7 @@ export class TileCaptureCoreTest {
         const regionNumber = 1;
         const buildingType = BuildingType.SMITHY;
         const prosperityStake = 25;
-        const hireWorkerQuantity = 4;
+        const hireWorkerQuantity = 2;
 
         const userSettlementInstance = await UserHelper.getUserSettlementByNumber(testUser1, 1);
 
@@ -894,15 +994,25 @@ export class TileCaptureCoreTest {
         expect(BuildingHelper.getBuildingTypeId(buildingType))
             .eql(advancedProductionTileBonusTypeId, 'Building type id is not correct');
 
-        await userSettlementInstance
-            .assignResourcesAndWorkersToBuilding(
-                ethers.ZeroAddress,
-                await buildingInstance.getAddress(),
-                transferableFromLowBN(actualWorkersCap),
-                [],
-                []
-            )
-            .then((tx) => tx.wait());
+        await userSettlementInstance.modifyBuildingsProduction(
+            [
+                {
+                    buildingTypeId: await buildingInstance.buildingTypeId(),
+                    workersAmount: transferableFromLowBN(actualWorkersCap),
+                    isTransferringWorkersFromBuilding: false,
+                    resources: []
+                }
+            ]
+        ).then((tx) => tx.wait())
+        // await userSettlementInstance
+        //     .assignResourcesAndWorkersToBuilding(
+        //         ethers.ZeroAddress,
+        //         await buildingInstance.getAddress(),
+        //         transferableFromLowBN(actualWorkersCap),
+        //         [],
+        //         []
+        //     )
+        //     .then((tx) => tx.wait());
 
         const assignedWorkersBefore = toLowBN(await buildingInstance.getAssignedWorkers());
 

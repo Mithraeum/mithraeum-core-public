@@ -86,6 +86,19 @@ _Updated when #increaseUnitBattleMultiplier or #decreaseUnitBattleMultiplier is 
 
 
 
+### lastDemilitarizationTime
+
+```solidity
+uint64 lastDemilitarizationTime
+```
+
+Last demilitarization time
+
+_Updated when #demilitarize is called_
+
+
+
+
 ### onlyRulerOrWorldAssetFromSameEra
 
 ```solidity
@@ -521,6 +534,45 @@ function _speedUpArmyByBurningTreasuryOnCurrentPosition(uint256 maxManeuverDurat
 
 
 _Updates building's treasury, burns resource specified for acceleration and returns maneuver duration duration reduction_
+
+
+
+
+### _isInBattle
+
+```solidity
+function _isInBattle() internal view returns (bool)
+```
+
+
+
+_Checks if army is in battle_
+
+
+
+
+### _isStunned
+
+```solidity
+function _isStunned() internal view returns (bool)
+```
+
+
+
+_Checks if army is stunned_
+
+
+
+
+### _isDemilitarizeOnCooldown
+
+```solidity
+function _isDemilitarizeOnCooldown() internal view returns (bool)
+```
+
+
+
+_Check if demilitarize is on cooldown_
 
 
 
