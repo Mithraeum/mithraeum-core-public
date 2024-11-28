@@ -7,7 +7,6 @@
 /cache
 /cache-zk
 /scripts/node_modules/*
-/typechain-types
 /deployments/localhost
 .zksolc-libraries-cache
 
